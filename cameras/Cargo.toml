@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 messaging = { path = "../messaging" }
+lib = { path = "../lib" }

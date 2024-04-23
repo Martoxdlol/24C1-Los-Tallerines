@@ -1,5 +1,5 @@
-use messaging::client::NATSClient;
+// use messaging::client::NATSClient;
 
 fn main() {
-    let client = NATSClient::new();
+    // let client = NATSClient::new();
 }
