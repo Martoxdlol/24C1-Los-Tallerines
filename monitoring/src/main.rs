@@ -1,3 +1,5 @@
+use messaging::client::NATSClient;
+
 fn main() {
-    println!("Hello, world!");
+    let client = NATSClient::new();
 }
