@@ -47,7 +47,7 @@ impl Conexion {
     /// Este método se encarga de filtrar el mensaje según las subscripciones que tenga el cliente
     pub fn publicar(&mut self, publicacion: Publicacion) {
         // TODO: Verificar tópico
-        self.publicaciones_salientes.push(publicacion);
+        self.publicaciones_entrantes.push(publicacion);
     }
 
     /// Extrae las publicaciones salientes que se generaron en el último tick
