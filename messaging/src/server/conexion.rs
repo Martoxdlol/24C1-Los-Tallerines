@@ -30,20 +30,28 @@ impl Conexion {
 
     /// Lee los mensajes nuevos recibidos del stream y que fueron previamente enviados al parser
     pub fn leer_mensajes(&mut self) {
-        while let Some(mensaje) = self.parser.proximo_mensaje() { // proximo mensaje va a leer los bytes nuevos y devuelve si es una accion valida
+        while let Some(mensaje) = self.parser.proximo_mensaje() {
+            // proximo mensaje va a leer los bytes nuevos y devuelve si es una accion valida
             match mensaje {
-                Message::Sub(topico, id) => { 
+                Message::Pub(subject, replay_to, payload) => self
+                    .publicaciones_salientes
+                    .push(Publicacion::new(subject, payload, None, replay_to)),
+                Message::Hpub(subject, replay_to, headers, payload) => self
+                    .publicaciones_salientes
+                    .push(Publicacion::new(subject, payload, Some(headers), replay_to)),
+                Message::Sub(topico, _, id) => {
                     self.subscripciones.insert(id, topico);
                 }
-                Message::Pub(topico, payload, replay_to) => self
-                    .publicaciones_salientes
-                    .push(Publicacion::new(topico, payload, replay_to)),
+                Message::Unsub(subject, _) => {
+                    self.subscripciones.remove(&subject);
+                }
+                Message::Err(_) => {}
             }
         }
     }
 
     /// Agrega un mensaje para publicar al cliente
-    /// 
+    ///
     /// Este método se encarga de filtrar el mensaje según las subscripciones que tenga el cliente
     pub fn publicar(&mut self, publicacion: Publicacion) {
         // TODO: Verificar tópico
@@ -52,24 +60,24 @@ impl Conexion {
 
     /// Extrae las publicaciones salientes que se generaron en el último tick
     pub fn extraer_publicaciones_salientes(&mut self) -> Vec<Publicacion> {
-        self.publicaciones_salientes.drain(..).collect() // drane saca los elementos del vector  
+        self.publicaciones_salientes.drain(..).collect() // drane saca los elementos del vector
     }
 
     /// Realiza una iteración de la conexión
-    /// 
+    ///
     /// Este método se encarga de leer mensajes, enviar mensajes y procesar mensajes
-    /// 
+    ///
     /// Se debe llamar a este método en un loop para que la conexión funcione
-    /// 
+    ///
     /// Este método no bloquea, si no hay datos para leer o enviar, no hace nada
-    /// 
+    ///
     /// Este método no maneja errores, si hay un error en la conexión, se debe manejar en el loop principal
     pub fn tick(&mut self) {
         let mut buffer = [0; 1024]; // 1kb
-        // 1. Leer una vez
+                                    // 1. Leer una vez
         match self.stream.read(&mut buffer) {
             Ok(n) => {
-                // 2. Enviar bytes a parser
+                // 2. Enviar bytes a parser y leer nuevos mensajes generados
                 self.parser.agregar_bytes(&buffer[..n]);
                 // 3. Leer mensajes
                 self.leer_mensajes();
@@ -84,7 +92,7 @@ impl Conexion {
 
         // 4. Enviar mensajes
         for publicacion in self.publicaciones_entrantes.drain(..) {
-            let buffer = publicacion.serializar();
+            let buffer = publicacion.serializar_msg();
             self.stream.write_all(&buffer).unwrap();
         }
     }
