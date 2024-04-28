@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub enum ResultadoLinea {
     StringVacio,
-    SintaxisInvalida,
+    MensajeIncorrecto,
     Pub(String, Option<String>, usize),
     Hpub(String, Option<String>, usize, usize),
     Sub(String, Option<String>, String),

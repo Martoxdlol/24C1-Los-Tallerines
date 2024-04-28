@@ -46,7 +46,7 @@ fn main() {
         // Cada conexión decide si debe enviar el mensaje o ignorarlo según el tópico
         for conexion in &mut conexiones {
             for publicacion in &todas_las_publicaciones {
-                conexion.publicar(publicacion.clone());
+                conexion.recibir_mensaje(publicacion.clone());
             }
         }
     }
