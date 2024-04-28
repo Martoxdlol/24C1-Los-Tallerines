@@ -1,13 +1,19 @@
 /// Representa un mensaje que se va a publicar en un tópico
+#[derive(Debug)]
 pub struct Publicacion {
-    topico: String,            // a donde se envia el mensaje
-    payload: Vec<u8>,          // El mensaje que se va a enviar
-    headers: Option<Vec<u8>>,          // Los headers del mensaje que se va a enviar
-    replay_to: Option<String>, // Campo que tiene nats
+    pub topico: String,            // A donde se envia el mensaje
+    pub payload: Vec<u8>,          // El mensaje que se va a enviar
+    pub headers: Option<Vec<u8>>,  // Los headers del mensaje que se va a enviar
+    pub replay_to: Option<String>, // Campo que tiene nats
 }
 
 impl Publicacion {
-    pub fn new(topico: String, payload: Vec<u8>, headeres: Option<Vec<u8>>, replay_to: Option<String>) -> Self {
+    pub fn new(
+        topico: String,
+        payload: Vec<u8>,
+        headeres: Option<Vec<u8>>,
+        replay_to: Option<String>,
+    ) -> Self {
         Self {
             topico: topico,
             payload: payload,

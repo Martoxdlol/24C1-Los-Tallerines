@@ -2,7 +2,7 @@
 pub enum Message {
     // 'topico', 'replay_to' payload
     Pub(String, Option<String>, Vec<u8>),
-        // 'topico', 'replay_to' headers, payload
+    // 'topico', 'replay_to' headers, payload
     Hpub(String, Option<String>, Vec<u8>, Vec<u8>),
     // 'topico', 'queue group', 'id
     Sub(String, Option<String>, String),
