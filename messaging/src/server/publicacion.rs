@@ -15,9 +15,9 @@ impl Publicacion {
         replay_to: Option<String>,
     ) -> Self {
         Self {
-            topico: topico,
-            payload: payload,
-            replay_to: replay_to,
+            topico,
+            payload,
+            replay_to,
             headers: headeres,
         }
     }
