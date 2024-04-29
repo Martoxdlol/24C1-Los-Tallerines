@@ -6,4 +6,6 @@ pub enum ResultadoLinea {
     Hpub(String, Option<String>, usize, usize),
     Sub(String, Option<String>, String),
     Unsub(String, Option<usize>),
+    Ping,
+    Connect
 }

@@ -10,4 +10,8 @@ pub enum Message {
     Unsub(String, Option<usize>),
     // Mensaje de error (cuando no se pudo parsear el mensaje)
     Err(String),
+    // Mensaje para generar la conexión
+    Connect(String),
+    // Mensaje para revisar la conexión
+    Ping()
 }
