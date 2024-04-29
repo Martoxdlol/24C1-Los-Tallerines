@@ -31,8 +31,8 @@ impl Publicacion {
         bytes.extend_from_slice(b" ");
         if let Some(replay_to) = &self.replay_to {
             bytes.extend_from_slice(replay_to.as_bytes());
+            bytes.extend_from_slice(b" ");
         }
-        bytes.extend_from_slice(b" ");
         bytes.extend_from_slice(self.payload.len().to_string().as_bytes());
         bytes.extend_from_slice(b"\r\n");
         bytes.extend_from_slice(&self.payload);
