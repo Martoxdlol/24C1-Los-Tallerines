@@ -29,14 +29,13 @@ pub struct Conexion {
 
 impl Conexion {
     pub fn new(stream: TcpStream) -> Self {
-        let mut respuestas = Vec::new();
-        respuestas.push(Respuesta::Info());
+        let respuestas = vec![Respuesta::Info()];
         Self {
-            stream: stream, // Los bytes de donde vamos a saber: QUE hay que hacer en DONDE, y si es publicar, el mensaje
+            stream, // Los bytes de donde vamos a saber: QUE hay que hacer en DONDE, y si es publicar, el mensaje
             parser: Parser::new(),
             subscripciones: HashMap::new(),
             publicaciones_salientes: Vec::new(),
-            respuestas: respuestas,
+            respuestas,
             recibi_connect: false,
         }
     }
@@ -47,7 +46,7 @@ impl Conexion {
             // Devuelve que tipo de mensaje es
             println!("Mensaje: {:?}", mensaje);
 
-            if self.recibi_connect == false {
+            if !self.recibi_connect {
                 match mensaje {
                     Message::Connect(_) => {
                         self.recibi_connect = true;
@@ -159,7 +158,7 @@ impl Conexion {
             }
         }
 
-        if self.respuestas.len() > 0 {
+        if !self.respuestas.is_empty() {
             println!("Respuestas: {:?}", &self.respuestas);
         }
 

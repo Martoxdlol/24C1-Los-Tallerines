@@ -9,13 +9,13 @@ pub struct Subject {
 }
 
 impl Subject {
-    pub fn new(patron: String) -> Result<Self, ()> {
+    pub fn new(patron: String) -> Result<Self, String> {
         let mut segmentos = Vec::new();
         let mut exacto = true;
 
-        for str in patron.split(".") {
+        for str in patron.split('.') {
             if !exacto {
-                return Err(());
+                return Err("Patrón no válido".to_string());
             }
 
             if str.eq("*") {
@@ -27,14 +27,14 @@ impl Subject {
             }
         }
 
-        return Ok(Self {
+        Ok(Self {
             patron: segmentos,
             exacto,
-        });
+        })
     }
 
     pub fn test(&self, subject: &str) -> bool {
-        let segmentos = subject.split(".").collect::<Vec<&str>>();
+        let segmentos = subject.split('.').collect::<Vec<&str>>();
         if self.patron.len() > segmentos.len() {
             return false;
         }
@@ -43,8 +43,7 @@ impl Subject {
             return false;
         }
 
-        let mut i = 0;
-        for segmento in segmentos.iter() {
+        for (i, segmento) in segmentos.iter().enumerate() {
             let segmento_patron = &self.patron[i];
 
             if let Segmento::Texto(t) = segmento_patron {
@@ -52,9 +51,8 @@ impl Subject {
                     return false;
                 }
             }
-            i += 1;
         }
 
-        return true;
+        true
     }
 }

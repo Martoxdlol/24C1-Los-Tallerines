@@ -21,6 +21,12 @@ pub struct Parser {
 ///
 /// El parser se encarga de ir liberando los bytes que ya utilizó y de tener en cuenta los estados intermedios
 /// (es decir, si le llega un mensaje que no está completo, lo guarda y espera a que lleguen más bytes)
+impl Default for Parser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Parser {
     pub fn new() -> Self {
         Self {
@@ -176,7 +182,7 @@ impl Parser {
         }
 
         if primera_palabra.eq("hpub") {
-            return self.linea_hpub(&palabras);
+            return self.linea_hpub(&palabras[1..]);
         }
 
         if primera_palabra.eq("sub") {
@@ -184,7 +190,7 @@ impl Parser {
         }
 
         if primera_palabra.eq("unsub") {
-            return self.linea_unsub(&palabras);
+            return self.linea_unsub(&palabras[1..]);
         }
 
         if primera_palabra.eq("") {
@@ -197,7 +203,7 @@ impl Parser {
             return ResultadoLinea::Connect;
         }
 
-        return ResultadoLinea::MensajeIncorrecto;
+        ResultadoLinea::MensajeIncorrecto
     }
 
     fn linea_pub(&self, palabras: &[String]) -> ResultadoLinea {
@@ -224,10 +230,10 @@ impl Parser {
             );
         }
 
-        return ResultadoLinea::MensajeIncorrecto;
+        ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_hpub(&self, palabras: &Vec<String>) -> ResultadoLinea {
+    fn linea_hpub(&self, palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 3 o 4 para saber si tiene reply_to
         if palabras.len() == 3 {
             let bytes = match palabras[1].parse() {
@@ -260,7 +266,7 @@ impl Parser {
             );
         }
 
-        return ResultadoLinea::MensajeIncorrecto;
+        ResultadoLinea::MensajeIncorrecto
     }
 
     fn linea_sub(&self, palabras: &[String]) -> ResultadoLinea {
@@ -282,15 +288,15 @@ impl Parser {
             )
         }
 
-        return ResultadoLinea::MensajeIncorrecto;
+        ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_unsub(&self, palabras: &Vec<String>) -> ResultadoLinea {
-        if palabras.len() < 2 {
+    fn linea_unsub(&self, palabras: &[String]) -> ResultadoLinea {
+        if palabras.len() != 1 {
             return ResultadoLinea::MensajeIncorrecto;
         }
 
-        let sid = &palabras[1];
+        let sid = &palabras[0];
         let max_msgs = palabras.get(2).map(|s| s.parse::<usize>().unwrap());
 
         ResultadoLinea::Unsub(sid.to_string(), max_msgs)
