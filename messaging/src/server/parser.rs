@@ -152,6 +152,12 @@ impl Parser {
                 ResultadoLinea::Pub(subject, reply_to, bytes) => {
                     self.actual = Some(ResultadoLinea::Pub(subject, reply_to, bytes));
                 }
+                ResultadoLinea::Ping => {
+                    return Some(Message::Ping());
+                }
+                ResultadoLinea::Connect => {
+                    return Some(Message::Connect("".to_string()));
+                }
             }
         }
         None
@@ -183,6 +189,12 @@ impl Parser {
 
         if primera_palabra.eq("") {
             return ResultadoLinea::StringVacio;
+        }
+        if primera_palabra.eq("ping") {
+            return ResultadoLinea::Ping;
+        }
+        if primera_palabra.eq("connect") {
+            return ResultadoLinea::Connect;
         }
 
         return ResultadoLinea::MensajeIncorrecto;

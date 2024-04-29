@@ -23,16 +23,21 @@ pub struct Conexion {
     publicaciones_salientes: Vec<Publicacion>,
     /// Las respuestas y publicaciones que se envian al stream del cliente
     respuestas: Vec<Respuesta>,
+    /// Flag para saber si la conexión está activa
+    recibi_connect: bool,
 }
 
 impl Conexion {
     pub fn new(stream: TcpStream) -> Self {
+        let mut respuestas = Vec::new();
+        respuestas.push(Respuesta::Info());
         Self {
             stream: stream, // Los bytes de donde vamos a saber: QUE hay que hacer en DONDE, y si es publicar, el mensaje
             parser: Parser::new(),
             subscripciones: HashMap::new(),
             publicaciones_salientes: Vec::new(),
-            respuestas: Vec::new(),
+            respuestas: respuestas,
+            recibi_connect: false,
         }
     }
 
@@ -41,6 +46,22 @@ impl Conexion {
         while let Some(mensaje) = self.parser.proximo_mensaje() {
             // Devuelve que tipo de mensaje es
             println!("Mensaje: {:?}", mensaje);
+
+            if self.recibi_connect == false {
+                match mensaje {
+                    Message::Connect(_) => {
+                        self.recibi_connect = true;
+                        self.respuestas
+                            .push(Respuesta::Ok(Some("connect".to_string())));
+                    }
+                    _ => {
+                        self.respuestas.push(Respuesta::Err(
+                            "Primero debe enviar un mensaje de conexión".to_string(),
+                        ));
+                    }
+                }
+                continue;
+            }
 
             // proximo mensaje va a leer los bytes nuevos y devuelve si es una accion valida
             match mensaje {
@@ -78,6 +99,14 @@ impl Conexion {
                 }
                 Message::Err(msg) => {
                     self.respuestas.push(Respuesta::Err(msg));
+                }
+                Message::Connect(_) => {
+                    self.respuestas.push(Respuesta::Err(
+                        "Ya se recibió un mensaje de conexión".to_string(),
+                    ));
+                }
+                Message::Ping() => {
+                    self.respuestas.push(Respuesta::Pong());
                 }
             }
         }

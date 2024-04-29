@@ -5,6 +5,8 @@ pub enum Respuesta {
     Msg(Publicacion),
     Err(String),
     Ok(Option<String>),
+    Pong(),
+    Info(),
 }
 
 impl Respuesta {
@@ -25,6 +27,18 @@ impl Respuesta {
                     bytes.extend_from_slice(b" ");
                     bytes.extend_from_slice(msg.as_bytes());
                 }
+                bytes.extend_from_slice(b"\r\n");
+                bytes
+            }
+            Respuesta::Pong() => {
+                let mut bytes = Vec::new();
+                bytes.extend_from_slice(b"PONG");
+                bytes.extend_from_slice(b"\r\n");
+                bytes
+            }
+            Respuesta::Info() => {
+                let mut bytes = Vec::new();
+                bytes.extend_from_slice(b"INFO {}");
                 bytes.extend_from_slice(b"\r\n");
                 bytes
             }
