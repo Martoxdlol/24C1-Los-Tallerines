@@ -4,7 +4,10 @@ use std::{
     net::TcpStream,
 };
 
-use super::{message::Message, parser::Parser, publicacion::Publicacion, respuesta::Respuesta}; // Usamos super porque estamos en el mismo módulo
+use super::{
+    message::Message, parser::Parser, publicacion::Publicacion, respuesta::Respuesta,
+    subject::Subject,
+}; // Usamos super porque estamos en el mismo módulo
 
 /// La conexión es responsable de mantener el stream con el cliente, leer mensajes y enviar mensajes
 ///
@@ -15,7 +18,7 @@ pub struct Conexion {
     /// El parser se encarga de leer los bytes y generar mensajes
     parser: Parser,
     /// Por cada conexion, vamos a guardar los topicos a los que se suscribio
-    subscripciones: HashMap<String, String>,
+    subscripciones: HashMap<String, Subject>,
     /// Las publicaciones que manda el cliente
     publicaciones_salientes: Vec<Publicacion>,
     /// Las respuestas y publicaciones que se envian al stream del cliente
@@ -57,10 +60,17 @@ impl Conexion {
                     self.respuestas
                         .push(Respuesta::Ok(Some("hpub".to_string())));
                 }
-                Message::Sub(topico, _, id) => {
-                    self.subscripciones.insert(id, topico);
-                    self.respuestas.push(Respuesta::Ok(Some("sub".to_string())));
-                }
+                Message::Sub(topico, _, id) => match Subject::new(topico) {
+                    Ok(sub) => {
+                        self.subscripciones.insert(id, sub);
+                        self.respuestas.push(Respuesta::Ok(Some("sub".to_string())));
+                    }
+                    Err(_) => {
+                        self.respuestas.push(Respuesta::Err(
+                            "Tópico de subscripción incorrecto".to_string(),
+                        ));
+                    }
+                },
                 Message::Unsub(subject, _) => {
                     self.subscripciones.remove(&subject);
                     self.respuestas
@@ -77,8 +87,12 @@ impl Conexion {
     ///
     /// Este método se encarga de filtrar el mensaje según las subscripciones que tenga el cliente
     pub fn recibir_mensaje(&mut self, publicacion: Publicacion) {
-        // TODO: Filtrar por tópico
-        self.respuestas.push(Respuesta::Msg(publicacion));
+        for subject in self.subscripciones.values() {
+            if subject.test(&publicacion.topico) {
+                self.respuestas.push(Respuesta::Msg(publicacion));
+                break;
+            }
+        }
     }
 
     /// Extrae las publicaciones salientes que se generaron en el último tick

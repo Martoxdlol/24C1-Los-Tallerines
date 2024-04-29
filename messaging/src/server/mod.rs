@@ -4,3 +4,4 @@ pub mod parser;
 pub mod publicacion;
 pub mod resultado_linea;
 pub mod respuesta;
+pub mod subject;
