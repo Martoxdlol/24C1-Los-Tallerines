@@ -44,6 +44,10 @@ impl Subject {
         }
 
         for (i, segmento) in segmentos.iter().enumerate() {
+            if i >= self.patron.len() {
+                return true;
+            }
+
             let segmento_patron = &self.patron[i];
 
             if let Segmento::Texto(t) = segmento_patron {

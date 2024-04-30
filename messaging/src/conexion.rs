@@ -4,6 +4,8 @@ use std::{
     net::TcpStream,
 };
 
+use crate::configuracion::Configuracion;
+
 use super::{
     message::Message, parser::Parser, publicacion::Publicacion, respuesta::Respuesta,
     subject::Subject,
@@ -25,10 +27,12 @@ pub struct Conexion {
     respuestas: Vec<Respuesta>,
     /// Flag para saber si la conexión está activa
     recibi_connect: bool,
+    /// Configuración
+    configuracion: Configuracion,
 }
 
 impl Conexion {
-    pub fn new(stream: TcpStream) -> Self {
+    pub fn new(stream: TcpStream, configuracion: Configuracion) -> Self {
         let respuestas = vec![Respuesta::Info()];
         Self {
             stream, // Los bytes de donde vamos a saber: QUE hay que hacer en DONDE, y si es publicar, el mensaje
@@ -37,14 +41,17 @@ impl Conexion {
             publicaciones_salientes: Vec::new(),
             respuestas,
             recibi_connect: false,
+            configuracion,
         }
     }
 
     /// Lee los mensajes nuevos recibidos del stream y que fueron previamente enviados al parser
     pub fn leer_mensajes(&mut self) {
         while let Some(mensaje) = self.parser.proximo_mensaje() {
-            // Devuelve que tipo de mensaje es
-            println!("Mensaje: {:?}", mensaje);
+            if self.configuracion.registros {
+                // Devuelve que tipo de mensaje es
+                println!("Mensaje: {:?}", mensaje);
+            }
 
             if !self.recibi_connect {
                 match mensaje {
@@ -65,7 +72,10 @@ impl Conexion {
             // proximo mensaje va a leer los bytes nuevos y devuelve si es una accion valida
             match mensaje {
                 Message::Pub(subject, replay_to, payload) => {
-                    println!("Publicacion: {:?} {:?} {:?}", subject, replay_to, payload);
+                    if self.configuracion.registros {
+                        println!("Publicacion: {:?} {:?} {:?}", subject, replay_to, payload);
+                    }
+
                     self.publicaciones_salientes
                         .push(Publicacion::new(subject, payload, None, replay_to));
                     self.respuestas.push(Respuesta::Ok(Some("pub".to_string())));
