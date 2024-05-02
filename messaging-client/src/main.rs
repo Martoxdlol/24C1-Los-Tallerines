@@ -57,17 +57,28 @@ fn encontrar_salto_de_linea(buffer: &[u8]) -> Option<usize> {
 use client::Client;
 mod client;
 
-fn main() {
+use std::env;
+
+fn main() -> Result<(), String> {
     let mut client = Client::new();
 
-    // client.connect("localhost:3001");
-    if client.connect("demo.nats.io:4222").is_ok() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 3 {
+        return Err(String::from("Cantidad de argumentos incorrecta"));
+    }
+
+    let host: String = format!("{}:{}", args[1], args[2]);
+
+    if client.connect(host).is_ok() {
         println!("Conectado correctamente!");
     }
 
     client.next();
 
-    for msg in client {
-        println!("NUEVO MENSAJE: {}", msg);
+    for _ in client {
+     //   println!("NUEVO MENSAJE: {}", msg);
     }
+
+    Ok(())
 }

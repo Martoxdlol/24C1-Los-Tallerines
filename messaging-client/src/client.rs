@@ -6,14 +6,15 @@ use std::{io, net::TcpStream};
 
 pub struct Client {
     stream: Option<TcpStream>,
+    topics: Option<Vec<String>>
 }
 
 impl Client {
     pub fn new() -> Self {
-        Client { stream: None }
+        Client{ stream: None, topics: Some(Vec::new())}
     }
 
-    pub fn connect(&mut self, host: &str) -> io::Result<()> {
+    pub fn connect(&mut self, host: String) -> io::Result<()> {
         self.stream = Some(TcpStream::connect(host)?);
         Ok(())
     }
@@ -21,6 +22,14 @@ impl Client {
     pub fn get_stream(&self) -> Option<&TcpStream> {
         if let Some(stream_ok) = &self.stream {
             Some(stream_ok)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_topics(&self) -> Option<Vec<String>> {
+        if let Some(topics) = &self.topics {
+            Some(topics.to_vec())
         } else {
             None
         }
@@ -37,7 +46,7 @@ impl Iterator for Client {
             loop {
                 let mut buf: [u8; 1024] = [0; 1024];
                 // Cantidad de bytes que acabo de leer
-                let n = stream.read(&mut buf).unwrap();
+                let n: usize = stream.read(&mut buf).unwrap();
 
                 let line_break = find_line_break(&buf[..n]);
 
@@ -69,17 +78,19 @@ impl Iterator for Client {
 fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
     // Parsearla
     // y hacer algo...
+    let mut respuesta = String::new();
     if line.starts_with("INFO") {
+        println!("SERVIDOR: INFO");
+        println!(r"CLIENTE: CONNECT {{}}");
         stream.write_all(b"CONNECT {}\r\n").unwrap();
     } else if line.starts_with("PING") {
+        println!("SERVIDOR: PING");
+        println!(r"CLIENTE: PONG");
         stream.write_all(b"PONG\r\n").unwrap();
-        // stream.write_all(b"SUB asd 1\r\n").unwrap();
-        // stream.write_all(b"PUB asd 5\r\n").unwrap();
-        // stream.write_all(b"hello\r\n").unwrap();
-    } else if line.starts_with("PONG") {
-        stream.write_all(b"PING\r\n").unwrap();
-    } else if line.starts_with("SUB") || line.starts_with("PUB") {
-        stream.write_all(b"PONG\r\n").unwrap();
+    } else if line.starts_with("SUB") {
+
+    } else if line.starts_with("PUB") {
+
     } else {
         return None;
     }
