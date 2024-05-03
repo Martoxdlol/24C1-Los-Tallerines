@@ -56,15 +56,40 @@ fn encontrar_salto_de_linea(buffer: &[u8]) -> Option<usize> {
 
 use client::Client;
 mod client;
+use std::thread;
+use std::sync::mpsc;
 
 fn main() -> Result<(), String> {
     let mut client = Client::new();
+
+    // Channel para subscripciones
+    let (tx1, rx1) = mpsc::channel();
+
+    // Channel para publicaciones
+    let (tx2, rx2) = mpsc::channel();
+
+    // Thread para subscripciones
+    let handler_sub = thread::spawn(move || {
+        for _ in client {
+            tx1.send().unwrap();
+        }
+    });
+
+    // Thread para publicaciones
+    let handler_pub = thread::spawn(move || {
+        for _ in client {
+            rx2.try_rcv().unwrap();
+        }
+    });
 
     if client.connect("localhost:4222").is_ok() {
         println!("Conectado correctamente!");
     }
 
     for _ in client {}
+
+    handler_sub.join().unwrap();
+    handler_pub.join().unwrap();
 
     Ok(())
 }
