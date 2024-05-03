@@ -87,9 +87,10 @@ fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
     match line {
         line if line.starts_with("INFO") => send_message_connect(&mut stream, line),
         line if line.starts_with("PING") => {
-            send_message_pong(&mut stream, line);
-            send_message_sub(&mut stream, line, "asd", Some(1));
-            send_message_pub(&mut stream, line, "asd", 5, "hola!");
+            send_message_pong(&mut stream);
+            send_message_sub(&mut stream, "asd", Some(1));
+            send_message_pub(&mut stream, "asd", 5, "hola!");
+            send_message_unsub(&mut stream, Some(1));
         }
         _ => return None
     }
@@ -103,30 +104,58 @@ fn send_message_connect(mut stream: &TcpStream, line: &str) {
 }
 
 // QUITAR DESPUÉS
-fn send_message_pong(mut stream: &TcpStream, line: &str) {
+fn send_message_pong(mut stream: &TcpStream) {
     stream.write_all(b"PONG\r\n").unwrap();
 }
 
-fn send_message_pub(mut stream: &TcpStream, line: &str, topic: &str, len_message: usize, message: &str) {
+fn send_message_pub(mut stream: &TcpStream, topic: &str, len_message: usize, message: &str) {
     // Manejar el error
     if topic.is_empty() || len_message == 0 || message.is_empty() {
         return;
     }
-    // stream.write_all(b"PUB {topic} {len_message}\r\n").unwrap();
-    // stream.write_all(b"{message}\r\n").unwrap();
-    stream.write_all(b"PUB asd 5\r\n").unwrap();
-    stream.write_all(b"hola!\r\n").unwrap();
+
+    let message_pub_stream = format!("PUB {} {}\r\n", topic, len_message);
+    let message_stream = format!("{}\r\n", message);
+
+    stream.write_all(message_pub_stream.as_str().as_bytes()).unwrap();
+    stream.write_all(message_stream.as_str().as_bytes()).unwrap();
+
     clientMessages::Pub { topic, len_message, message };
 }
 
-fn send_message_sub(mut stream: &TcpStream, line: &str, topic: &str, subscription_id: Option<u8>) {
+fn send_message_sub(mut stream: &TcpStream, topic: &str, subscription_id: Option<u8>) {
     // Manejar el error
     if topic.is_empty() || subscription_id.is_none() {
         return;
     }
-    // stream.write_all(b"SUB {topic} {subscription_id} \r\n").unwrap();
-    stream.write_all(b"SUB asd 5\r\n").unwrap();
+
+    let mut sub_id = 0;
+    if let Some(subscription_id) = subscription_id {
+        sub_id = subscription_id;
+    }
+
+    let message_sub_stream = format!("SUB {} {:?}\r\n", topic, sub_id);
+    
+    stream.write_all(message_sub_stream.as_str().as_bytes()).unwrap();
+
     clientMessages::Sub { topic, subscription_id};
+}
+
+fn send_message_unsub(mut stream: &TcpStream, subscription_id: Option<u8>) {
+    if subscription_id.is_none() {
+        return;
+    }
+
+    let mut sub_id = 0;
+    if let Some(subscription_id) = subscription_id {
+        sub_id = subscription_id;
+    }
+
+    let message_unsub_stream = format!("UNSUB {:?}\r\n", sub_id);
+    
+    stream.write_all(message_unsub_stream.as_str().as_bytes()).unwrap();
+
+    clientMessages::Unsub { subscription_id};
 }
 
 /// TODO: \r\n
