@@ -1,30 +1,12 @@
 use std::io::prelude::*;
 use std::{io, net::TcpStream};
 
-pub struct Sub<'a> {
-    topic: &'a str,
-    subscription_id: u8
-}
-
-pub struct Pub<'a> {
-    topic: &'a str,
-    len_message: usize
-}
-
-pub struct Hpub<'a> {
-    topic: &'a str
-}
-
-pub struct Unsub {
-    subscription_id: u8
-}
-
-pub enum clientMessages {
+pub enum clientMessages<'a> {
     Connect,
-    Pub,
-    Hpub(),
-    Sub,
-    Unsub
+    Pub{topic: &'a str, len_message: usize, message: &'a str},
+    Hpub{topic: &'a str},
+    Sub{topic: &'a str, subscription_id: Option<u8>},
+    Unsub{subscription_id: Option<u8>},
 }
 
 pub struct Client<'a> {
@@ -106,7 +88,7 @@ fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
         line if line.starts_with("INFO") => send_message_connect(&mut stream, line),
         line if line.starts_with("PING") => {
             send_message_pong(&mut stream, line);
-            send_message_sub(&mut stream, line, "asd", 1);
+            send_message_sub(&mut stream, line, "asd", Some(1));
             send_message_pub(&mut stream, line, "asd", 5, "hola!");
         }
         _ => return None
@@ -117,19 +99,34 @@ fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
 
 fn send_message_connect(mut stream: &TcpStream, line: &str) {
     stream.write_all(b"CONNECT {}\r\n").unwrap();
+    clientMessages::Connect;
 }
 
+// QUITAR DESPUÉS
 fn send_message_pong(mut stream: &TcpStream, line: &str) {
     stream.write_all(b"PONG\r\n").unwrap();
 }
 
 fn send_message_pub(mut stream: &TcpStream, line: &str, topic: &str, len_message: usize, message: &str) {
+    // Manejar el error
+    if topic.is_empty() || len_message == 0 || message.is_empty() {
+        return;
+    }
+    // stream.write_all(b"PUB {topic} {len_message}\r\n").unwrap();
+    // stream.write_all(b"{message}\r\n").unwrap();
     stream.write_all(b"PUB asd 5\r\n").unwrap();
     stream.write_all(b"hola!\r\n").unwrap();
+    clientMessages::Pub { topic, len_message, message };
 }
 
-fn send_message_sub(mut stream: &TcpStream, line: &str, topic: &str, subscription_id: u8) {
+fn send_message_sub(mut stream: &TcpStream, line: &str, topic: &str, subscription_id: Option<u8>) {
+    // Manejar el error
+    if topic.is_empty() || subscription_id.is_none() {
+        return;
+    }
+    // stream.write_all(b"SUB {topic} {subscription_id} \r\n").unwrap();
     stream.write_all(b"SUB asd 5\r\n").unwrap();
+    clientMessages::Sub { topic, subscription_id};
 }
 
 /// TODO: \r\n
