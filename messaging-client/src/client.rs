@@ -207,12 +207,18 @@ fn find_line_break(buffer: &[u8]) -> Option<usize> {
 #[cfg(test)]
 #[test]
 fn test01_assert_correct_connection() {
-    assert!()
+    let mut client = Client::new();
+
+    let connection = client.connect();
+    assert!(connection.is_ok());
 }
 
 #[test]
 fn test02_assert_try_connection_with_invalid_stream() {
-    assert!()
+    let mut client = Client::new();
+
+    let connection = client.connect();
+    assert!(!connection.is_ok());
 }
 
 #[test]
@@ -275,9 +281,38 @@ fn test14_assert_send_unsub_message_without_subscription_id() {
     assert!()
 }
 
-/*
+// Completar
 #[test]
-fn test15_ {
+fn test15_assert_send_hpub_message() {
     assert!()
 }
-*/
+
+#[test]
+fn test16_assert_subscribe_to_new_topic() {
+    assert!()
+}
+
+#[test]
+fn test17_assert_subscribe_to_existing_topic() {
+    assert!()
+}
+
+#[test]
+fn test18_assert_unsubscribe_to_topic() {
+    assert!()
+}
+
+#[test]
+fn test19_assert_unsubscribe_to_non_existing_topic() {
+    assert!()
+}
+
+#[test]
+fn test20_assert_publish_to_valid_topic() {
+    assert!()
+}
+
+#[test]
+fn test21_assert_publish_to_invalid_topic() {
+    assert!()
+}
