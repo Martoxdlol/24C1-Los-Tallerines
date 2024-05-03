@@ -51,15 +51,17 @@ impl Parser {
         // Estamos buscando un salto de linea, este se marca como \r\n
         for i in self.continuar_en_indice..self.bytes_pendientes.len() {
             // Si encontramos un \r, marcamos que el último caracter fue un \r
-            if self.bytes_pendientes[i] == b'\r' { // La b es para que lo tome como binario
+            if self.bytes_pendientes[i] == b'\r' {
+                // La b es para que lo tome como binario
                 last_char_cr = true;
             // Si encontramos un \n y el último caracter fue un \r, encontramos un mensaje (o al menos la primera linea)
             } else if last_char_cr && self.bytes_pendientes[i] == b'\n' {
                 self.continuar_en_indice = i + 1;
 
-                let result = String::from_utf8_lossy(&self.bytes_pendientes[..self.continuar_en_indice])
-                    .trim_end() // Elimina los espacios vacios al final
-                    .to_string();
+                let result =
+                    String::from_utf8_lossy(&self.bytes_pendientes[..self.continuar_en_indice])
+                        .trim_end() // Elimina los espacios vacios al final
+                        .to_string();
 
                 self.resetear_bytes();
                 return Some(result);
@@ -280,12 +282,12 @@ impl Parser {
             let subject = &palabras[1];
             let queue_group = &palabras[2];
             let sid = &palabras[3];
-    
+
             return ResultadoLinea::Sub(
                 subject.to_string(),
                 Some(queue_group.to_string()),
                 sid.to_string(),
-            )
+            );
         }
 
         ResultadoLinea::MensajeIncorrecto

@@ -13,5 +13,5 @@ pub enum Message {
     // Mensaje para generar la conexión
     Connect(String),
     // Mensaje para revisar la conexión
-    Ping()
+    Ping(),
 }
