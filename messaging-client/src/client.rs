@@ -8,7 +8,7 @@ pub struct Sub<'a> {
 
 pub struct Pub<'a> {
     topic: &'a str,
-    len_message: u8
+    len_message: usize
 }
 
 pub struct Hpub<'a> {
@@ -101,24 +101,35 @@ impl Iterator for Client<'_> {
 
 fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
     println!("LINE: {}", line);
-
-    if line.starts_with("INFO") {
-        stream.write_all(b"CONNECT {}\r\n").unwrap();
-    } else if line.starts_with("PING") {
-        stream.write_all(b"PONG\r\n").unwrap();
-
-        stream.write_all(b"SUB asd 1\r\n").unwrap();
-
-        stream.write_all(b"PUB asd 5\r\n").unwrap();
-        stream.write_all(b"hola!\r\n").unwrap();
-
-        if line.starts_with("MSG") {
-            println!("LLEGÓ EL PUB");
+    
+    match line {
+        line if line.starts_with("INFO") => send_message_connect(&mut stream, line),
+        line if line.starts_with("PING") => {
+            send_message_pong(&mut stream, line);
+            send_message_sub(&mut stream, line, "asd", 1);
+            send_message_pub(&mut stream, line, "asd", 5, "hola!");
         }
-    } else {
-        return None;
+        _ => return None
     }
+
     Some(line.to_string())
+}
+
+fn send_message_connect(mut stream: &TcpStream, line: &str) {
+    stream.write_all(b"CONNECT {}\r\n").unwrap();
+}
+
+fn send_message_pong(mut stream: &TcpStream, line: &str) {
+    stream.write_all(b"PONG\r\n").unwrap();
+}
+
+fn send_message_pub(mut stream: &TcpStream, line: &str, topic: &str, len_message: usize, message: &str) {
+    stream.write_all(b"PUB asd 5\r\n").unwrap();
+    stream.write_all(b"hola!\r\n").unwrap();
+}
+
+fn send_message_sub(mut stream: &TcpStream, line: &str, topic: &str, subscription_id: u8) {
+    stream.write_all(b"SUB asd 5\r\n").unwrap();
 }
 
 /// TODO: \r\n
