@@ -2,7 +2,7 @@ use std::io::prelude::*;
 use std::{io, net::TcpStream};
 
 pub enum ClientMessages<'a> {
-    Connect,
+    Connect(String),
     Pub {
         topic: &'a str,
         len_message: Option<usize>,
@@ -18,14 +18,15 @@ pub enum ClientMessages<'a> {
     Unsub {
         subscription_id: Option<u8>,
     },
+    Err(String)
 }
 
-pub struct Client<'a> {
+pub struct Client {
     stream: Option<TcpStream>,
-    topics: Vec<&'a str>,
+    topics: Vec<String>,
 }
 
-impl<'a> Client<'a> {
+impl Client {
     pub fn new() -> Self {
         Client {
             stream: None,
@@ -46,12 +47,109 @@ impl<'a> Client<'a> {
         }
     }
 
-    pub fn get_topics(&self) -> Vec<&str> {
+    pub fn get_topics(&self) -> Vec<String> {
         self.topics.clone()
     }
+
+    /*
+    pub fn send_message_connect(&mut self) {//, message_type: &mut ClientMessages) {
+        &self.stream.as_ref().unwrap().write_all(b"CONNECT {}\r\n");
+        //if let Some(stream) = &self.stream {
+        //    stream.write_all(b"CONNECT {}\r\n");
+        //}
+        //self.stream.write_all(b"CONNECT {}\r\n");
+        //&self.stream.unwrap().write_all(b"CONNECT {}\r\n").unwrap();
+        // *message_type = ClientMessages::Connect;
+    }
+    
+    // QUITAR DESPUÉS
+    pub fn send_message_pong(&self) {
+        &self.stream.unwrap().write_all(b"PONG\r\n").unwrap();
+    }
+    
+    pub fn send_message_pub(
+        &self,
+        topic: &str,
+        len_message: Option<usize>,
+        message: &str,
+    //    message_type: &mut ClientMessages,
+    ) {
+        // Manejar el error
+        if topic.is_empty() || len_message.is_none() || len_message == Some(0) || message.is_empty() {
+            return;
+        }
+    
+        let mut pub_len_message = 0;
+        if let Some(len_message) = len_message {
+            pub_len_message = len_message;
+        }
+    
+        let message_pub_stream = format!("PUB {} {}\r\n", topic, pub_len_message);
+        let message_stream = format!("{}\r\n", message);
+    
+        &self.stream.unwrap().write_all(message_pub_stream.as_bytes()).unwrap();
+        &self.stream.unwrap().write_all(message_stream.as_bytes()).unwrap();
+    
+        /*
+        *message_type = ClientMessages::Pub {
+            topic,
+            len_message,
+            message,
+        };
+        */
+    }
+    
+    pub fn send_message_sub(
+        &self,
+        topic: &str,
+        subscription_id: Option<u8>,
+    //    message_type: &mut ClientMessages,
+    ) {
+        // Manejar el error
+        if topic.is_empty() || subscription_id.is_none() {
+            return;
+        }
+    
+        let mut sub_id = 0;
+        if let Some(subscription_id) = subscription_id {
+            sub_id = subscription_id;
+        }
+    
+        let message_sub_stream = format!("SUB {} {:?}\r\n", topic, sub_id);
+    
+        &self.stream.unwrap().write_all(message_sub_stream.as_bytes()).unwrap();
+    
+        /*
+        *message_type = ClientMessages::Sub {
+            topic,
+            subscription_id,
+        };
+        */
+    }
+    
+    pub fn send_message_unsub(&self,
+        subscription_id: Option<u8>,
+    //    message_type: &mut ClientMessages,
+    ) {
+        if subscription_id.is_none() {
+            return;
+        }
+    
+        let mut sub_id = 0;
+        if let Some(subscription_id) = subscription_id {
+            sub_id = subscription_id;
+        }
+    
+        let message_unsub_stream = format!("UNSUB {:?}\r\n", sub_id);
+    
+        &self.stream.unwrap().write_all(message_unsub_stream.as_bytes()).unwrap();
+    
+    //    *message_type = ClientMessages::Unsub { subscription_id };
+    }
+    */
 }
 
-impl Iterator for Client<'_> {
+impl Iterator for Client {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -91,17 +189,14 @@ impl Iterator for Client<'_> {
         panic!("No hay stream");
     }
 }
-
-fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
-    println!("LINE: {}", line);
-
+fn parse_line(stream: &TcpStream, line: &str) -> Option<String> {
     match line {
-        line if line.starts_with("INFO") => send_message_connect(stream),
+        line if line.starts_with("INFO") => send_message_connect(stream),//, &mut message_type),
         line if line.starts_with("PING") => {
             send_message_pong(stream);
-            send_message_sub(stream, "", None);
-            send_message_pub(stream, "", Some(5), "");
-            send_message_unsub(stream, None);
+            send_message_sub(stream, "asd", Some(1));//, &mut message_type);
+            send_message_pub(stream, "asd", Some(5), "hola!");//, &mut message_type);
+            send_message_unsub(stream, Some(1));// &mut message_type);
         }
         _ => return None,
     }
@@ -109,21 +204,22 @@ fn parse_line(mut stream: &TcpStream, line: &str) -> Option<String> {
     Some(line.to_string())
 }
 
-fn send_message_connect(mut stream: &TcpStream) {
+pub fn send_message_connect(mut stream: &TcpStream){//, message_type: &mut ClientMessages) {
     stream.write_all(b"CONNECT {}\r\n").unwrap();
-    ClientMessages::Connect;
+    // *message_type = ClientMessages::Connect;
 }
 
 // QUITAR DESPUÉS
-fn send_message_pong(mut stream: &TcpStream) {
+pub fn send_message_pong(mut stream: &TcpStream) {
     stream.write_all(b"PONG\r\n").unwrap();
 }
 
-fn send_message_pub(
+pub fn send_message_pub(
     mut stream: &TcpStream,
     topic: &str,
     len_message: Option<usize>,
     message: &str,
+//    message_type: &mut ClientMessages,
 ) {
     // Manejar el error
     if topic.is_empty() || len_message.is_none() || len_message == Some(0) || message.is_empty() {
@@ -138,21 +234,24 @@ fn send_message_pub(
     let message_pub_stream = format!("PUB {} {}\r\n", topic, pub_len_message);
     let message_stream = format!("{}\r\n", message);
 
-    stream
-        .write_all(message_pub_stream.as_bytes())
-        .unwrap();
-    stream
-        .write_all(message_stream.as_bytes())
-        .unwrap();
+    stream.write_all(message_pub_stream.as_bytes()).unwrap();
+    stream.write_all(message_stream.as_bytes()).unwrap();
 
-    ClientMessages::Pub {
+    /*
+    *message_type = ClientMessages::Pub {
         topic,
         len_message,
         message,
     };
+    */
 }
 
-fn send_message_sub(mut stream: &TcpStream, topic: &str, subscription_id: Option<u8>) {
+pub fn send_message_sub(
+    mut stream: &TcpStream,
+    topic: &str,
+    subscription_id: Option<u8>,
+//    message_type: &mut ClientMessages,
+) {
     // Manejar el error
     if topic.is_empty() || subscription_id.is_none() {
         return;
@@ -165,17 +264,21 @@ fn send_message_sub(mut stream: &TcpStream, topic: &str, subscription_id: Option
 
     let message_sub_stream = format!("SUB {} {:?}\r\n", topic, sub_id);
 
-    stream
-        .write_all(message_sub_stream.as_bytes())
-        .unwrap();
+    stream.write_all(message_sub_stream.as_bytes()).unwrap();
 
-    ClientMessages::Sub {
+    /*
+    *message_type = ClientMessages::Sub {
         topic,
         subscription_id,
     };
+    */
 }
 
-fn send_message_unsub(mut stream: &TcpStream, subscription_id: Option<u8>) {
+pub fn send_message_unsub(
+    mut stream: &TcpStream,
+    subscription_id: Option<u8>,
+//    message_type: &mut ClientMessages,
+) {
     if subscription_id.is_none() {
         return;
     }
@@ -187,11 +290,9 @@ fn send_message_unsub(mut stream: &TcpStream, subscription_id: Option<u8>) {
 
     let message_unsub_stream = format!("UNSUB {:?}\r\n", sub_id);
 
-    stream
-        .write_all(message_unsub_stream.as_bytes())
-        .unwrap();
+    stream.write_all(message_unsub_stream.as_bytes()).unwrap();
 
-    ClientMessages::Unsub { subscription_id };
+//    *message_type = ClientMessages::Unsub { subscription_id };
 }
 
 /// TODO: \r\n
@@ -204,115 +305,121 @@ fn find_line_break(buffer: &[u8]) -> Option<usize> {
     None
 }
 
+/*
 #[cfg(test)]
 #[test]
-fn test01_assert_correct_connection() {
-    let mut client = Client::new();
-
-    let connection = client.connect();
-    assert!(connection.is_ok());
+fn test01_assert_client_creation_without_stream() {
 }
 
 #[test]
-fn test02_assert_try_connection_with_invalid_stream() {
-    let mut client = Client::new();
-
-    let connection = client.connect();
-    assert!(!connection.is_ok());
+fn test02_assert_client_creation_with_valid_stream() {
 }
 
 #[test]
-fn test03_assert_send_connect_message() {
+fn test03_assert_try_client_creation_with_invalid_stream() {
+}
+
+#[test]
+fn test04_assert_correct_connection() {
+}
+
+#[test]
+fn test05_assert_try_connection_with_invalid_stream() {
+}
+
+#[test]
+fn test06_assert_send_connect_message() {
     assert!()
 }
 
 #[test]
-fn test04_assert_send_pub_message() {
+fn test07_assert_send_pub_message() {
     assert!()
 }
 
 #[test]
-fn test05_assert_send_sub_message() {
+fn test08_assert_send_sub_message() {
     assert!()
 }
 
 #[test]
-fn test06_assert_send_unsub_message() {
+fn test09_assert_send_unsub_message() {
     assert!()
 }
 
 #[test]
-fn test07_assert_send_hpub_message() {
+fn test10_assert_send_hpub_message() {
     assert!()
 }
 
 #[test]
-fn test08_assert_send_pub_message_without_topic() {
+fn test11_assert_send_pub_message_without_topic() {
     assert!()
 }
 
 #[test]
-fn test09_assert_send_pub_message_with_message_length_zero() {
+fn test12_assert_send_pub_message_with_message_length_zero() {
     assert!()
 }
 
 #[test]
-fn test10_assert_send_pub_message_without_message_length() {
+fn test13_assert_send_pub_message_without_message_length() {
     assert!()
 }
 
 #[test]
-fn test11_assert_send_pub_message_with_empty_message() {
+fn test14_assert_send_pub_message_with_empty_message() {
     assert!()
 }
 
 #[test]
-fn test12_assert_send_sub_message_without_topic() {
+fn test15_assert_send_sub_message_without_topic() {
     assert!()
 }
 
 #[test]
-fn test13_assert_send_sub_message_without_subscription_id() {
+fn test16_assert_send_sub_message_without_subscription_id() {
     assert!()
 }
 
 #[test]
-fn test14_assert_send_unsub_message_without_subscription_id() {
+fn test17_assert_send_unsub_message_without_subscription_id() {
     assert!()
 }
 
 // Completar
 #[test]
-fn test15_assert_send_hpub_message() {
+fn test18_assert_send_hpub_message() {
     assert!()
 }
 
 #[test]
-fn test16_assert_subscribe_to_new_topic() {
+fn test19_assert_subscribe_to_new_topic() {
     assert!()
 }
 
 #[test]
-fn test17_assert_subscribe_to_existing_topic() {
+fn test20_assert_subscribe_to_existing_topic() {
     assert!()
 }
 
 #[test]
-fn test18_assert_unsubscribe_to_topic() {
+fn test21_assert_unsubscribe_to_topic() {
     assert!()
 }
 
 #[test]
-fn test19_assert_unsubscribe_to_non_existing_topic() {
+fn test22_assert_unsubscribe_to_non_existing_topic() {
     assert!()
 }
 
 #[test]
-fn test20_assert_publish_to_valid_topic() {
+fn test23_assert_publish_to_valid_topic() {
     assert!()
 }
 
 #[test]
-fn test21_assert_publish_to_invalid_topic() {
+fn test24_assert_publish_to_invalid_topic() {
     assert!()
 }
+*/

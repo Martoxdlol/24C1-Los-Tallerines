@@ -54,14 +54,18 @@ fn encontrar_salto_de_linea(buffer: &[u8]) -> Option<usize> {
 }
 */
 
-use client::Client;
 mod client;
-use std::thread;
-use std::sync::mpsc;
 
-fn main() -> Result<(), String> {
+use client::{Client, send_message_connect, send_message_pong, send_message_pub, send_message_sub, send_message_unsub};
+//use client::Client;
+use std::sync::mpsc;
+use std::thread;
+use std::io::Error;
+
+fn main() -> Result<(), Error> {
     let mut client = Client::new();
 
+    /*
     // Channel para subscripciones
     let (tx1, rx1) = mpsc::channel();
 
@@ -81,15 +85,46 @@ fn main() -> Result<(), String> {
             rx2.try_rcv().unwrap();
         }
     });
+    */
 
-    if client.connect("localhost:4222").is_ok() {
-        println!("Conectado correctamente!");
-    }
+    client.connect("localhost:4222")?;
 
     for _ in client {}
 
+    //if let Some(stream) = client.get_stream() {
+        /*
+        send_message_connect(stream);
+        send_message_pong(stream);
+        send_message_sub(stream, "asd", Some(1));//, &mut message_type);
+        send_message_pub(stream, "asd", Some(5), "hola!");//, &mut message_type);
+        send_message_unsub(stream, Some(1));//, &mut message_type);
+        */
+    //}
+
+    //let stream = client.get_stream();
+
+    /*
+    client.send_message_connect();
+    client.send_message_pong();
+    client.send_message_sub("asd", Some(1));//, &mut message_type);
+    client.send_message_pub("asd", Some(5), "hola!");//, &mut message_type);
+    client.send_message_unsub(Some(1));//, &mut message_type);
+    */
+
+    /*
+    send_message_connect(stream);
+    send_message_pong(stream);
+    send_message_sub(stream, "asd", Some(1));//, &mut message_type);
+    send_message_pub(stream, "asd", Some(5), "hola!");//, &mut message_type);
+    send_message_unsub(stream, Some(1));//, &mut message_type);
+    */
+
+    //for _ in client {}
+
+    /*
     handler_sub.join().unwrap();
     handler_pub.join().unwrap();
+    */
 
     Ok(())
 }
