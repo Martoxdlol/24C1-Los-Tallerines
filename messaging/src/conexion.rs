@@ -258,3 +258,56 @@ impl Conexion {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc;
+
+    use crate::{configuracion::Configuracion, mock_stream::MockStream, stream::Stream};
+
+    use super::Conexion;
+
+    #[test]
+    fn test_connect() {
+        let (escribir_bytes, rx) = mpsc::channel();
+        let (tx, recibir_bytes) = mpsc::channel();
+        let mut stream = MockStream::new(tx, rx);
+
+        escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
+        escribir_bytes.send(b"SUB asd 1\r\n".to_vec()).unwrap();
+
+        let b: Box<dyn Stream> = Box::new(stream);
+
+        let mut con = Conexion::new(b, Configuracion::new());
+
+        con.tick();
+
+        assert!(con.suscripciones.contains_key("1"));
+        assert!(con.suscripciones.get("1").unwrap().to_string().eq("asd"));
+
+        assert!(con.suscripciones_salientes.len() == 1);
+        assert!(con.suscripciones_salientes[0].to_string().eq("asd"));
+    }
+
+    #[test]
+    fn test_nueva_suscripcion() {
+        let (escribir_bytes, rx) = mpsc::channel();
+        let (tx, recibir_bytes) = mpsc::channel();
+        let mut stream = MockStream::new(tx, rx);
+
+        escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
+        escribir_bytes.send(b"SUB asd 1\r\n".to_vec()).unwrap();
+
+        let b: Box<dyn Stream> = Box::new(stream);
+
+        let mut con = Conexion::new(b, Configuracion::new());
+
+        con.tick();
+
+        assert!(con.suscripciones.contains_key("1"));
+        assert!(con.suscripciones.get("1").unwrap().to_string().eq("asd"));
+
+        assert!(con.suscripciones_salientes.len() == 1);
+        assert!(con.suscripciones_salientes[0].to_string().eq("asd"));
+    }
+}

@@ -13,6 +13,7 @@ pub mod configuracion;
 pub mod stream;
 pub mod instrucciones;
 pub mod publicacion_mensaje;
+pub mod mock_stream;
 
 // mod tests;
 
