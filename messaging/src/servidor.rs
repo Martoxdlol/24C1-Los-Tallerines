@@ -2,7 +2,7 @@ use std::{
     io,
     net::TcpListener,
     sync::mpsc::{self, Sender},
-    thread::JoinHandle,
+    thread::{self, JoinHandle},
 };
 
 use crate::configuracion::Configuracion;
@@ -53,6 +53,12 @@ impl Servidor {
         }
     }
 
+    pub fn iniciar(mut servidor: Servidor) -> JoinHandle<()> {
+        thread::spawn(move || {
+            servidor.inicio();
+        })
+    }
+
     pub fn inicio(&mut self) {
         let listener = TcpListener::bind("127.0.0.1:3000").unwrap();
         listener
@@ -63,7 +69,7 @@ impl Servidor {
             match listener.accept() {
                 Ok((stream, _)) => {
                     stream.set_nonblocking(true).unwrap();
-                    let conexion = Conexion::new(stream, self.configuracion.clone()); // Si escucho algo, genero una nueva conexion
+                    let conexion = Conexion::new(Box::new(stream), self.configuracion.clone()); // Si escucho algo, genero una nueva conexion
 
                     let (tx, _) = &self.hilos[self.i];
                     match tx.send(conexion) {

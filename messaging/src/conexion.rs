@@ -4,7 +4,7 @@ use std::{
     net::TcpStream,
 };
 
-use crate::configuracion::Configuracion;
+use crate::{configuracion::Configuracion, stream::Stream};
 
 use super::{
     message::Message, parser::Parser, publicacion::Publicacion, respuesta::Respuesta,
@@ -16,7 +16,7 @@ use super::{
 /// El proceso este se va realizando en el tiempo a través de llamar el método `tick` en un loop
 pub struct Conexion {
     /// El stream de la conexión
-    stream: TcpStream,
+    stream: Box<dyn Stream>,
     /// El parser se encarga de leer los bytes y generar mensajes
     parser: Parser,
     /// Por cada conexion, vamos a guardar los topicos a los que se suscribio
@@ -32,7 +32,7 @@ pub struct Conexion {
 }
 
 impl Conexion {
-    pub fn new(stream: TcpStream, configuracion: Configuracion) -> Self {
+    pub fn new(stream: Box<dyn Stream>, configuracion: Configuracion) -> Self {
         let respuestas = vec![Respuesta::Info()];
         Self {
             stream, // Los bytes de donde vamos a saber: QUE hay que hacer en DONDE, y si es publicar, el mensaje

@@ -7,8 +7,8 @@ use super::{conexion::Conexion, publicacion::Publicacion};
 
 pub struct Proceso {
     /// Canales a otros procesos
-    otros_procesos: Vec<Sender<Publicacion>>,
-    nuevos_mensajes: Receiver<Publicacion>,
+    otros_procesos: Vec<Sender<Publicacion>>, // El tipo sender es un canal de solo escritura
+    nuevos_mensajes: Receiver<Publicacion>, // El tipo receiver es un canal de solo lectura
     nuevas_conexiones: Receiver<Conexion>,
     conexiones: Vec<Conexion>,
 }
@@ -28,7 +28,7 @@ impl Proceso {
     }
 
     pub fn iniciar(mut proceso: Proceso) -> JoinHandle<()> {
-        thread::spawn(move || {
+        thread::spawn(move || { // Crea un nuevo hilo y ejecuta proceso.inicio() dentro
             proceso.inicio();
         })
     }
