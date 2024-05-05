@@ -79,6 +79,8 @@ impl Proceso {
                     conexion.recibir_mensaje(publicacion.clone());
                 }
             }
+
+            self.conexiones.retain(|conexion| !conexion.desconectado);
         }
     }
 }

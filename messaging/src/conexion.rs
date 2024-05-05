@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     io::{self, Read, Write},
-    net::TcpStream,
 };
 
 use crate::{configuracion::Configuracion, stream::Stream};
@@ -29,6 +28,8 @@ pub struct Conexion {
     recibi_connect: bool,
     /// Configuración
     configuracion: Configuracion,
+    /// Si está desconectado
+    pub desconectado: bool,
 }
 
 impl Conexion {
@@ -42,6 +43,7 @@ impl Conexion {
             respuestas,
             recibi_connect: false,
             configuracion,
+            desconectado: false,
         }
     }
 
@@ -148,6 +150,10 @@ impl Conexion {
     ///
     /// Este método no maneja errores, si hay un error en la conexión, se debe manejar en el loop principal
     pub fn tick(&mut self) {
+        if self.desconectado {
+            return;
+        }
+
         let mut buffer = [0; 1024]; // 1kb
                                     // 1. Leer una vez
         match self.stream.read(&mut buffer) {
@@ -160,11 +166,9 @@ impl Conexion {
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // No hay datos para leer (no hay que hacer nada acá)
             }
-            Err(e) => {
-                panic!(
-                    "Error: {} (acá debería gestionar la desconexión probablemente)",
-                    e
-                );
+            Err(_) => {
+                self.desconectado = true;
+                return;
             }
         }
 
@@ -175,11 +179,9 @@ impl Conexion {
         // 4. Enviar mensajes
         for mut respuesta in self.respuestas.drain(..) {
             let buffer = respuesta.serializar();
-            if let Err(e) = self.stream.write_all(&buffer) {
-                panic!(
-                    "Error: {} (acá debería gestionar la desconexión probablemente)",
-                    e
-                );
+            if let Err(_) = self.stream.write_all(&buffer) {
+                self.desconectado = true;
+                return;
             }
         }
     }
