@@ -54,7 +54,7 @@ impl Cliente {
         Ok(())
     }
 
-    pub fn publish_con_header(
+    pub fn publicar_con_header(
         &mut self,
         subject: &str,
         body: &[u8],
@@ -74,7 +74,7 @@ impl Cliente {
         Ok(())
     }
 
-    pub fn subscribe(
+    pub fn suscribirse(
         &mut self,
         subject: &str,
         queue_group: Option<&str>,
@@ -88,7 +88,7 @@ impl Cliente {
 
         canal_instrucciones.send(Instruccion::Subscribir {
             topico: subject.to_owned(),
-            id_subscripcion: id.to_owned(),
+            id_suscripcion: id.to_owned(),
             queue_group: queue_group.map(|s| s.to_owned()),
             canal: tx,
         })?;

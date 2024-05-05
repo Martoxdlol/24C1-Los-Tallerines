@@ -5,13 +5,14 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use crate::{instruccion::Instruccion, mensaje::Mensaje, publicacion::Publicacion};
+use crate::{instruccion::Instruccion, mensaje::Mensaje, parser::Parser, publicacion::Publicacion};
 
 pub struct HiloCliente {
     pub stream: TcpStream,
     pub canal_recibir: Receiver<Instruccion>,
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
+    parser: Parser,
 }
 
 impl HiloCliente {
@@ -20,6 +21,7 @@ impl HiloCliente {
             stream,
             canal_recibir,
             canales_subscripciones: HashMap::new(),
+            parser: Parser::new(),
         }
     }
 
@@ -43,12 +45,21 @@ impl HiloCliente {
 
     fn gestionar_nuevo_mensaje(&mut self, mensaje: Mensaje) -> std::io::Result<()> {
         match mensaje {
-            Mensaje::Publicacion(sid, publicacion) => {
-                if let Some(canal) = self.canales_subscripciones.get(&sid) {
+            // Ejemplo: MSG 1 4\r\nhola\r\n
+            Mensaje::Publicacion(id_suscripcion, publicacion) => {
+                if let Some(canal) = self.canales_subscripciones.get(&id_suscripcion) {
                     if let Err(e) = canal.send(publicacion) {
                         return Err(std::io::Error::new(std::io::ErrorKind::Other, e));
                     }
                 }
+            }
+            // Ejemplo: INFO {"server_id":"a","version":"2.1.0","go":"go1.15.6","host":"...
+            Mensaje::Info => {
+                self.stream.write_all(b"CONNECT {}\r\n")?;
+            }
+            // Ejemplo: PING\r\n
+            Mensaje::Ping => {
+                self.stream.write_all(b"PONG\r\n")?;
             }
             _ => {}
         }
@@ -59,28 +70,28 @@ impl HiloCliente {
     fn gestionar_nueva_instruccion(&mut self, instruccion: Instruccion) -> std::io::Result<bool> {
         match instruccion {
             Instruccion::Subscribir {
-                id_subscripcion,
+                id_suscripcion,
                 canal,
                 queue_group,
                 topico,
             } => {
                 self.canales_subscripciones
-                    .insert(id_subscripcion.to_owned(), canal);
+                    .insert(id_suscripcion.to_owned(), canal);
+
                 if let Some(queue_group) = queue_group {
                     self.stream.write_all(
-                        format!("SUB {} {} {}\r\n", topico, id_subscripcion, queue_group)
-                            .as_bytes(),
+                        format!("SUB {} {} {}\r\n", topico, id_suscripcion, queue_group).as_bytes(),
                     )?;
                 } else {
                     self.stream
-                        .write_all(format!("SUB {} {}\r\n", topico, id_subscripcion).as_bytes())?;
+                        .write_all(format!("SUB {} {}\r\n", topico, id_suscripcion).as_bytes())?;
                 }
             }
-            Instruccion::Desubscribir { id_subscripcion } => {
+            Instruccion::Desubscribir { id_suscripcion } => {
                 self.canales_subscripciones
-                    .remove(&id_subscripcion.to_string());
+                    .remove(&id_suscripcion.to_string());
                 self.stream
-                    .write_all(format!("UNSUB {}\r\n", id_subscripcion).as_bytes())?;
+                    .write_all(format!("UNSUB {}\r\n", id_suscripcion).as_bytes())?;
             }
             Instruccion::Publicar(publicacion) => {
                 if let Some(reply_to) = publicacion.replay_to {
@@ -112,33 +123,31 @@ impl HiloCliente {
                         self.stream.write_all(&publicacion.payload)?;
                         self.stream.write_all(b"\r\n")?;
                     }
+                } else if let Some(header) = &publicacion.header {
+                    self.stream.write_all(
+                        format!(
+                            "PUB {} {} {}\r\n",
+                            publicacion.subject,
+                            header.len(),
+                            publicacion.payload.len()
+                        )
+                        .as_bytes(),
+                    )?;
+                    self.stream.write_all(&header)?;
+                    self.stream.write_all(b"\r\n")?;
+                    self.stream.write_all(&publicacion.payload)?;
+                    self.stream.write_all(b"\r\n")?;
                 } else {
-                    if let Some(header) = &publicacion.header {
-                        self.stream.write_all(
-                            format!(
-                                "PUB {} {} {}\r\n",
-                                publicacion.subject,
-                                header.len(),
-                                publicacion.payload.len()
-                            )
-                            .as_bytes(),
-                        )?;
-                        self.stream.write_all(&header)?;
-                        self.stream.write_all(b"\r\n")?;
-                        self.stream.write_all(&publicacion.payload)?;
-                        self.stream.write_all(b"\r\n")?;
-                    } else {
-                        self.stream.write_all(
-                            format!(
-                                "PUB {} {}\r\n",
-                                publicacion.subject,
-                                publicacion.payload.len()
-                            )
-                            .as_bytes(),
-                        )?;
-                        self.stream.write_all(&publicacion.payload)?;
-                        self.stream.write_all(b"\r\n")?;
-                    }
+                    self.stream.write_all(
+                        format!(
+                            "PUB {} {}\r\n",
+                            publicacion.subject,
+                            publicacion.payload.len()
+                        )
+                        .as_bytes(),
+                    )?;
+                    self.stream.write_all(&publicacion.payload)?;
+                    self.stream.write_all(b"\r\n")?;
                 }
             }
             Instruccion::Desconectar => {
@@ -153,7 +162,8 @@ impl HiloCliente {
         let mut buffer = [0; 1024];
         match self.stream.read(&mut buffer) {
             Ok(n) => {
-                todo!()
+                self.parser.agregar_bytes(&buffer[..n]);
+                return Ok(self.parser.proximo_mensaje());
             }
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // No hay datos para leer (no hay que hacer nada acá)
