@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io,
     net::TcpListener,
     sync::mpsc::{self, Sender},
@@ -29,18 +30,22 @@ impl Servidor {
         }
 
         for (i, rx) in canales_recibir.drain(..).enumerate() {
-            let mut otros_canales = Vec::new();
+            let mut otros_canales = HashMap::new();
 
             for (canal_i, tx) in canales_enviar.iter().enumerate() {
                 if canal_i == i {
                     continue;
                 }
 
-                otros_canales.push(tx.clone());
+                let id = canal_i as u64;
+
+                otros_canales.insert(id, tx.clone());
             }
 
+            let id: u64 = i as u64;
+
             let (tx_conexiones, rx_conexiones) = mpsc::channel();
-            let proceso = Proceso::new(otros_canales, rx, rx_conexiones);
+            let proceso = Proceso::new(id, otros_canales, rx, rx_conexiones);
 
             let handle = Proceso::iniciar(proceso);
             procesos.push((tx_conexiones, handle));

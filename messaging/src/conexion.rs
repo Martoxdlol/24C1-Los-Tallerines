@@ -3,11 +3,11 @@ use std::{
     io::{self, Read, Write},
 };
 
-use crate::{configuracion::Configuracion, stream::Stream};
+use crate::{configuracion::Configuracion, proceso::Proceso, stream::Stream};
 
 use super::{
     message::Message, parser::Parser, publicacion::Publicacion, respuesta::Respuesta,
-    subject::Subject,
+    topico::Topico,
 }; // Usamos super porque estamos en el mismo módulo
 
 /// La conexión es responsable de mantener el stream con el cliente, leer mensajes y enviar mensajes
@@ -19,7 +19,7 @@ pub struct Conexion {
     /// El parser se encarga de leer los bytes y generar mensajes
     parser: Parser,
     /// Por cada conexion, vamos a guardar los topicos a los que se suscribio
-    subscripciones: HashMap<String, Subject>,
+    subscripciones: HashMap<String, Topico>,
     /// Las publicaciones que manda el cliente
     publicaciones_salientes: Vec<Publicacion>,
     /// Las respuestas y publicaciones que se envian al stream del cliente
@@ -92,7 +92,7 @@ impl Conexion {
                     self.respuestas
                         .push(Respuesta::Ok(Some("hpub".to_string())));
                 }
-                Message::Sub(topico, _, id) => match Subject::new(topico) {
+                Message::Sub(topico, _, id) => match Topico::new(topico) {
                     Ok(sub) => {
                         self.subscripciones.insert(id, sub);
                         self.respuestas.push(Respuesta::Ok(Some("sub".to_string())));
