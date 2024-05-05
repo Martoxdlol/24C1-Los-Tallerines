@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 messaging = { path = "../messaging" }
 lib = { path = "../lib" }
+egui = "0.27.2"
+eframe = "0.27.2"
+egui_extras = "0.27.2"
+walkers = "0.22.0"
