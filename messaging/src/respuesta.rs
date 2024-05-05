@@ -1,8 +1,8 @@
-use super::publicacion::Publicacion;
+use crate::publicacion_mensaje::PublicacionMensaje;
 
 #[derive(Debug)]
 pub enum Respuesta {
-    Msg(Publicacion),
+    Msg(PublicacionMensaje),
     Err(String),
     Ok(Option<String>),
     Pong(),

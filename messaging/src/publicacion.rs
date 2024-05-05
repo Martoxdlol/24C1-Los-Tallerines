@@ -1,3 +1,5 @@
+use crate::publicacion_mensaje::PublicacionMensaje;
+
 /// Representa un mensaje que se va a publicar en un tópico
 #[derive(Debug, Clone)]
 pub struct Publicacion {
@@ -22,37 +24,7 @@ impl Publicacion {
         }
     }
 
-    pub fn serializar_msg(&self) -> Vec<u8> {
-        // MSG <subject> <sid> [reply-to] <#bytes>␍␊[payload]␍␊
-        // HMSG <subject> <sid> [reply-to] <#header bytes> <#total bytes>␍␊[headers]␍␊␍␊[payload]␍␊
-
-        let mut bytes = Vec::new();
-
-        if self.header.is_some() {
-            bytes.extend_from_slice(b"HMSG ");
-        } else {
-            bytes.extend_from_slice(b"MSG ");
-        }
-
-        bytes.extend_from_slice(self.topico.as_bytes());
-        bytes.extend_from_slice(b" ");
-        if let Some(replay_to) = &self.replay_to {
-            bytes.extend_from_slice(replay_to.as_bytes());
-            bytes.extend_from_slice(b" ");
-        }
-
-        if let Some(header) = &self.header {
-            bytes.extend_from_slice(header.len().to_string().as_bytes());
-            bytes.extend_from_slice(b" ");
-            bytes.extend_from_slice(self.payload.len().to_string().as_bytes());
-            bytes.extend_from_slice(b"\r\n");
-            bytes.extend_from_slice(&header);
-            bytes.extend_from_slice(b"\r\n");
-        } else {
-            bytes.extend_from_slice(self.payload.len().to_string().as_bytes());
-            bytes.extend_from_slice(b"\r\n");
-        }
-
-        bytes
+    pub fn mensaje(&self, sid: String) -> PublicacionMensaje {
+        PublicacionMensaje::new(sid, self.payload.clone(), self.header.clone(), self.replay_to.clone())
     }
 }

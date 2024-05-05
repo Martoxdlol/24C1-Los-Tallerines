@@ -7,7 +7,7 @@ pub enum Message {
     // 'topico', 'queue group', 'id
     Sub(String, Option<String>, String),
     //
-    Unsub(String, Option<usize>),
+    Unsub(String, Option<u64>),
     // Mensaje de error (cuando no se pudo parsear el mensaje)
     Err(String),
     // Mensaje para generar la conexión

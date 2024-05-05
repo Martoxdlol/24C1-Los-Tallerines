@@ -12,6 +12,7 @@ pub mod topico;
 pub mod configuracion;
 pub mod stream;
 pub mod instrucciones;
+pub mod publicacion_mensaje;
 
 // mod tests;
 

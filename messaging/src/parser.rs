@@ -297,7 +297,7 @@ impl Parser {
         }
 
         let sid = &palabras[0];
-        let max_msgs = palabras.get(2).map(|s| s.parse::<usize>().unwrap());
+        let max_msgs = palabras.get(2).map(|s| s.parse::<u64>().unwrap());
 
         ResultadoLinea::Unsub(sid.to_string(), max_msgs)
     }

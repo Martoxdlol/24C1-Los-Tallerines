@@ -11,7 +11,7 @@ use crate::configuracion::Configuracion;
 use super::{conexion::Conexion, proceso::Proceso};
 
 pub struct Servidor {
-    hilos: Vec<(Sender<Conexion>, JoinHandle<()>)>,
+    hilos: Vec<(Sender<(u64, Conexion)>, JoinHandle<()>)>,
     configuracion: Configuracion,
     i: usize,
 }
@@ -70,14 +70,19 @@ impl Servidor {
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
 
+        let mut id: u64 = 0;
+
         loop {
             match listener.accept() {
                 Ok((stream, _)) => {
                     stream.set_nonblocking(true).unwrap();
                     let conexion = Conexion::new(Box::new(stream), self.configuracion.clone()); // Si escucho algo, genero una nueva conexion
 
+                    id += 1;
+                    let nuevo_id = id;
+
                     let (tx, _) = &self.hilos[self.i];
-                    match tx.send(conexion) {
+                    match tx.send((nuevo_id,conexion)) {
                         Ok(_) => {
                             self.i = (self.i + 1) % self.hilos.len();
                         }

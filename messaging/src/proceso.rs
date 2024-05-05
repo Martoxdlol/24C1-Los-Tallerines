@@ -7,21 +7,18 @@ use std::{
 use rand::Rng;
 
 use crate::{
-    conexion::Conexion,
-    instrucciones::Instrucciones,
-    publicacion::{self, Publicacion},
-    topico::Topico,
+    conexion::Conexion, instrucciones::Instrucciones, publicacion::Publicacion, topico::Topico,
 };
 
 pub struct Proceso {
     /// Id del proceso
-    id: u64,
+    _id: u64,
     /// Canales a otros procesos para **enviar** instrucciones (ejemplo: publicar, suscribir, desuscribir, etc.)
     otros_procesos: HashMap<u64, Sender<Instrucciones>>,
     /// Canal para **recibir** instrucciones de otros procesos
     canal_instrucciones: Receiver<Instrucciones>,
     /// Canal para recibir nuevas conexiones
-    canal_nuevas_conexiones: Receiver<Conexion>,
+    canal_nuevas_conexiones: Receiver<(u64, Conexion)>,
     /// Conexiones indexadas por id (el id es un número incremental generado cuando se crea la conexión)
     conexiones: HashMap<u64, Conexion>,
     /// Suscripciones locales, por tópico, por cada cliente
@@ -39,10 +36,10 @@ impl Proceso {
         id: u64,
         otros_procesos: HashMap<u64, Sender<Instrucciones>>,
         canal_instrucciones: Receiver<Instrucciones>,
-        canal_nuevas_conexiones: Receiver<Conexion>,
+        canal_nuevas_conexiones: Receiver<(u64, Conexion)>,
     ) -> Proceso {
         Proceso {
-            id,
+            _id: id,
             otros_procesos,
             canal_instrucciones,
             canal_nuevas_conexiones,
@@ -68,7 +65,7 @@ impl Proceso {
     }
 
     pub fn enviar_instruccion(&self, instruccion: Instrucciones) {
-        for (id, tx) in &self.otros_procesos {
+        for (_, tx) in &self.otros_procesos {
             let r = tx.send(instruccion.clone());
             if r.is_err() {
                 panic!("No se pudo enviar la instrucción a otro proceso");
@@ -138,7 +135,7 @@ impl Proceso {
 
         for (cola, (topico, otros_pesos)) in &mut self.suscripciones_colas_otros {
             if topico.test(&publicacion.topico) {
-                if let Some((id, peso)) = elegir_si_proceso_local_u_otro_random(otros_pesos, 0) {
+                if let Some((id, _)) = elegir_si_proceso_local_u_otro_random(otros_pesos, 0) {
                     if let Some(tx) = self.otros_procesos.get(&id) {
                         let r = tx.send(Instrucciones::PublicarCola(
                             cola.clone(),
@@ -161,6 +158,11 @@ impl Proceso {
 
     pub fn tick(&mut self) {
         // Itear instrucciones
+        while let Ok((id, conexion)) = self.canal_nuevas_conexiones.try_recv() {
+            self.conexiones.insert(id, conexion);
+        }
+
+        // Itear instrucciones
         while let Ok(instruccion) = self.canal_instrucciones.try_recv() {
             self.gestionar_instruccion(instruccion);
         }
@@ -175,6 +177,22 @@ impl Proceso {
             let publicaciones_salientes = conexion.extraer_publicaciones_salientes();
 
             nuevas_publicaciones.extend(publicaciones_salientes);
+
+            for s in conexion.suscripciones_salientes.drain(..) {
+                self.suscripciones_locales
+                    .entry(s)
+                    .or_insert(HashSet::new())
+                    .insert(*id);
+            }
+
+            for s in conexion.desuscripciones_salientes.drain(..) {
+                if let Some(conexiones) = self.suscripciones_locales.get_mut(&s) {
+                    conexiones.remove(id);
+                    if conexiones.is_empty() {
+                        self.suscripciones_locales.remove(&s);
+                    }
+                }
+            }
         }
 
         for publicacion in &nuevas_publicaciones {
@@ -236,7 +254,7 @@ impl Proceso {
                         .insert(id, peso);
                 }
             }
-            Instrucciones::Publicar( publicacion) => {
+            Instrucciones::Publicar(publicacion) => {
                 self.publicar_local(&publicacion);
             }
             Instrucciones::PublicarCola(nombre, publicacion) => {

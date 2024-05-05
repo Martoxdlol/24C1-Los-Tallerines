@@ -3,7 +3,7 @@ use std::{
     io::{self, Read, Write},
 };
 
-use crate::{configuracion::Configuracion, proceso::Proceso, stream::Stream};
+use crate::{configuracion::Configuracion, stream::Stream};
 
 use super::{
     message::Message, parser::Parser, publicacion::Publicacion, respuesta::Respuesta,
@@ -19,7 +19,9 @@ pub struct Conexion {
     /// El parser se encarga de leer los bytes y generar mensajes
     parser: Parser,
     /// Por cada conexion, vamos a guardar los topicos a los que se suscribio
-    subscripciones: HashMap<String, Topico>,
+    suscripciones: HashMap<String, Topico>,
+    /// Max msgs de suscripciones
+    suscripciones_max_msgs: HashMap<String, u64>,
     /// Las publicaciones que manda el cliente
     publicaciones_salientes: Vec<Publicacion>,
     /// Las respuestas y publicaciones que se envian al stream del cliente
@@ -30,6 +32,10 @@ pub struct Conexion {
     configuracion: Configuracion,
     /// Si está desconectado
     pub desconectado: bool,
+    /// Suscripciones salientes, el proceso las agarra para saber a quien se suscribio
+    pub suscripciones_salientes: Vec<Topico>,
+    /// Desuscripciones salientes, el proceso las agarra para saber a quien se desuscribio
+    pub desuscripciones_salientes: Vec<Topico>,
 }
 
 impl Conexion {
@@ -38,12 +44,56 @@ impl Conexion {
         Self {
             stream, // Los bytes de donde vamos a saber: QUE hay que hacer en DONDE, y si es publicar, el mensaje
             parser: Parser::new(),
-            subscripciones: HashMap::new(),
+            suscripciones: HashMap::new(),
+            suscripciones_max_msgs: HashMap::new(),
             publicaciones_salientes: Vec::new(),
             respuestas,
             recibi_connect: false,
             configuracion,
             desconectado: false,
+            suscripciones_salientes: Vec::new(),
+            desuscripciones_salientes: Vec::new(),
+        }
+    }
+
+    /// Agrega una nueva suscripción y le informa al proceso si hace falta agregarla
+    pub fn nueva_suscripcion(&mut self, topico: Topico, id: String) {
+        // Detectar si ya estaba suscrito el rópico
+        let mut ya_estaba_suscrito = false;
+        for (_, topico) in self.suscripciones.iter() {
+            if topico.eq(topico) {
+                ya_estaba_suscrito = true;
+                break;
+            }
+        }
+
+        // Si no estaba suscrito, agregarlo a las suscripciones salientes
+        if !ya_estaba_suscrito {
+            self.suscripciones_salientes.push(topico.clone());
+        }
+
+        // Agregar la suscripción
+        self.suscripciones.insert(id, topico);
+    }
+
+    pub fn nueva_desuscripcion(&mut self, id: &str) {
+        // Remover la suscripción
+        if let Some(topico) = self.suscripciones.remove(id) {
+            self.suscripciones_max_msgs.remove(id);
+
+            // Detectar si sigue suscrito el tópico
+            let mut sigue_suscrito = false;
+            for (_, topico) in self.suscripciones.iter() {
+                if topico.eq(topico) {
+                    sigue_suscrito = true;
+                    break;
+                }
+            }
+
+            // Si no sigue suscrito, agregarlo a las desuscripciones salientes
+            if !sigue_suscrito {
+                self.desuscripciones_salientes.push(topico.clone());
+            }
         }
     }
 
@@ -93,8 +143,8 @@ impl Conexion {
                         .push(Respuesta::Ok(Some("hpub".to_string())));
                 }
                 Message::Sub(topico, _, id) => match Topico::new(topico) {
-                    Ok(sub) => {
-                        self.subscripciones.insert(id, sub);
+                    Ok(topico) => {
+                        self.nueva_suscripcion(topico, id);
                         self.respuestas.push(Respuesta::Ok(Some("sub".to_string())));
                     }
                     Err(_) => {
@@ -103,8 +153,12 @@ impl Conexion {
                         ));
                     }
                 },
-                Message::Unsub(subject, _) => {
-                    self.subscripciones.remove(&subject);
+                Message::Unsub(id, max_msgs) => {
+                    if let Some(max) = max_msgs {
+                        self.suscripciones_max_msgs.insert(id.clone(), max);
+                    } else {
+                        self.nueva_desuscripcion(&id);
+                    }
                     self.respuestas
                         .push(Respuesta::Ok(Some("unsub".to_string())));
                 }
@@ -127,11 +181,29 @@ impl Conexion {
     ///
     /// Este método se encarga de filtrar el mensaje según las subscripciones que tenga el cliente
     pub fn recibir_mensaje(&mut self, publicacion: Publicacion) {
-        for subject in self.subscripciones.values() {
+        let mut desuscripciones = Vec::new();
+
+        for (id, subject) in &self.suscripciones {
             if subject.test(&publicacion.topico) {
-                self.respuestas.push(Respuesta::Msg(publicacion));
+                if let Some(max_msgs) = self.suscripciones_max_msgs.get_mut(id) {
+                    let nuevo_max_msgs = *max_msgs - 1;
+                    if *max_msgs == 0 {
+                        desuscripciones.push(id.clone());
+                        self.suscripciones_max_msgs.remove(id);
+                    } else {
+                        self.suscripciones_max_msgs
+                            .insert(id.clone(), nuevo_max_msgs);
+                    }
+                }
+
+                self.respuestas
+                    .push(Respuesta::Msg(publicacion.mensaje(id.to_owned())));
                 break;
             }
+        }
+
+        for id in desuscripciones {
+            self.nueva_desuscripcion(&id);
         }
     }
 
