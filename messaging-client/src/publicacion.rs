@@ -1,3 +1,4 @@
+/// Estructura de una publicación (Pub)
 pub struct Publicacion {
     pub subject: String,
     pub replay_to: Option<String>,

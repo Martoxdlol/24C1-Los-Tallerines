@@ -5,14 +5,17 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use crate::{instruccion::Instruccion, mensaje::Mensaje, parser::Parser, publicacion::Publicacion};
+use crate::{instruccion::Instruccion, mensaje::Mensaje, publicacion::Publicacion};//parser::Parser
 
+/// El hilo del cliente posee el stream de la conexion, el canal por el cual se
+/// reciben mensajes, los canales de suscripciones que están asociados a un id
+/// de suscripción, y el parser
 pub struct HiloCliente {
     pub stream: TcpStream,
     pub canal_recibir: Receiver<Instruccion>,
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
-    parser: Parser,
+    //parser: Parser,
 }
 
 impl HiloCliente {
@@ -21,13 +24,14 @@ impl HiloCliente {
             stream,
             canal_recibir,
             canales_subscripciones: HashMap::new(),
-            parser: Parser::new(),
+            //parser: Parser::new(),
         }
     }
 
     pub fn ejecutar(&mut self) -> std::io::Result<()> {
         let mut desconectar = false;
 
+        // Se confirma la conexión
         self.stream.write_all(b"CONNECT {}\r\n")?;
 
         while !desconectar {
@@ -69,7 +73,7 @@ impl HiloCliente {
 
     fn gestionar_nueva_instruccion(&mut self, instruccion: Instruccion) -> std::io::Result<bool> {
         match instruccion {
-            Instruccion::Subscribir {
+            Instruccion::Suscribir {
                 id_suscripcion,
                 canal,
                 queue_group,
@@ -87,7 +91,7 @@ impl HiloCliente {
                         .write_all(format!("SUB {} {}\r\n", topico, id_suscripcion).as_bytes())?;
                 }
             }
-            Instruccion::Desubscribir { id_suscripcion } => {
+            Instruccion::Desuscribir { id_suscripcion } => {
                 self.canales_subscripciones
                     .remove(&id_suscripcion.to_string());
                 self.stream
@@ -162,6 +166,7 @@ impl HiloCliente {
         let mut buffer = [0; 1024];
         match self.stream.read(&mut buffer) {
             Ok(n) => {
+                let mut bytes_pendientes = Vec::new();
                 self.parser.agregar_bytes(&buffer[..n]);
                 return Ok(self.parser.proximo_mensaje());
             }

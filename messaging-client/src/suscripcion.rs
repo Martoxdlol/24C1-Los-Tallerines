@@ -2,13 +2,16 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use crate::{instruccion::Instruccion, publicacion::Publicacion};
 
-pub struct Subscripcion {
+/// Estructura de una suscripcion (Sub), con el canal de instrucciones, el
+/// canal de publicaciones que tiene la punta receptora de un canal de 
+/// publicaciones y el id de la suscripcion
+pub struct Suscripcion {
     canal_instrucciones: Sender<Instruccion>,
     canal_publicaciones: Receiver<Publicacion>,
     id: String,
 }
 
-impl Subscripcion {
+impl Suscripcion {
     pub fn new(
         canal_instrucciones: Sender<Instruccion>,
         canal_publicaciones: Receiver<Publicacion>,
@@ -30,15 +33,16 @@ impl Subscripcion {
     }
 }
 
-impl Drop for Subscripcion {
+impl Drop for Suscripcion {
     fn drop(&mut self) {
-        let _ = self.canal_instrucciones.send(Instruccion::Desubscribir {
-            id_subscripcion: self.id.clone(),
+        // Envio el mensaje de desuscribir al canal de instrucciones
+        self.canal_instrucciones.send(Instruccion::Desuscribir {
+            id_suscripcion: self.id.clone(),
         });
     }
 }
 
-impl Iterator for Subscripcion {
+impl Iterator for Suscripcion {
     type Item = Publicacion;
 
     fn next(&mut self) -> Option<Self::Item> {
