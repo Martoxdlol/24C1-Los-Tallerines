@@ -271,10 +271,9 @@ mod tests {
     fn test_connect() {
         let (escribir_bytes, rx) = mpsc::channel();
         let (tx, recibir_bytes) = mpsc::channel();
-        let mut stream = MockStream::new(tx, rx);
+        let stream = MockStream::new(tx, rx);
 
         escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
-        escribir_bytes.send(b"SUB asd 1\r\n".to_vec()).unwrap();
 
         let b: Box<dyn Stream> = Box::new(stream);
 
@@ -282,18 +281,27 @@ mod tests {
 
         con.tick();
 
-        assert!(con.suscripciones.contains_key("1"));
-        assert!(con.suscripciones.get("1").unwrap().to_string().eq("asd"));
+        assert!(con.recibi_connect);
 
-        assert!(con.suscripciones_salientes.len() == 1);
-        assert!(con.suscripciones_salientes[0].to_string().eq("asd"));
+        let bytes = recibir_bytes.try_recv().unwrap();
+        let txt = String::from_utf8_lossy(&bytes);
+        assert!(txt.starts_with("INFO"));
+
+        escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
+
+        con.tick();
+
+        let bytes = recibir_bytes.try_recv().unwrap();
+        let txt = String::from_utf8_lossy(&bytes);
+
+        assert!(txt.starts_with("+OK"));
     }
 
     #[test]
     fn test_nueva_suscripcion() {
         let (escribir_bytes, rx) = mpsc::channel();
-        let (tx, recibir_bytes) = mpsc::channel();
-        let mut stream = MockStream::new(tx, rx);
+        let (tx, _recibir_bytes) = mpsc::channel();
+        let stream = MockStream::new(tx, rx);
 
         escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
         escribir_bytes.send(b"SUB asd 1\r\n".to_vec()).unwrap();
