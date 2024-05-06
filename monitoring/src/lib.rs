@@ -96,7 +96,9 @@ impl eframe::App for Aplicacion {
 
                 let mapa_final = mapa_a_mostrar
                     .with_plugin(plugins::mostrar_incidentes(&self.incidentes))
-                    .with_plugin(plugins::SombreadoCircular {})
+                    .with_plugin(plugins::SombreadoCircular {
+                        positions: self.incidentes.iter().map(|i | (i.posicion, 50.)).collect(),
+                    })
                     .with_plugin(&mut self.clicks);
 
                 // Draw the map widget.

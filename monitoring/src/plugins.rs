@@ -1,18 +1,15 @@
+use crate::incidente::Incidente;
 use egui::{Color32, Painter, Response};
 use walkers::{
     extras::{Place, Places},
     Plugin, Position, Projector,
 };
-use crate::incidente::Incidente;
-
-use crate::iconos;
 
 /// Los lugares. Los iconos
 pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     let mut lugares = Vec::new();
 
-
-    for incidente in incidentes.iter(){
+    for incidente in incidentes.iter() {
         lugares.push(Place {
             position: incidente.posicion,
             label: incidente.nombre.clone(),
@@ -21,36 +18,30 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
         });
     }
     Places::new(lugares)
-
 }
 
-
-
-
-
 /// Sample map plugin which draws custom stuff on the map.
-pub struct SombreadoCircular {}
+pub struct SombreadoCircular {
+    pub positions: Vec<(Position, f32)>,
+}
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        // Position of the point we want to put our shapes.
-        let position = iconos::incidente();
+        for (position, radius) in &self.positions {
+            // Project it into the position on the screen.
+            let position = projector.project(position.clone()).to_pos2();
 
-        // Project it into the position on the screen.
-        let position = projector.project(position).to_pos2();
+            let hovered = response
+                .hover_pos()
+                .map(|hover_pos| hover_pos.distance(position) < *radius)
+                .unwrap_or(false);
 
-        let radius = 50.;
-
-        let hovered = response
-            .hover_pos()
-            .map(|hover_pos| hover_pos.distance(position) < radius)
-            .unwrap_or(false);
-
-        painter.circle_filled(
-            position,
-            radius,
-            Color32::BLACK.gamma_multiply(if hovered { 0.5 } else { 0.2 }),
-        );
+            painter.circle_filled(
+                position,
+                *radius,
+                Color32::BLACK.gamma_multiply(if hovered { 0.5 } else { 0.2 }),
+            );
+        }
     }
 }
 
@@ -59,7 +50,8 @@ pub struct ClickWatcher {
     pub clicked_at: Option<Position>,
 }
 
-impl ClickWatcher { // Donde hiciste click
+impl ClickWatcher {
+    // Donde hiciste click
     pub fn show_position(&mut self, ui: &egui::Ui) {
         if let Some(clicked_at) = self.clicked_at {
             egui::Window::new("Clicked Position")
@@ -70,10 +62,10 @@ impl ClickWatcher { // Donde hiciste click
                 .show(ui.ctx(), |ui| {
                     ui.horizontal(|ui| {
                         ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
-                        .on_hover_text("Posición donde hiciste click");
-                    if ui.button("cerrar").clicked() {
-                        self.clear()
-                    }
+                            .on_hover_text("Posición donde hiciste click");
+                        if ui.button("cerrar").clicked() {
+                            self.clear()
+                        }
                     });
                 });
         }
