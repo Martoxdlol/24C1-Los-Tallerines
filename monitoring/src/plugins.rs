@@ -29,7 +29,7 @@ impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
         for (posicion, radio) in &self.posiciones {
             // Project it into the position on the screen.
-            let posicion = projector.project(posicion.clone()).to_pos2();
+            let posicion = projector.project(*posicion).to_pos2();
 
             let flotar = response
                 .hover_pos()

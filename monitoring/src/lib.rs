@@ -127,23 +127,20 @@ impl eframe::App for Aplicacion {
                                 ui.text_edit_multiline(&mut self.nombre_incidente)
                             });
 
-                            if self.nombre_incidente.trim().len() > 0 {
-                                if ui
+                            if !self.nombre_incidente.trim().is_empty() && ui
                                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
-                                    .clicked()
-                                {
-                                    let incidente = Incidente::new(
-                                        clicked_at.lon(),
-                                        clicked_at.lat(),
-                                        self.nombre_incidente.clone(),
-                                    );
+                                    .clicked() {
+                                let incidente = Incidente::new(
+                                    clicked_at.lon(),
+                                    clicked_at.lat(),
+                                    self.nombre_incidente.clone(),
+                                );
 
-                                    self.nombre_incidente.clear();
+                                self.nombre_incidente.clear();
 
-                                    self.clicks.clear();
+                                self.clicks.clear();
 
-                                    self.incidentes.push(incidente);
-                                }
+                                self.incidentes.push(incidente);
                             }
                         });
                 }
