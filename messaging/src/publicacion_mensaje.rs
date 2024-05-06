@@ -53,6 +53,9 @@ impl PublicacionMensaje {
             bytes.extend_from_slice(b"\r\n");
         }
 
+        bytes.extend_from_slice(&self.payload);
+        bytes.extend_from_slice(b"\r\n");
+
         bytes
     }
 }

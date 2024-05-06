@@ -318,4 +318,28 @@ mod tests {
         assert!(con.suscripciones_salientes.len() == 1);
         assert!(con.suscripciones_salientes[0].to_string().eq("asd"));
     }
+
+    #[test]
+    fn test_nueva_desuscripcion() {
+        let (escribir_bytes, rx) = mpsc::channel();
+        let (tx, _recibir_bytes) = mpsc::channel();
+        let stream = MockStream::new(tx, rx);
+
+        escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
+        escribir_bytes.send(b"SUB asd 1\r\n".to_vec()).unwrap();
+
+        let b: Box<dyn Stream> = Box::new(stream);
+
+        let mut con = Conexion::new(b, Configuracion::new());
+
+        con.tick();
+
+        assert!(con.suscripciones.contains_key("1"));
+        escribir_bytes.send(b"UNSUB 1\r\n".to_vec()).unwrap();
+
+        con.tick();
+
+        assert!(!con.suscripciones.contains_key("1"));
+        assert!(con.desuscripciones_salientes.len() == 0);
+    }
 }

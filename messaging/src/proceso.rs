@@ -12,7 +12,7 @@ use crate::{
 
 pub struct Proceso {
     /// Id del proceso
-    _id: u64,
+    id: u64,
     /// Canales a otros procesos para **enviar** instrucciones (ejemplo: publicar, suscribir, desuscribir, etc.)
     otros_procesos: HashMap<u64, Sender<Instrucciones>>,
     /// Canal para **recibir** instrucciones de otros procesos
@@ -39,7 +39,7 @@ impl Proceso {
         canal_nuevas_conexiones: Receiver<(u64, Conexion)>,
     ) -> Proceso {
         Proceso {
-            _id: id,
+            id,
             otros_procesos,
             canal_instrucciones,
             canal_nuevas_conexiones,
@@ -99,6 +99,17 @@ impl Proceso {
 
     /// Envia las publicaciones a los otros procesos que correspondan
     pub fn publicar(&mut self, publicacion: &Publicacion) {
+        let procesos_ids = self.procesos_suscritos_a(&publicacion.topico);
+
+        for id in procesos_ids {
+            if let Some(tx) = self.otros_procesos.get(&id) {
+                let r = tx.send(Instrucciones::Publicar(publicacion.clone()));
+                if r.is_err() {
+                    panic!("No se pudo enviar la instrucción a otro proceso");
+                }
+            }
+        }
+
         self.publicar_local(&publicacion);
     }
 
@@ -164,10 +175,13 @@ impl Proceso {
 
         // Itear instrucciones
         while let Ok(instruccion) = self.canal_instrucciones.try_recv() {
+            println!("[hilo: {}] Recibida instrucción: {:?}", self.id, &instruccion);
             self.gestionar_instruccion(instruccion);
         }
 
         let mut nuevas_publicaciones = Vec::new();
+        let mut nuevas_suscripciones = Vec::new();
+        let mut nuevas_desuscripciones = Vec::new();
 
         // Iterar conexiones
         for (id, conexion) in &mut self.conexiones {
@@ -179,6 +193,10 @@ impl Proceso {
             nuevas_publicaciones.extend(publicaciones_salientes);
 
             for s in conexion.suscripciones_salientes.drain(..) {
+                println!("[hilo: {}] Suscribir: {:?}", self.id, &s);
+                if !self.suscripciones_locales.contains_key(&s) {
+                    nuevas_suscripciones.push(s.clone());
+                }
                 self.suscripciones_locales
                     .entry(s)
                     .or_insert(HashSet::new())
@@ -190,9 +208,18 @@ impl Proceso {
                     conexiones.remove(id);
                     if conexiones.is_empty() {
                         self.suscripciones_locales.remove(&s);
+                        nuevas_desuscripciones.push(s);
                     }
                 }
             }
+        }
+
+        for s in nuevas_suscripciones {
+            self.enviar_instruccion(Instrucciones::Suscribir(self.id, s));
+        }
+
+        for s in nuevas_desuscripciones {
+            self.enviar_instruccion(Instrucciones::Desuscribir(self.id, s));
         }
 
         for publicacion in &nuevas_publicaciones {
@@ -227,11 +254,13 @@ impl Proceso {
                     .or_insert(HashSet::new())
                     .insert(id);
             }
-            Instrucciones::Desuscribir(id) => {
-                self.suscripciones_otros.retain(|_, ids| {
+            Instrucciones::Desuscribir(id, topico) => {
+                if let Some(ids) = self.suscripciones_otros.get_mut(&topico) {
                     ids.remove(&id);
-                    !ids.is_empty()
-                });
+                    if ids.is_empty() {
+                        self.suscripciones_otros.remove(&topico);
+                    }
+                }
             }
             Instrucciones::ActualizarCola {
                 id,

@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Read, Write},
+    io::{Read, Write},
     net::TcpStream,
 };
 
@@ -8,4 +8,3 @@ pub trait Stream: Read + Write + Send {
 }
 
 impl Stream for TcpStream {}
-
