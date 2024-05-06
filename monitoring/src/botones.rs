@@ -1,9 +1,6 @@
 use egui::{Align2, RichText, Ui, Window};
 use walkers::MapMemory;
 
-
-
-
 pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {
     Window::new("Map")
         .collapsible(false)
@@ -12,11 +9,17 @@ pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {
         .anchor(Align2::LEFT_BOTTOM, [10., -10.])
         .show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
-                if ui.button(RichText::new("➕").heading()).clicked() {
+                if ui
+                    .add_sized([40., 40.], egui::Button::new(RichText::new("➕").heading()))
+                    .clicked()
+                {
                     let _ = map_memory.zoom_in();
                 }
 
-                if ui.button(RichText::new("➖").heading()).clicked() {
+                if ui
+                    .add_sized([40., 40.], egui::Button::new(RichText::new("➖").heading()))
+                    .clicked()
+                {
                     let _ = map_memory.zoom_out();
                 }
             });
@@ -33,10 +36,7 @@ pub fn ir_a_posicion_inicial(ui: &Ui, map_memory: &mut MapMemory) {
             .show(ui.ctx(), |ui| {
                 ui.label("centro del mapa: ");
                 ui.label(format!("{:.04} {:.04}", position.lon(), position.lat()));
-                if ui
-                    .button(RichText::new("Ir al inicio").heading())
-                    .clicked()
-                {
+                if ui.button(RichText::new("Ir al inicio").heading()).clicked() {
                     map_memory.follow_my_position();
                 }
             });

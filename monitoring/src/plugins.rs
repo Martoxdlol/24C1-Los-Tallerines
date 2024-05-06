@@ -8,7 +8,7 @@ use crate::incidente::Incidente;
 use crate::iconos;
 
 /// Los lugares. Los iconos
-pub fn mostrar_incidentes(incidentes: Vec<Incidente>) -> impl Plugin {
+pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     let mut lugares = Vec::new();
 
 
@@ -60,7 +60,7 @@ pub struct ClickWatcher {
 }
 
 impl ClickWatcher { // Donde hiciste click
-    pub fn show_position(&self, ui: &egui::Ui) {
+    pub fn show_position(&mut self, ui: &egui::Ui) {
         if let Some(clicked_at) = self.clicked_at {
             egui::Window::new("Clicked Position")
                 .collapsible(false)
@@ -68,10 +68,19 @@ impl ClickWatcher { // Donde hiciste click
                 .title_bar(false)
                 .anchor(egui::Align2::CENTER_BOTTOM, [0., -10.])
                 .show(ui.ctx(), |ui| {
-                    ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
-                        .on_hover_text("last clicked position");
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
+                        .on_hover_text("Posición donde hiciste click");
+                    if ui.button("cerrar").clicked() {
+                        self.clear()
+                    }
+                    });
                 });
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.clicked_at = None;
     }
 }
 

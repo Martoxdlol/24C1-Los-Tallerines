@@ -1,15 +1,16 @@
-mod iconos;
-mod plugins;
 mod botones;
-mod proveer_carto;
+mod iconos;
 mod incidente;
+mod plugins;
+mod proveer_carto;
 
 use std::collections::HashMap;
 
 //use iconos::incidente;
 
+use egui::{Context, Ui};
+use incidente::Incidente;
 use proveer_carto::MapaCarto;
-use egui::Context;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -50,19 +51,22 @@ pub struct Aplicacion {
     opciones_mapa: HashMap<Provider, Box<dyn TilesManager + Send>>,
     estilo_mapa_elegido: Provider,
     memoria_mapa: MapMemory, // guarda el zoom, la posicion, el centro del mapa
+    nombre_incidente: String,
     clicks: plugins::ClickWatcher,
+    incidentes: Vec<incidente::Incidente>,
 }
 
 impl Aplicacion {
     pub fn new(contexto: Context) -> Self {
         egui_extras::install_image_loaders(&contexto);
 
-
         Self {
             opciones_mapa: estilo_mapa(contexto.to_owned()),
             estilo_mapa_elegido: Provider::CartoMaps,
             memoria_mapa: MapMemory::default(),
             clicks: Default::default(),
+            nombre_incidente: String::new(),
+            incidentes: Vec::new(),
         }
     }
 }
@@ -86,16 +90,12 @@ impl eframe::App for Aplicacion {
                     .unwrap()
                     .as_mut();
 
-
                 let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
                 // HARDCODEO INCIDENTE
-                let incidente = incidente::Incidente::new(-58.3816, -34.6062);
-                let vector_incidentes = vec![incidente];
-
 
                 let mapa_final = mapa_a_mostrar
-                    .with_plugin(plugins::mostrar_incidentes(vector_incidentes))
+                    .with_plugin(plugins::mostrar_incidentes(&self.incidentes))
                     .with_plugin(plugins::SombreadoCircular {})
                     .with_plugin(&mut self.clicks);
 
@@ -109,6 +109,41 @@ impl eframe::App for Aplicacion {
                     zoom(ui, &mut self.memoria_mapa);
                     ir_a_posicion_inicial(ui, &mut self.memoria_mapa);
                     self.clicks.show_position(ui);
+                }
+
+                if let Some(clicked_at) = self.clicks.clicked_at {
+                    egui::Window::new("Agregar Incidente")
+                        .collapsible(false)
+                        .movable(true)
+                        .resizable(false)
+                        .collapsible(true)
+                        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+                        .show(ui.ctx(), |ui| {
+                            ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
+
+                            ui.add_sized([350., 40.], |ui: &mut Ui| {
+                                ui.text_edit_multiline(&mut self.nombre_incidente)
+                            });
+
+                            if self.nombre_incidente.trim().len() > 0 {
+                                if ui
+                                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                                    .clicked()
+                                {
+                                    let incidente = Incidente::new(
+                                        clicked_at.lon(),
+                                        clicked_at.lat(),
+                                        self.nombre_incidente.clone(),
+                                    );
+
+                                    self.nombre_incidente.clear();
+
+                                    self.clicks.clear();
+
+                                    self.incidentes.push(incidente);
+                                }
+                            }
+                        });
                 }
             });
     }
