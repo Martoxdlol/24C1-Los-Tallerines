@@ -8,9 +8,6 @@ pub fn obelisco() -> Position {
 
 
 
-pub fn incidente() -> Position {
-    Position::from_lon_lat(-58.8890, -34.6062)
-}
 
 
 

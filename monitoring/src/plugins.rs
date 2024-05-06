@@ -22,24 +22,24 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
 
 /// Sample map plugin which draws custom stuff on the map.
 pub struct SombreadoCircular {
-    pub positions: Vec<(Position, f32)>,
+    pub posiciones: Vec<(Position, f32)>,
 }
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        for (position, radius) in &self.positions {
+        for (posicion, radio) in &self.posiciones {
             // Project it into the position on the screen.
-            let position = projector.project(position.clone()).to_pos2();
+            let posicion = projector.project(posicion.clone()).to_pos2();
 
-            let hovered = response
+            let flotar = response
                 .hover_pos()
-                .map(|hover_pos| hover_pos.distance(position) < *radius)
+                .map(|hover_pos| hover_pos.distance(posicion) < *radio)
                 .unwrap_or(false);
 
             painter.circle_filled(
-                position,
-                *radius,
-                Color32::BLACK.gamma_multiply(if hovered { 0.5 } else { 0.2 }),
+                posicion,
+                *radio,
+                Color32::BLACK.gamma_multiply(if flotar { 0.5 } else { 0.2 }),
             );
         }
     }
