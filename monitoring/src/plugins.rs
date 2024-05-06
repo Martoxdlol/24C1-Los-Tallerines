@@ -1,70 +1,45 @@
 use egui::{Color32, Painter, Response};
 use walkers::{
-    extras::{Image, Images, Place, Places, Style, Texture},
+    extras::{Place, Places},
     Plugin, Position, Projector,
 };
+use crate::incidente::Incidente;
 
-use crate::places;
+use crate::iconos;
 
-/// Creates a built-in `Places` plugin with some predefined places.
-pub fn places() -> impl Plugin {
-    Places::new(vec![
-        Place {
-            position: places::wroclaw_glowny(),
-            label: "Wrocław Główny\ntrain station".to_owned(),
-            symbol: '🚆',
-            style: Style::default(),
-        },
-        Place {
-            position: places::dworcowa_bus_stop(),
-            label: "Bus stop".to_owned(),
-            symbol: '🚌',
-            style: Style::default(),
-        },
-    ])
-}
+/// Los lugares. Los iconos
+pub fn mostrar_incidentes(incidentes: Vec<Incidente>) -> impl Plugin {
+    let mut lugares = Vec::new();
 
-/// Helper structure for the `Images` plugin.
-pub struct ImagesPluginData {
-    pub texture: Texture,
-    pub angle: f32,
-    pub x_scale: f32,
-    pub y_scale: f32,
-}
 
-impl ImagesPluginData {
-    pub fn new(egui_ctx: egui::Context) -> Self {
-        Self {
-            texture: Texture::from_color_image(egui::ColorImage::example(), &egui_ctx),
-            angle: 0.0,
-            x_scale: 1.0,
-            y_scale: 1.0,
-        }
+    for incidente in incidentes.iter(){
+        lugares.push(Place {
+            position: incidente.posicion,
+            label: incidente.nombre.clone(),
+            symbol: incidente.icono,
+            style: incidente.estilo.clone(),
+        });
     }
+    Places::new(lugares)
+
 }
 
-/// Creates a built-in `Images` plugin with an example image.
-pub fn images(images_plugin_data: &mut ImagesPluginData) -> impl Plugin {
-    Images::new(vec![{
-        let mut image = Image::new(images_plugin_data.texture.clone(), places::wroclavia());
-        image.scale(images_plugin_data.x_scale, images_plugin_data.y_scale);
-        image.angle(images_plugin_data.angle.to_radians());
-        image
-    }])
-}
+
+
+
 
 /// Sample map plugin which draws custom stuff on the map.
-pub struct CustomShapes {}
+pub struct SombreadoCircular {}
 
-impl Plugin for CustomShapes {
+impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
         // Position of the point we want to put our shapes.
-        let position = places::capitol();
+        let position = iconos::incidente();
 
         // Project it into the position on the screen.
         let position = projector.project(position).to_pos2();
 
-        let radius = 30.;
+        let radius = 50.;
 
         let hovered = response
             .hover_pos()
@@ -84,7 +59,7 @@ pub struct ClickWatcher {
     pub clicked_at: Option<Position>,
 }
 
-impl ClickWatcher {
+impl ClickWatcher { // Donde hiciste click
     pub fn show_position(&self, ui: &egui::Ui) {
         if let Some(clicked_at) = self.clicked_at {
             egui::Window::new("Clicked Position")

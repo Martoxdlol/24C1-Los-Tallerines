@@ -1,12 +1,14 @@
-mod places;
+mod iconos;
 mod plugins;
-mod windows;
-mod carto_provider;
+mod botones;
+mod proveer_carto;
+mod incidente;
 
 use std::collections::HashMap;
 
-use crate::plugins::ImagesPluginData;
-use carto_provider::CartoMaps;
+//use iconos::incidente;
+
+use proveer_carto::MapaCarto;
 use egui::Context;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 
@@ -14,8 +16,6 @@ use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 pub enum Provider {
     OpenStreetMap,
     Geoportal,
-    MapboxStreets,
-    MapboxSatellite,
     CartoMaps,
 }
 
@@ -31,147 +31,84 @@ fn http_options() -> HttpOptions {
     }
 }
 
-fn providers(egui_ctx: Context) -> HashMap<Provider, Box<dyn TilesManager + Send>> {
+fn estilo_mapa(contexto: Context) -> HashMap<Provider, Box<dyn TilesManager + Send>> {
     let mut providers: HashMap<Provider, Box<dyn TilesManager + Send>> = HashMap::default();
-
-    
 
     providers.insert(
         Provider::CartoMaps,
         Box::new(Tiles::with_options(
-            CartoMaps {},
+            MapaCarto {},
             http_options(),
-            egui_ctx.to_owned(),
+            contexto.to_owned(),
         )),
     );
-
-    providers.insert(
-        Provider::OpenStreetMap,
-        Box::new(Tiles::with_options(
-            walkers::sources::OpenStreetMap,
-            http_options(),
-            egui_ctx.to_owned(),
-        )),
-    );
-
-    providers.insert(
-        Provider::Geoportal,
-        Box::new(Tiles::with_options(
-            walkers::sources::Geoportal,
-            http_options(),
-            egui_ctx.to_owned(),
-        )),
-    );
-
-
-
-    // Pass in a mapbox access token at compile time. May or may not be what you want to do,
-    // potentially loading it from application settings instead.
-    let mapbox_access_token = std::option_env!("MAPBOX_ACCESS_TOKEN");
-
-    // We only show the mapbox map if we have an access token
-    if let Some(token) = mapbox_access_token {
-        providers.insert(
-            Provider::MapboxStreets,
-            Box::new(Tiles::with_options(
-                walkers::sources::Mapbox {
-                    style: walkers::sources::MapboxStyle::Streets,
-                    access_token: token.to_string(),
-                    high_resolution: false,
-                },
-                http_options(),
-                egui_ctx.to_owned(),
-            )),
-        );
-        providers.insert(
-            Provider::MapboxSatellite,
-            Box::new(Tiles::with_options(
-                walkers::sources::Mapbox {
-                    style: walkers::sources::MapboxStyle::Satellite,
-                    access_token: token.to_string(),
-                    high_resolution: true,
-                },
-                http_options(),
-                egui_ctx.to_owned(),
-            )),
-        );
-    }
 
     providers
 }
 
-pub struct MyApp {
-    providers: HashMap<Provider, Box<dyn TilesManager + Send>>,
-    selected_provider: Provider,
-    map_memory: MapMemory,
-    images_plugin_data: ImagesPluginData,
-    click_watcher: plugins::ClickWatcher,
+pub struct Aplicacion {
+    opciones_mapa: HashMap<Provider, Box<dyn TilesManager + Send>>,
+    estilo_mapa_elegido: Provider,
+    memoria_mapa: MapMemory, // guarda el zoom, la posicion, el centro del mapa
+    clicks: plugins::ClickWatcher,
 }
 
-impl MyApp {
-    pub fn new(egui_ctx: Context) -> Self {
-        egui_extras::install_image_loaders(&egui_ctx);
+impl Aplicacion {
+    pub fn new(contexto: Context) -> Self {
+        egui_extras::install_image_loaders(&contexto);
 
-        // Data for the `images` plugin showcase.
-        let images_plugin_data = ImagesPluginData::new(egui_ctx.to_owned());
 
         Self {
-            providers: providers(egui_ctx.to_owned()),
-            selected_provider: Provider::CartoMaps,
-            map_memory: MapMemory::default(),
-            images_plugin_data,
-            click_watcher: Default::default(),
+            opciones_mapa: estilo_mapa(contexto.to_owned()),
+            estilo_mapa_elegido: Provider::CartoMaps,
+            memoria_mapa: MapMemory::default(),
+            clicks: Default::default(),
         }
     }
 }
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let rimless = egui::Frame {
-            fill: ctx.style().visuals.panel_fill,
+impl eframe::App for Aplicacion {
+    fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
+        let frame = egui::Frame {
+            fill: contexto.style().visuals.panel_fill,
             ..Default::default()
         };
 
         egui::CentralPanel::default()
-            .frame(rimless)
-            .show(ctx, |ui| {
-                // Typically this would be a GPS acquired position which is tracked by the map.
-                let my_position = places::wroclaw_glowny();
+            .frame(frame)
+            .show(contexto, |ui| {
+                // coordenadas iniciales
+                let posicion_inicial = iconos::obelisco();
 
-                let tiles = self
-                    .providers
-                    .get_mut(&self.selected_provider)
+                let mapa = self
+                    .opciones_mapa
+                    .get_mut(&self.estilo_mapa_elegido)
                     .unwrap()
                     .as_mut();
-                let attribution = tiles.attribution();
 
-                // In egui, widgets are constructed and consumed in each frame.
-                let map = Map::new(Some(tiles), &mut self.map_memory, my_position);
 
-                // Optionally, plugins can be attached.
-                let map = map
-                    .with_plugin(plugins::places())
-                    .with_plugin(plugins::images(&mut self.images_plugin_data))
-                    .with_plugin(plugins::CustomShapes {})
-                    .with_plugin(&mut self.click_watcher);
+                let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
+
+                // HARDCODEO INCIDENTE
+                let incidente = incidente::Incidente::new(-58.3816, -34.6062);
+                let vector_incidentes = vec![incidente];
+
+
+                let mapa_final = mapa_a_mostrar
+                    .with_plugin(plugins::mostrar_incidentes(vector_incidentes))
+                    .with_plugin(plugins::SombreadoCircular {})
+                    .with_plugin(&mut self.clicks);
 
                 // Draw the map widget.
-                ui.add(map);
+                ui.add(mapa_final);
 
                 // Draw utility windows.
                 {
-                    use windows::*;
+                    use botones::*;
 
-                    zoom(ui, &mut self.map_memory);
-                    go_to_my_position(ui, &mut self.map_memory);
-                    self.click_watcher.show_position(ui);
-                    controls(
-                        ui,
-                        &mut self.selected_provider,
-                        &mut self.providers.keys(),
-                        &mut self.images_plugin_data,
-                    );
-                    acknowledge(ui, attribution);
+                    zoom(ui, &mut self.memoria_mapa);
+                    ir_a_posicion_inicial(ui, &mut self.memoria_mapa);
+                    self.clicks.show_position(ui);
                 }
             });
     }

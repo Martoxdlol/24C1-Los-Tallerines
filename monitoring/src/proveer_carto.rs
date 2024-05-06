@@ -1,8 +1,8 @@
 use walkers::{sources::{Attribution, TileSource}, TileId};
 
-pub struct CartoMaps;
+pub struct MapaCarto;
 
-impl TileSource for CartoMaps {
+impl TileSource for MapaCarto {
     fn tile_url(&self, tile_id: TileId) -> String {
         format!(
             "https://d.basemaps.cartocdn.com/light_all/{}/{}/{}@2x.png",
@@ -10,10 +10,10 @@ impl TileSource for CartoMaps {
         )
     }
 
-    fn attribution(&self) -> Attribution {
+    fn attribution(&self) -> Attribution { // Se debe llamar attribution
         Attribution {
-            text: "CARTO Attribution",
-            url: "https://carto.com/attribution",
+            text: "Repo github",
+            url: "https://github.com/taller-1-fiuba-rust/24C1-Los-Tallerines/tree/interfaz_grafica",
             logo_light: None,
             logo_dark: None,
         }
