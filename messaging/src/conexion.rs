@@ -19,7 +19,7 @@ pub struct Conexion {
     /// El parser se encarga de leer los bytes y generar mensajes
     parser: Parser,
     /// Por cada conexion, vamos a guardar los topicos a los que se suscribio
-    suscripciones: HashMap<String, Topico>,
+    suscripciones: HashMap<String, (Topico, Option<String>)>,
     /// Max msgs de suscripciones
     suscripciones_max_msgs: HashMap<String, u64>,
     /// Las publicaciones que manda el cliente
@@ -36,6 +36,10 @@ pub struct Conexion {
     pub suscripciones_salientes: Vec<Topico>,
     /// Desuscripciones salientes, el proceso las agarra para saber a quien se desuscribio
     pub desuscripciones_salientes: Vec<Topico>,
+    /// Suscripciones salientes con cola
+    pub suscripciones_salientes_cola: Vec<(String, Topico)>,
+    /// Desuscripciones salientes con cola
+    pub desuscripciones_salientes_cola: Vec<String>,
 }
 
 impl Conexion {
@@ -53,45 +57,56 @@ impl Conexion {
             desconectado: false,
             suscripciones_salientes: Vec::new(),
             desuscripciones_salientes: Vec::new(),
+            suscripciones_salientes_cola: Vec::new(),
+            desuscripciones_salientes_cola: Vec::new(),
         }
     }
 
     /// Agrega una nueva suscripción y le informa al proceso si hace falta agregarla
-    pub fn nueva_suscripcion(&mut self, topico: Topico, id: String) {
+    pub fn nueva_suscripcion(&mut self, id: String, cola: Option<String>, topico: Topico) {
+        if self.suscripciones.contains_key(&id) {
+            return;
+        }
+
         // Detectar si ya estaba suscrito el rópico
         let mut ya_estaba_suscrito = false;
-        for (_, topico) in self.suscripciones.iter() {
-            if topico.eq(topico) {
+        for (_, (topico, cola)) in self.suscripciones.iter() {
+            if topico.eq(topico) && cola.is_none() {
                 ya_estaba_suscrito = true;
                 break;
             }
         }
 
-        // Si no estaba suscrito, agregarlo a las suscripciones salientes
-        if !ya_estaba_suscrito {
+        if let Some(cola) = cola.clone() {
+            self.suscripciones_salientes_cola
+                .push((cola, topico.clone()));
+        } else if !ya_estaba_suscrito {
+            // Si no estaba suscrito, agregarlo a las suscripciones salientes
             self.suscripciones_salientes.push(topico.clone());
         }
 
         // Agregar la suscripción
-        self.suscripciones.insert(id, topico);
+        self.suscripciones.insert(id, (topico, cola));
     }
 
     pub fn nueva_desuscripcion(&mut self, id: &str) {
         // Remover la suscripción
-        if let Some(topico) = self.suscripciones.remove(id) {
+        if let Some((topico, cola)) = self.suscripciones.remove(id) {
             self.suscripciones_max_msgs.remove(id);
 
             // Detectar si sigue suscrito el tópico
             let mut sigue_suscrito = false;
-            for (_, topico) in self.suscripciones.iter() {
-                if topico.eq(topico) {
+            for (_, (topico, cola)) in self.suscripciones.iter() {
+                if topico.eq(topico) && cola.is_none() {
                     sigue_suscrito = true;
                     break;
                 }
             }
 
-            // Si no sigue suscrito, agregarlo a las desuscripciones salientes
-            if !sigue_suscrito {
+            if let Some(cola) = cola {
+                self.desuscripciones_salientes_cola.push(cola);
+            } else if !sigue_suscrito {
+                // Si no sigue suscrito, agregarlo a las desuscripciones salientes
                 self.desuscripciones_salientes.push(topico.clone());
             }
         }
@@ -142,9 +157,9 @@ impl Conexion {
                     self.respuestas
                         .push(Respuesta::Ok(Some("hpub".to_string())));
                 }
-                Message::Sub(topico, _, id) => match Topico::new(topico) {
+                Message::Sub(topico, cola, id) => match Topico::new(topico) {
                     Ok(topico) => {
-                        self.nueva_suscripcion(topico, id);
+                        self.nueva_suscripcion(id, cola, topico);
                         self.respuestas.push(Respuesta::Ok(Some("sub".to_string())));
                     }
                     Err(_) => {
@@ -183,8 +198,8 @@ impl Conexion {
     pub fn recibir_mensaje(&mut self, publicacion: Publicacion) {
         let mut desuscripciones = Vec::new();
 
-        for (id, subject) in &self.suscripciones {
-            if subject.test(&publicacion.topico) {
+        for (id, (topico, _)) in &self.suscripciones {
+            if topico.test(&publicacion.topico) {
                 if let Some(max_msgs) = self.suscripciones_max_msgs.get_mut(id) {
                     let nuevo_max_msgs = *max_msgs - 1;
                     if *max_msgs == 0 {
@@ -313,7 +328,8 @@ mod tests {
         con.tick();
 
         assert!(con.suscripciones.contains_key("1"));
-        assert!(con.suscripciones.get("1").unwrap().to_string().eq("asd"));
+        assert!(con.suscripciones.get("1").unwrap().0.to_string().eq("asd"));
+        assert!(con.suscripciones.get("1").unwrap().1.eq(&None));
 
         assert!(con.suscripciones_salientes.len() == 1);
         assert!(con.suscripciones_salientes[0].to_string().eq("asd"));
@@ -341,5 +357,35 @@ mod tests {
 
         assert!(!con.suscripciones.contains_key("1"));
         assert!(con.desuscripciones_salientes.len() == 0);
+    }
+
+    #[test]
+    fn test_nueva_suscripcion_con_cola() {
+        let (escribir_bytes, rx) = mpsc::channel();
+        let (tx, _recibir_bytes) = mpsc::channel();
+        let stream = MockStream::new(tx, rx);
+
+        escribir_bytes.send(b"CONNECT {}\r\n".to_vec()).unwrap();
+        escribir_bytes
+            .send(b"SUB asd group1 1\r\n".to_vec())
+            .unwrap();
+
+        let b: Box<dyn Stream> = Box::new(stream);
+
+        let mut con = Conexion::new(b, Configuracion::new());
+
+        con.tick();
+
+        assert!(con.suscripciones.contains_key("1"));
+        assert!(con.suscripciones.get("1").unwrap().0.to_string().eq("asd"));
+        assert!(con
+            .suscripciones
+            .get("1")
+            .unwrap()
+            .1
+            .eq(&Some("group1".to_string())));
+
+        assert!(con.suscripciones_salientes.len() == 0);
+        // assert!(con.suscripciones_salientes[0].to_string().eq("asd"));
     }
 }

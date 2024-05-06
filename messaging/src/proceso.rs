@@ -23,8 +23,8 @@ pub struct Proceso {
     conexiones: HashMap<u64, Conexion>,
     /// Suscripciones locales, por tópico, por cada cliente
     suscripciones_locales: HashMap<Topico, HashSet<u64>>,
-    /// Suscripciones de cola (queue groups). (nombre, (tópico, id))
-    suscripciones_colas_locales: HashMap<String, (Topico, HashSet<u64>)>,
+    /// Suscripciones de cola (queue groups). (nombre, (tópico, id conexion, peso conexion))
+    suscripciones_colas_locales: HashMap<String, (Topico, HashMap<u64, u64>)>,
     /// Suscripciones a otros procesos, por tópico, por cada thread
     suscripciones_otros: HashMap<Topico, HashSet<u64>>,
     /// Suscripciones de cola (queue groups) a otros procesos. (nombre, (tópico, (id proceso, peso)))
@@ -131,10 +131,9 @@ impl Proceso {
         if let Some((topico, conexiones)) = self.suscripciones_colas_locales.get(cola) {
             if topico.test(&publicacion.topico) {
                 // elegir conexion random
-                let values = conexiones.iter().collect::<Vec<&u64>>();
-                rand::thread_rng().gen_range(0..conexiones.len());
-
-                if let Some(conexion) = self.conexiones.get_mut(values[0]) {
+                let opcion = elegir_con_peso_random(conexiones);
+                
+                if let Some(conexion) = self.conexiones.get_mut(&opcion) {
                     conexion.recibir_mensaje(publicacion.clone());
                 }
             }
@@ -143,6 +142,8 @@ impl Proceso {
 
     pub fn publicar_colas(&mut self, publicacion: &Publicacion) {
         let mut nuevas_para_colas_locales = Vec::new();
+
+        println!("Publicar colas: {:?}", &self.suscripciones_colas_otros);
 
         for (cola, (topico, otros_pesos)) in &mut self.suscripciones_colas_otros {
             if topico.test(&publicacion.topico) {
@@ -175,13 +176,15 @@ impl Proceso {
 
         // Itear instrucciones
         while let Ok(instruccion) = self.canal_instrucciones.try_recv() {
-            println!("[hilo: {}] Recibida instrucción: {:?}", self.id, &instruccion);
+            println!(
+                "[hilo: {}] Recibida instrucción: {:?}",
+                self.id, &instruccion
+            );
             self.gestionar_instruccion(instruccion);
         }
 
         let mut nuevas_publicaciones = Vec::new();
-        let mut nuevas_suscripciones = Vec::new();
-        let mut nuevas_desuscripciones = Vec::new();
+        let mut nuevas_instrucciones = Vec::new();
 
         // Iterar conexiones
         for (id, conexion) in &mut self.conexiones {
@@ -195,7 +198,7 @@ impl Proceso {
             for s in conexion.suscripciones_salientes.drain(..) {
                 println!("[hilo: {}] Suscribir: {:?}", self.id, &s);
                 if !self.suscripciones_locales.contains_key(&s) {
-                    nuevas_suscripciones.push(s.clone());
+                    nuevas_instrucciones.push(Instrucciones::Suscribir(self.id, s.clone()));
                 }
                 self.suscripciones_locales
                     .entry(s)
@@ -208,18 +211,60 @@ impl Proceso {
                     conexiones.remove(id);
                     if conexiones.is_empty() {
                         self.suscripciones_locales.remove(&s);
-                        nuevas_desuscripciones.push(s);
+                        nuevas_instrucciones.push(Instrucciones::Desuscribir(self.id, s.clone()));
                     }
+                }
+            }
+
+            for (nombre, topico) in conexion.suscripciones_salientes_cola.drain(..) {
+
+                let conexiones = &mut self
+                .suscripciones_colas_locales
+                .entry(nombre.clone())
+                .or_insert((topico.clone(), HashMap::new())).1;
+
+                let mut peso = *conexiones.get(id).unwrap_or(&0);
+                peso += 1;
+
+                conexiones.insert(*id, peso);
+
+                let peso_total = conexiones.values().sum::<u64>();
+
+                nuevas_instrucciones.push(Instrucciones::ActualizarCola {
+                    id: self.id,
+                    cola: nombre,
+                    topico: topico.clone(),
+                    peso: peso_total,
+                });
+            }
+
+            for nombre in conexion.desuscripciones_salientes_cola.drain(..) {
+                if let Some((topico, conexiones)) =
+                    self.suscripciones_colas_locales.get_mut(&nombre)
+                {
+                    let mut peso = *conexiones.get(&id).unwrap_or(&0);
+                    peso -= 1;
+
+                    conexiones.insert(*id, peso);
+
+                    if peso == 0 {
+                        conexiones.remove(id);
+                    }
+
+                    let peso_total = conexiones.values().sum::<u64>();
+
+                    nuevas_instrucciones.push(Instrucciones::ActualizarCola {
+                        id: self.id,
+                        cola: nombre,
+                        topico: topico.clone(),
+                        peso: peso_total,
+                    });
                 }
             }
         }
 
-        for s in nuevas_suscripciones {
-            self.enviar_instruccion(Instrucciones::Suscribir(self.id, s));
-        }
-
-        for s in nuevas_desuscripciones {
-            self.enviar_instruccion(Instrucciones::Desuscribir(self.id, s));
+        for instruccion in nuevas_instrucciones {
+            self.enviar_instruccion(instruccion);
         }
 
         for publicacion in &nuevas_publicaciones {
@@ -229,6 +274,8 @@ impl Proceso {
 
         self.conexiones.retain(|id, c| {
             if c.desconectado {
+                println!("[hilo: {}] Cliente desconectado: {}", self.id, id);
+
                 self.suscripciones_locales.retain(|_, ids| {
                     ids.remove(id);
                     !ids.is_empty()
@@ -405,4 +452,21 @@ pub fn elegir_si_proceso_local_u_otro_random(
     }
 
     None
+}
+
+/// Elige una opcion del map. Map<opcion, peso>. Random
+pub fn elegir_con_peso_random(opciones: &HashMap<u64, u64>) -> u64 {
+    let total = opciones.values().sum::<u64>();
+    let mut rng = rand::thread_rng();
+    let random = rng.gen_range(0..total);
+    let mut acumulado = 0;
+
+    for (opcion, peso) in opciones {
+        acumulado += peso;
+        if acumulado >= random {
+            return *opcion;
+        }
+    }
+
+    0
 }

@@ -51,15 +51,17 @@ impl Parser {
         // Estamos buscando un salto de linea, este se marca como \r\n
         for i in self.continuar_en_indice..self.bytes_pendientes.len() {
             // Si encontramos un \r, marcamos que el último caracter fue un \r
-            if self.bytes_pendientes[i] == b'\r' { // La b es para que lo tome como binario
+            if self.bytes_pendientes[i] == b'\r' {
+                // La b es para que lo tome como binario
                 last_char_cr = true;
             // Si encontramos un \n y el último caracter fue un \r, encontramos un mensaje (o al menos la primera linea)
             } else if last_char_cr && self.bytes_pendientes[i] == b'\n' {
                 self.continuar_en_indice = i + 1;
 
-                let result = String::from_utf8_lossy(&self.bytes_pendientes[..self.continuar_en_indice])
-                    .trim_end() // Elimina los espacios vacios al final
-                    .to_string();
+                let result =
+                    String::from_utf8_lossy(&self.bytes_pendientes[..self.continuar_en_indice])
+                        .trim_end() // Elimina los espacios vacios al final
+                        .to_string();
 
                 self.resetear_bytes();
                 return Some(result);
@@ -178,19 +180,19 @@ impl Parser {
         let primera_palabra = palabras.first().unwrap_or(&palabra_vacia).to_lowercase();
 
         if primera_palabra.eq("pub") {
-            return self.linea_pub(&palabras[1..]);
+            return Self::linea_pub(&palabras[1..]);
         }
 
         if primera_palabra.eq("hpub") {
-            return self.linea_hpub(&palabras[1..]);
+            return Self::linea_hpub(&palabras[1..]);
         }
 
         if primera_palabra.eq("sub") {
-            return self.linea_sub(&palabras[1..]);
+            return Self::linea_sub(&palabras[1..]);
         }
 
         if primera_palabra.eq("unsub") {
-            return self.linea_unsub(&palabras[1..]);
+            return Self::linea_unsub(&palabras[1..]);
         }
 
         if primera_palabra.eq("") {
@@ -206,7 +208,7 @@ impl Parser {
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_pub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_pub(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 2 o 3 para saber si tiene reply_to
         if palabras.len() == 2 {
             let bytes = match palabras[1].parse() {
@@ -233,7 +235,7 @@ impl Parser {
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_hpub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_hpub(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 3 o 4 para saber si tiene reply_to
         if palabras.len() == 3 {
             let bytes = match palabras[1].parse() {
@@ -269,7 +271,7 @@ impl Parser {
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_sub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_sub(palabras: &[String]) -> ResultadoLinea {
         if palabras.len() == 2 {
             let subject = &palabras[0];
             let sid = &palabras[1];
@@ -277,21 +279,21 @@ impl Parser {
         }
 
         if palabras.len() == 3 {
-            let subject = &palabras[1];
-            let queue_group = &palabras[2];
-            let sid = &palabras[3];
-    
+            let subject = &palabras[0];
+            let queue_group = &palabras[1];
+            let sid = &palabras[2];
+
             return ResultadoLinea::Sub(
                 subject.to_string(),
                 Some(queue_group.to_string()),
                 sid.to_string(),
-            )
+            );
         }
 
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_unsub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_unsub(palabras: &[String]) -> ResultadoLinea {
         if palabras.len() != 1 {
             return ResultadoLinea::MensajeIncorrecto;
         }
@@ -317,5 +319,31 @@ impl Parser {
         self.resetear_bytes();
         self.actual = None;
         self.headers = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn linea_sub() {
+        let parser = super::Parser::new();
+        let resultado = parser.parsear_linea("sub subject sid");
+        assert_eq!(
+            resultado,
+            super::ResultadoLinea::Sub("subject".to_string(), None, "sid".to_string())
+        );
+
+        let resultado = parser.parsear_linea("sub subject queue_group sid");
+        assert_eq!(
+            resultado,
+            super::ResultadoLinea::Sub(
+                "subject".to_string(),
+                Some("queue_group".to_string()),
+                "sid".to_string()
+            )
+        );
+
+        let resultado = parser.parsear_linea("sub");
+        assert_eq!(resultado, super::ResultadoLinea::MensajeIncorrecto);
     }
 }
