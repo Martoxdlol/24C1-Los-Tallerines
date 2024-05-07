@@ -7,7 +7,7 @@ pub enum Respuesta {
 }
 
 impl Respuesta {
-    pub fn serializar(&mut self) -> Vec<u8> {
+    pub fn serializar(&self) -> Vec<u8> {
         match self {
             Respuesta::Err(error) => {
                 let mut bytes = Vec::new();

@@ -101,7 +101,8 @@ impl Conexion {
     }
 
     pub fn escribir_respuesta(&mut self, respuesta: &Respuesta) {
-        if let Err(e) = self.escribir_bytes(&respuesta.serializar()) {
+        let bytes = &respuesta.serializar();
+        if let Err(e) = self.escribir_bytes(&bytes) {
             self.registrador
                 .error("Error al enviar respuesta", Some(self.id));
         }
@@ -175,7 +176,10 @@ impl Conexion {
                         self.escribir_err(Some("Tópico de subscripción incorrecto".to_string()));
                     }
                 },
-                Message::Unsub(id, max_msgs) => {}
+                Message::Unsub(id, max_msgs) => {
+                    contexto.desuscribir((self.id, id));
+                    self.escribir_ok(Some("unsub".to_string()));
+                }
                 Message::Err(msg) => {
                     // self.respuestas.push(Respuesta::Err(msg));
                     self.escribir_err(Some(msg));
