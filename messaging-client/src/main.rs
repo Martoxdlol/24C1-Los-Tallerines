@@ -1,15 +1,6 @@
 use cliente::Cliente;
 use std::error::Error;
 
-pub mod cliente;
-pub mod hilo_cliente;
-pub mod instruccion;
-pub mod mensaje;
-pub mod parser;
-pub mod publicacion;
-pub mod resultado_linea;
-pub mod suscripcion;
-
 fn main() -> Result<(), Box<dyn Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
 

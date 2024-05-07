@@ -5,17 +5,17 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use crate::{instruccion::Instruccion, mensaje::Mensaje, publicacion::Publicacion};//parser::Parser
+use crate::{instruccion::Instruccion, mensaje::Mensaje, publicacion::Publicacion, parseador::Parseador};
 
 /// El hilo del cliente posee el stream de la conexion, el canal por el cual se
 /// reciben mensajes, los canales de suscripciones que están asociados a un id
-/// de suscripción, y el parser
+/// de suscripción, y el Parseador
 pub struct HiloCliente {
     pub stream: TcpStream,
     pub canal_recibir: Receiver<Instruccion>,
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
-    //parser: Parser,
+    parseador: Parseador,
 }
 
 impl HiloCliente {
@@ -24,7 +24,7 @@ impl HiloCliente {
             stream,
             canal_recibir,
             canales_subscripciones: HashMap::new(),
-            //parser: Parser::new(),
+            parseador: Parseador::new(),
         }
     }
 
@@ -166,9 +166,9 @@ impl HiloCliente {
         let mut buffer = [0; 1024];
         match self.stream.read(&mut buffer) {
             Ok(n) => {
-                let mut bytes_pendientes = Vec::new();
-                self.parser.agregar_bytes(&buffer[..n]);
-                return Ok(self.parser.proximo_mensaje());
+                let mut bytes_pendientes: Vec<u8> = Vec::new();
+                self.parseador.agregar_bytes(&buffer[..n]);
+                return Ok(self.parseador.proximo_mensaje());
             }
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // No hay datos para leer (no hay que hacer nada acá)
