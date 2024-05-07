@@ -12,7 +12,7 @@ pub struct Parseador {
     /// La primera linea del mensaje que se está parseando (ejemplo: se encontró un PUB y falta leer el payload)
     actual: Option<ResultadoLinea>,
     /// Los headers del mensaje que se está parseando ahora
-    headers: Option<Vec<u8>>,
+    header: Option<Vec<u8>>,
 }
 
 /// La responsabilidad del parser es recibir bytes de la conexión y tranformarlos a mensajes
@@ -37,7 +37,7 @@ impl Parseador {
             bytes_pendientes: Vec::new(),
             continuar_en_indice: 0,
             actual: None,
-            headers: None,
+            header: None,
         }
     }
 
@@ -103,15 +103,17 @@ impl Parseador {
         if let Some(ResultadoLinea::Hpub(topic, reply_to, headers_bytes, total_bytes)) =
             &self.actual
         {
+            let bytes_totales_con_salto_de_linea = *total_bytes + 2;
+
             // Si ya habíamos encontrado los headers antes,
             // tenemos todo para buscar el payload y si está completo devolver el mensaje
-            if let Some(headers) = &self.headers {
+            if let Some(headers) = &self.header {
                 // No hay suficientes bytes para el payload
-                if self.bytes_pendientes.len() < *total_bytes {
+                if self.bytes_pendientes.len() < bytes_totales_con_salto_de_linea {
                     return None;
                 }
 
-                self.continuar_en_indice = *total_bytes;
+                self.continuar_en_indice = bytes_totales_con_salto_de_linea;
 
                 // Si hay suficientes bytes para el payload, devolvemos el mensaje
                 let resultado = Some(Message::Hpub(
@@ -130,7 +132,7 @@ impl Parseador {
                     return None;
                 }
 
-                self.headers = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
+                self.header = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
                 self.continuar_en_indice = *headers_bytes;
                 return None;
             }
@@ -322,7 +324,7 @@ impl Parseador {
     fn resetear_todo(&mut self) {
         self.resetear_bytes();
         self.actual = None;
-        self.headers = None;
+        self.header = None;
     }
 }
 
