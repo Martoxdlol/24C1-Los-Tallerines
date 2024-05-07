@@ -1,5 +1,12 @@
-// use messaging::client::NATSClient;
+#[cfg(not(target_arch = "wasm32"))]
+use monitoring::Aplicacion;
 
-fn main() {
-    // let client = NATSClient::new();
+#[cfg(not(target_arch = "wasm32"))]
+fn main() -> Result<(), eframe::Error> {
+    // env_logger::init();
+    eframe::run_native(
+        "APLICACION DE MONITOREO", // Nombre de la ventana
+        Default::default(),
+        Box::new(|cc| Box::new(Aplicacion::new(cc.egui_ctx.clone()))),
+    )
 }
