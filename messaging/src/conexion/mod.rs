@@ -73,6 +73,11 @@ impl Conexion {
                                     // 1. Leer una vez
         match self.stream.read(&mut buffer) {
             Ok(n) => {
+                if n == 0 {
+                    self.desconectado = true;
+                    return;
+                }
+
                 // 2. Enviar bytes a parser y leer nuevos mensajes generados
                 self.parser.agregar_bytes(&buffer[..n]);
             }
