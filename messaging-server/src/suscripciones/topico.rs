@@ -1,14 +1,19 @@
+use std::hash::Hash;
+
+#[derive(Debug, Clone)]
 enum Segmento {
     Texto(String),
     Asteriso,
 }
 
-pub struct Subject {
+/// Meter dentro de un hashMap
+#[derive(Debug, Clone)]
+pub struct Topico {
     patron: Vec<Segmento>,
     exacto: bool,
 }
 
-impl Subject {
+impl Topico {
     pub fn new(patron: String) -> Result<Self, String> {
         let mut segmentos = Vec::new();
         let mut exacto = true;
@@ -44,6 +49,10 @@ impl Subject {
         }
 
         for (i, segmento) in segmentos.iter().enumerate() {
+            if i >= self.patron.len() {
+                return true;
+            }
+
             let segmento_patron = &self.patron[i];
 
             if let Segmento::Texto(t) = segmento_patron {
@@ -56,3 +65,36 @@ impl Subject {
         true
     }
 }
+
+impl ToString for Topico {
+    fn to_string(&self) -> String {
+        let mut s = String::new();
+        for segmento in &self.patron {
+            match segmento {
+                Segmento::Texto(t) => s.push_str(t),
+                Segmento::Asteriso => s.push('*'),
+            }
+            s.push('.');
+        }
+        if self.exacto {
+            s.pop();
+        } else {
+            s.push('>');
+        }
+        s
+    }
+}
+
+impl Hash for Topico {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state)
+    }
+}
+
+impl PartialEq for Topico {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string().eq(&other.to_string())
+    }
+}
+
+impl Eq for Topico {}

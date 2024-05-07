@@ -1,6 +1,10 @@
-use super::{message::Message, resultado_linea::ResultadoLinea};
+mod resultado_linea;
 
-pub struct Parser {
+use crate::conexion::mensaje::Mensaje;
+
+use self::resultado_linea::ResultadoLinea;
+
+pub struct Parseador {
     // Bytes que fue acumulando que todavía no se pudieron convertir en ninguna estructura
     bytes_pendientes: Vec<u8>,
     /// Se utiliza internamente para llevar el estado del parseo en diferentes casos
@@ -8,7 +12,7 @@ pub struct Parser {
     /// La primera linea del mensaje que se está parseando (ejemplo: se encontró un PUB y falta leer el payload)
     actual: Option<ResultadoLinea>,
     /// Los headers del mensaje que se está parseando ahora
-    headers: Option<Vec<u8>>,
+    header: Option<Vec<u8>>,
 }
 
 /// La responsabilidad del parser es recibir bytes de la conexión y tranformarlos a mensajes
@@ -21,19 +25,19 @@ pub struct Parser {
 ///
 /// El parser se encarga de ir liberando los bytes que ya utilizó y de tener en cuenta los estados intermedios
 /// (es decir, si le llega un mensaje que no está completo, lo guarda y espera a que lleguen más bytes)
-impl Default for Parser {
+impl Default for Parseador {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Parser {
+impl Parseador {
     pub fn new() -> Self {
         Self {
             bytes_pendientes: Vec::new(),
             continuar_en_indice: 0,
             actual: None,
-            headers: None,
+            header: None,
         }
     }
 
@@ -51,15 +55,17 @@ impl Parser {
         // Estamos buscando un salto de linea, este se marca como \r\n
         for i in self.continuar_en_indice..self.bytes_pendientes.len() {
             // Si encontramos un \r, marcamos que el último caracter fue un \r
-            if self.bytes_pendientes[i] == b'\r' { // La b es para que lo tome como binario
+            if self.bytes_pendientes[i] == b'\r' {
+                // La b es para que lo tome como binario
                 last_char_cr = true;
             // Si encontramos un \n y el último caracter fue un \r, encontramos un mensaje (o al menos la primera linea)
             } else if last_char_cr && self.bytes_pendientes[i] == b'\n' {
                 self.continuar_en_indice = i + 1;
 
-                let result = String::from_utf8_lossy(&self.bytes_pendientes[..self.continuar_en_indice])
-                    .trim_end() // Elimina los espacios vacios al final
-                    .to_string();
+                let result =
+                    String::from_utf8_lossy(&self.bytes_pendientes[..self.continuar_en_indice])
+                        .trim_end() // Elimina los espacios vacios al final
+                        .to_string();
 
                 self.resetear_bytes();
                 return Some(result);
@@ -71,7 +77,7 @@ impl Parser {
         None
     }
 
-    pub fn proximo_mensaje(&mut self) -> Option<Message> {
+    pub fn proximo_mensaje(&mut self) -> Option<Mensaje> {
         // Si actualmente se está parseando un PUB buscamos el payload
         if let Some(ResultadoLinea::Pub(topic, reply_to, total_bytes)) = &self.actual {
             // No hay suficientes bytes para el payload
@@ -82,7 +88,7 @@ impl Parser {
             self.continuar_en_indice = *total_bytes;
 
             // Si hay suficientes bytes para el payload, devolvemos el mensaje
-            let resultado = Some(Message::Pub(
+            let resultado = Some(Mensaje::Publicar(
                 topic.to_string(),
                 reply_to.clone(),
                 self.bytes_pendientes[..*total_bytes].to_vec(),
@@ -97,18 +103,20 @@ impl Parser {
         if let Some(ResultadoLinea::Hpub(topic, reply_to, headers_bytes, total_bytes)) =
             &self.actual
         {
+            let bytes_totales_con_salto_de_linea = *total_bytes + 2;
+
             // Si ya habíamos encontrado los headers antes,
             // tenemos todo para buscar el payload y si está completo devolver el mensaje
-            if let Some(headers) = &self.headers {
+            if let Some(headers) = &self.header {
                 // No hay suficientes bytes para el payload
-                if self.bytes_pendientes.len() < *total_bytes {
+                if self.bytes_pendientes.len() < bytes_totales_con_salto_de_linea {
                     return None;
                 }
 
-                self.continuar_en_indice = *total_bytes;
+                self.continuar_en_indice = bytes_totales_con_salto_de_linea;
 
                 // Si hay suficientes bytes para el payload, devolvemos el mensaje
-                let resultado = Some(Message::Hpub(
+                let resultado = Some(Mensaje::PublicarConHeader(
                     topic.to_string(),
                     reply_to.clone(),
                     headers.clone(),
@@ -124,7 +132,7 @@ impl Parser {
                     return None;
                 }
 
-                self.headers = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
+                self.header = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
                 self.continuar_en_indice = *headers_bytes;
                 return None;
             }
@@ -144,25 +152,25 @@ impl Parser {
                     ));
                 }
                 ResultadoLinea::MensajeIncorrecto => {
-                    return Some(Message::Err("Mensaje incorrecto".to_string()));
+                    return Some(Mensaje::Error("Mensaje incorrecto".to_string()));
                 }
                 ResultadoLinea::StringVacio => {
                     return self.proximo_mensaje();
                 }
                 ResultadoLinea::Sub(subject, queue_group, sid) => {
-                    return Some(Message::Sub(subject, queue_group, sid));
+                    return Some(Mensaje::Suscribir(subject, queue_group, sid));
                 }
                 ResultadoLinea::Unsub(sid, max_mgs) => {
-                    return Some(Message::Unsub(sid, max_mgs));
+                    return Some(Mensaje::Desuscribir(sid, max_mgs));
                 }
                 ResultadoLinea::Pub(subject, reply_to, bytes) => {
                     self.actual = Some(ResultadoLinea::Pub(subject, reply_to, bytes));
                 }
                 ResultadoLinea::Ping => {
-                    return Some(Message::Ping());
+                    return Some(Mensaje::Ping());
                 }
                 ResultadoLinea::Connect => {
-                    return Some(Message::Connect("".to_string()));
+                    return Some(Mensaje::Conectar("".to_string()));
                 }
             }
         }
@@ -178,19 +186,19 @@ impl Parser {
         let primera_palabra = palabras.first().unwrap_or(&palabra_vacia).to_lowercase();
 
         if primera_palabra.eq("pub") {
-            return self.linea_pub(&palabras[1..]);
+            return Self::linea_pub(&palabras[1..]);
         }
 
         if primera_palabra.eq("hpub") {
-            return self.linea_hpub(&palabras[1..]);
+            return Self::linea_hpub(&palabras[1..]);
         }
 
         if primera_palabra.eq("sub") {
-            return self.linea_sub(&palabras[1..]);
+            return Self::linea_sub(&palabras[1..]);
         }
 
         if primera_palabra.eq("unsub") {
-            return self.linea_unsub(&palabras[1..]);
+            return Self::linea_unsub(&palabras[1..]);
         }
 
         if primera_palabra.eq("") {
@@ -206,7 +214,7 @@ impl Parser {
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_pub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_pub(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 2 o 3 para saber si tiene reply_to
         if palabras.len() == 2 {
             let bytes = match palabras[1].parse() {
@@ -233,7 +241,7 @@ impl Parser {
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_hpub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_hpub(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 3 o 4 para saber si tiene reply_to
         if palabras.len() == 3 {
             let bytes = match palabras[1].parse() {
@@ -269,7 +277,7 @@ impl Parser {
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_sub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_sub(palabras: &[String]) -> ResultadoLinea {
         if palabras.len() == 2 {
             let subject = &palabras[0];
             let sid = &palabras[1];
@@ -277,27 +285,27 @@ impl Parser {
         }
 
         if palabras.len() == 3 {
-            let subject = &palabras[1];
-            let queue_group = &palabras[2];
-            let sid = &palabras[3];
-    
+            let subject = &palabras[0];
+            let queue_group = &palabras[1];
+            let sid = &palabras[2];
+
             return ResultadoLinea::Sub(
                 subject.to_string(),
                 Some(queue_group.to_string()),
                 sid.to_string(),
-            )
+            );
         }
 
         ResultadoLinea::MensajeIncorrecto
     }
 
-    fn linea_unsub(&self, palabras: &[String]) -> ResultadoLinea {
+    fn linea_unsub(palabras: &[String]) -> ResultadoLinea {
         if palabras.len() != 1 {
             return ResultadoLinea::MensajeIncorrecto;
         }
 
         let sid = &palabras[0];
-        let max_msgs = palabras.get(2).map(|s| s.parse::<usize>().unwrap());
+        let max_msgs = palabras.get(2).map(|s| s.parse::<u64>().unwrap());
 
         ResultadoLinea::Unsub(sid.to_string(), max_msgs)
     }
@@ -316,6 +324,34 @@ impl Parser {
     fn resetear_todo(&mut self) {
         self.resetear_bytes();
         self.actual = None;
-        self.headers = None;
+        self.header = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parseador::resultado_linea::ResultadoLinea;
+
+    #[test]
+    fn linea_sub() {
+        let parser = super::Parseador::new();
+        let resultado = parser.parsear_linea("sub subject sid");
+        assert_eq!(
+            resultado,
+            ResultadoLinea::Sub("subject".to_string(), None, "sid".to_string())
+        );
+
+        let resultado = parser.parsear_linea("sub subject queue_group sid");
+        assert_eq!(
+            resultado,
+            ResultadoLinea::Sub(
+                "subject".to_string(),
+                Some("queue_group".to_string()),
+                "sid".to_string()
+            )
+        );
+
+        let resultado = parser.parsear_linea("sub");
+        assert_eq!(resultado, ResultadoLinea::MensajeIncorrecto);
     }
 }
