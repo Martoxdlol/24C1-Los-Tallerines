@@ -1,5 +1,4 @@
 pub mod id;
-pub mod leer_mensajes;
 pub mod message;
 pub mod respuesta;
 pub mod tick_contexto;
@@ -11,10 +10,7 @@ use crate::{
     topico::Topico,
 };
 
-use self::{
-    id::IdConexion, leer_mensajes::leer_mensajes, message::Message, respuesta::Respuesta,
-    tick_contexto::TickContexto,
-};
+use self::{id::IdConexion, message::Message, respuesta::Respuesta, tick_contexto::TickContexto};
 
 pub struct Conexion {
     /// El identificador de la conexión. Global y único
@@ -54,12 +50,12 @@ impl Conexion {
         self.leer_bytes();
 
         // Lee mensaje y actua en consecuencia
-        leer_mensajes(self, salida);
+        self.leer_mensajes(salida);
     }
 
     /// Este método lo envia el Hilo cuando recibe un mensaje
     pub fn escribir_publicacion_mensaje(&mut self, mensaje: &PublicacionMensaje) {
-        if let Err(e) = self.escribir_bytes(&mensaje.serializar_msg()) {
+        if let Err(_) = self.escribir_bytes(&mensaje.serializar_msg()) {
             self.registrador
                 .error("Error al enviar mensaje", Some(self.id));
         }
@@ -102,7 +98,7 @@ impl Conexion {
 
     pub fn escribir_respuesta(&mut self, respuesta: &Respuesta) {
         let bytes = &respuesta.serializar();
-        if let Err(e) = self.escribir_bytes(&bytes) {
+        if let Err(_) = self.escribir_bytes(&bytes) {
             self.registrador
                 .error("Error al enviar respuesta", Some(self.id));
         }
@@ -176,8 +172,8 @@ impl Conexion {
                         self.escribir_err(Some("Tópico de subscripción incorrecto".to_string()));
                     }
                 },
-                Message::Unsub(id, max_msgs) => {
-                    contexto.desuscribir((self.id, id));
+                Message::Unsub(id, _max_msgs) => {
+                    contexto.desuscribir(id);
                     self.escribir_ok(Some("unsub".to_string()));
                 }
                 Message::Err(msg) => {

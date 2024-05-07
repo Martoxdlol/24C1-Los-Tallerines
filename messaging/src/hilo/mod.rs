@@ -98,8 +98,8 @@ impl Hilo {
             Instrucciones::Suscribir(suscripcion) => {
                 self.suscripciones.suscribir(suscripcion);
             }
-            Instrucciones::Desuscribir(suscripcion) => {
-                self.suscripciones.desuscribir(&suscripcion);
+            Instrucciones::Desuscribir(id_conexion, id_suscripcion) => {
+                self.suscripciones.desuscribir(id_conexion, &id_suscripcion);
             }
             Instrucciones::Publicar(publicacion) => {
                 self.recibir_publicacion(publicacion);
@@ -113,15 +113,13 @@ impl Hilo {
     pub fn recibir_publicacion(&mut self, publicacion: Publicacion) {
         // Iterar sobre las suscripciones y enviar la publicación a cada una
         // Cabe destacar que solo itera en las suscripciones que coinciden con el tópico de la publicación
-        self.suscripciones
-            .visitar_suscripciones_por_topico(&publicacion.topico, |suscripcion| {
-                // Enviar la publicación a la conexión
-                if let Some(conexion) = self.conexiones.get_mut(&suscripcion.id_conexion()) {
-                    conexion.escribir_publicacion_mensaje(
-                        &publicacion.mensaje(suscripcion.id().to_owned()),
-                    );
-                }
-            })
+        for suscripcion in self.suscripciones.suscripciones_topico(&publicacion.topico) {
+            if let Some(conexion) = self.conexiones.get_mut(&suscripcion.id_conexion()) {
+                conexion.escribir_publicacion_mensaje(
+                    &publicacion.mensaje(suscripcion.id().to_owned()),
+                );
+            }
+        }
     }
 
     pub fn recibir_publicacion_exacto(
@@ -138,8 +136,8 @@ impl Hilo {
     pub fn tick_conexiones(&mut self) {
         let mut salidas = Vec::new();
 
-        for conexion in self.conexiones.values_mut() {
-            let mut tick_salida = TickContexto::new(self.id);
+        for (id_conexion, conexion) in self.conexiones.iter_mut() {
+            let mut tick_salida = TickContexto::new(*id_conexion, self.id);
             conexion.tick(&mut tick_salida);
             salidas.push(tick_salida);
         }
@@ -149,13 +147,48 @@ impl Hilo {
                 self.suscripciones.suscribir(suscripcion);
             }
 
-            for suscripcion in salida.desuscripciones {
-                todo!();
-                // self.suscripciones.desuscribir(&suscripcion);
+            for id_suscripcion in salida.desuscripciones {
+                self.suscripciones
+                    .desuscribir(salida.id_conexion, &id_suscripcion);
+
+                self.enviar_instruccion(Instrucciones::Desuscribir(salida.id_conexion, id_suscripcion));
             }
 
             for publicacion in salida.publicaciones {
-                self.recibir_publicacion(publicacion);
+                self.enviar_instruccion_publicar(publicacion);
+            }
+        }
+    }
+
+    pub fn enviar_instruccion(&self, instruccion: Instrucciones) {
+        for (_, tx) in &self.canales_enviar_instrucciones {
+            let r = tx.send(instruccion.clone());
+            if r.is_err() {
+                self.registrador.error("No se pudo enviar la instrucción a otro proceso", None);
+            }
+        }
+    }
+
+    pub fn enviar_instruccion_publicar(&self, publicacion: Publicacion) {
+        let hilos = self.suscripciones.hilos_suscriptos_topico(&publicacion.topico);
+
+        for hilo in hilos {
+            if let Some(tx) = self.canales_enviar_instrucciones.get(&hilo) {
+                let r = tx.send(Instrucciones::Publicar(publicacion.clone()));
+                if r.is_err() {
+                    self.registrador.error("No se pudo enviar la instrucción a otro proceso", None);
+                }
+            }
+        }
+
+        for grupo in self.suscripciones.grupos_topico(&publicacion.topico) {
+            if let Some(suscripcion) = grupo.suscripcion_random() {
+                if let Some(tx) = self.canales_enviar_instrucciones.get(suscripcion.id_hilo()) {
+                    let r = tx.send(Instrucciones::PublicarExacto(suscripcion.clone(), publicacion.clone()));
+                    if r.is_err() {
+                        self.registrador.error("No se pudo enviar la instrucción a otro proceso", None);
+                    }
+                }
             }
         }
     }

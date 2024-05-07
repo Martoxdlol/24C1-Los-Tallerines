@@ -47,4 +47,8 @@ impl Suscripcion {
     pub fn id_grupo(&self) -> Option<&IdSuscripcion> {
         self.id_grupo.as_ref()
     }
+
+    pub fn es_grupo(&self) -> bool {
+        self.id_grupo.is_some()
+    }
 }

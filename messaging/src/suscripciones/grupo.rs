@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use rand::{thread_rng, Rng};
+
 use crate::topico::Topico;
 
 use super::{id::IdSuscripcion, suscripcion::Suscripcion};
@@ -33,5 +35,10 @@ impl Grupo {
 
     pub fn desuscribir(&mut self, suscripcion: &Suscripcion) {
         self.suscripciones.remove(suscripcion);
+    }
+
+    pub fn suscripcion_random(&self) -> Option<&Suscripcion> {
+        let index = thread_rng().gen_range(0..self.suscripciones.len());
+        return self.suscripciones.iter().nth(index);
     }
 }
