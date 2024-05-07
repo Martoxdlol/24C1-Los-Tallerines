@@ -7,6 +7,7 @@ use self::{grupo::Grupo, id::IdSuscripcion, suscripcion::Suscripcion};
 pub mod grupo;
 pub mod id;
 pub mod suscripcion;
+pub mod topico;
 pub struct Suscripciones {
     suscripciones: HashSet<Suscripcion>,
     grupos: HashMap<IdSuscripcion, Grupo>,

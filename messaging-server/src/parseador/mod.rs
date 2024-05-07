@@ -1,6 +1,6 @@
 mod resultado_linea;
 
-use crate::conexion::message::Message;
+use crate::conexion::mensaje::Mensaje;
 
 use self::resultado_linea::ResultadoLinea;
 
@@ -77,7 +77,7 @@ impl Parseador {
         None
     }
 
-    pub fn proximo_mensaje(&mut self) -> Option<Message> {
+    pub fn proximo_mensaje(&mut self) -> Option<Mensaje> {
         // Si actualmente se está parseando un PUB buscamos el payload
         if let Some(ResultadoLinea::Pub(topic, reply_to, total_bytes)) = &self.actual {
             // No hay suficientes bytes para el payload
@@ -88,7 +88,7 @@ impl Parseador {
             self.continuar_en_indice = *total_bytes;
 
             // Si hay suficientes bytes para el payload, devolvemos el mensaje
-            let resultado = Some(Message::Pub(
+            let resultado = Some(Mensaje::Publicar(
                 topic.to_string(),
                 reply_to.clone(),
                 self.bytes_pendientes[..*total_bytes].to_vec(),
@@ -116,7 +116,7 @@ impl Parseador {
                 self.continuar_en_indice = bytes_totales_con_salto_de_linea;
 
                 // Si hay suficientes bytes para el payload, devolvemos el mensaje
-                let resultado = Some(Message::Hpub(
+                let resultado = Some(Mensaje::PublicarConHeader(
                     topic.to_string(),
                     reply_to.clone(),
                     headers.clone(),
@@ -152,25 +152,25 @@ impl Parseador {
                     ));
                 }
                 ResultadoLinea::MensajeIncorrecto => {
-                    return Some(Message::Err("Mensaje incorrecto".to_string()));
+                    return Some(Mensaje::Error("Mensaje incorrecto".to_string()));
                 }
                 ResultadoLinea::StringVacio => {
                     return self.proximo_mensaje();
                 }
                 ResultadoLinea::Sub(subject, queue_group, sid) => {
-                    return Some(Message::Sub(subject, queue_group, sid));
+                    return Some(Mensaje::Suscribir(subject, queue_group, sid));
                 }
                 ResultadoLinea::Unsub(sid, max_mgs) => {
-                    return Some(Message::Unsub(sid, max_mgs));
+                    return Some(Mensaje::Desuscribir(sid, max_mgs));
                 }
                 ResultadoLinea::Pub(subject, reply_to, bytes) => {
                     self.actual = Some(ResultadoLinea::Pub(subject, reply_to, bytes));
                 }
                 ResultadoLinea::Ping => {
-                    return Some(Message::Ping());
+                    return Some(Mensaje::Ping());
                 }
                 ResultadoLinea::Connect => {
-                    return Some(Message::Connect("".to_string()));
+                    return Some(Mensaje::Conectar("".to_string()));
                 }
             }
         }

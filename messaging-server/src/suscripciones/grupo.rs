@@ -2,14 +2,12 @@ use std::collections::HashSet;
 
 use rand::{thread_rng, Rng};
 
-use crate::topico::Topico;
-
-use super::{id::IdSuscripcion, suscripcion::Suscripcion};
+use super::{id::IdSuscripcion, suscripcion::Suscripcion, topico::Topico};
 
 pub struct Grupo {
     id: IdSuscripcion,
     topico: Topico,
-    suscripciones: HashSet<Suscripcion>
+    suscripciones: HashSet<Suscripcion>,
 }
 
 impl Grupo {
@@ -17,7 +15,7 @@ impl Grupo {
         Self {
             id,
             topico,
-            suscripciones: HashSet::new()
+            suscripciones: HashSet::new(),
         }
     }
 

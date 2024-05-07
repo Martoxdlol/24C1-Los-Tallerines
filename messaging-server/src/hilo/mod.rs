@@ -1,4 +1,5 @@
 pub mod id;
+pub mod instruccion;
 
 use std::{
     collections::HashMap,
@@ -8,22 +9,21 @@ use std::{
 
 use crate::{
     conexion::{id::IdConexion, tick_contexto::TickContexto, Conexion},
-    instrucciones::Instrucciones,
     publicacion::Publicacion,
     registrador::Registrador,
     suscripciones::{suscripcion::Suscripcion, Suscripciones},
 };
 
-use self::id::IdHilo;
+use self::{id::IdHilo, instruccion::Instruccion};
 
 pub struct Hilo {
     id: u64,
     /// Canal para **recibir** instrucciones de otros procesos
     canal_recibir_conexiones: Receiver<(IdConexion, Conexion)>,
     /// Canales a otros hilos para **enviar** instrucciones (ejemplo: publicar, suscribir, desuscribir, etc.)
-    canales_enviar_instrucciones: HashMap<IdHilo, Sender<Instrucciones>>,
+    canales_enviar_instrucciones: HashMap<IdHilo, Sender<Instruccion>>,
     /// Canal para **recibir** instrucciones de otros procesos
-    canal_recibir_instrucciones: Receiver<Instrucciones>,
+    canal_recibir_instrucciones: Receiver<Instruccion>,
     /// Suscripciones de este hilo
     suscripciones: Suscripciones,
     /// Retgisrador de eventos
@@ -36,8 +36,8 @@ impl Hilo {
     pub fn new(
         id: u64,
         canal_recibir_conexiones: Receiver<(IdConexion, Conexion)>,
-        canales_enviar_instrucciones: HashMap<IdHilo, Sender<Instrucciones>>,
-        canal_recibir_instrucciones: Receiver<Instrucciones>,
+        canales_enviar_instrucciones: HashMap<IdHilo, Sender<Instruccion>>,
+        canal_recibir_instrucciones: Receiver<Instruccion>,
         registrador: Registrador,
     ) -> Self {
         Self {
@@ -93,18 +93,18 @@ impl Hilo {
         }
     }
 
-    pub fn recibir_instruccion(&mut self, instruccion: Instrucciones) {
+    pub fn recibir_instruccion(&mut self, instruccion: Instruccion) {
         match instruccion {
-            Instrucciones::Suscribir(suscripcion) => {
+            Instruccion::Suscribir(suscripcion) => {
                 self.suscripciones.suscribir(suscripcion);
             }
-            Instrucciones::Desuscribir(id_conexion, id_suscripcion) => {
+            Instruccion::Desuscribir(id_conexion, id_suscripcion) => {
                 self.suscripciones.desuscribir(id_conexion, &id_suscripcion);
             }
-            Instrucciones::Publicar(publicacion) => {
+            Instruccion::Publicar(publicacion) => {
                 self.recibir_publicacion(publicacion);
             }
-            Instrucciones::PublicarExacto(suscripcion, publicacion) => {
+            Instruccion::PublicarExacto(suscripcion, publicacion) => {
                 self.recibir_publicacion_exacto(&suscripcion, publicacion);
             }
         }
@@ -144,11 +144,11 @@ impl Hilo {
 
         for salida in salidas {
             for suscripcion in salida.suscripciones {
-                self.enviar_instruccion(Instrucciones::Suscribir(suscripcion));
+                self.enviar_instruccion(Instruccion::Suscribir(suscripcion));
             }
 
             for id_suscripcion in salida.desuscripciones {
-                self.enviar_instruccion(Instrucciones::Desuscribir(
+                self.enviar_instruccion(Instruccion::Desuscribir(
                     salida.id_conexion,
                     id_suscripcion,
                 ));
@@ -160,7 +160,7 @@ impl Hilo {
         }
     }
 
-    pub fn enviar_instruccion(&self, instruccion: Instrucciones) {
+    pub fn enviar_instruccion(&self, instruccion: Instruccion) {
         for tx in self.canales_enviar_instrucciones.values() {
             let r = tx.send(instruccion.clone());
             if r.is_err() {
@@ -177,7 +177,7 @@ impl Hilo {
 
         for hilo in hilos {
             if let Some(tx) = self.canales_enviar_instrucciones.get(&hilo) {
-                let r = tx.send(Instrucciones::Publicar(publicacion.clone()));
+                let r = tx.send(Instruccion::Publicar(publicacion.clone()));
                 if r.is_err() {
                     self.registrador
                         .error("No se pudo enviar la instrucción a otro proceso", None);
@@ -188,7 +188,7 @@ impl Hilo {
         for grupo in self.suscripciones.grupos_topico(&publicacion.topico) {
             if let Some(suscripcion) = grupo.suscripcion_random() {
                 if let Some(tx) = self.canales_enviar_instrucciones.get(suscripcion.id_hilo()) {
-                    let r = tx.send(Instrucciones::PublicarExacto(
+                    let r = tx.send(Instruccion::PublicarExacto(
                         suscripcion.clone(),
                         publicacion.clone(),
                     ));
@@ -220,7 +220,7 @@ impl Hilo {
         });
 
         for (id_conexion, id_suscripcion) in suscripciones_eliminar {
-            self.enviar_instruccion(Instrucciones::Desuscribir(id_conexion, id_suscripcion));
+            self.enviar_instruccion(Instruccion::Desuscribir(id_conexion, id_suscripcion));
         }
     }
 }

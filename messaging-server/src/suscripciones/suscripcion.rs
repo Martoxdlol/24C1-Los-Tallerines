@@ -1,6 +1,6 @@
-use crate::{conexion::id::IdConexion, hilo::id::IdHilo, topico::Topico};
+use crate::{conexion::id::IdConexion, hilo::id::IdHilo};
 
-use super::id::IdSuscripcion;
+use super::{id::IdSuscripcion, topico::Topico};
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct Suscripcion {

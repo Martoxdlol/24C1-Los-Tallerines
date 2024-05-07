@@ -1,16 +1,18 @@
 pub mod id;
-pub mod message;
+pub mod mensaje;
 pub mod respuesta;
 pub mod tick_contexto;
 use std::{fmt::Debug, io};
 
 use crate::{
-    parseador::Parseador, publicacion::Publicacion, publicacion_mensaje::PublicacionMensaje,
-    registrador::Registrador, stream::Stream, suscripciones::suscripcion::Suscripcion,
-    topico::Topico,
+    parseador::Parseador,
+    publicacion::{mensaje::PublicacionMensaje, Publicacion},
+    registrador::Registrador,
+    stream::Stream,
+    suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
-use self::{id::IdConexion, message::Message, respuesta::Respuesta, tick_contexto::TickContexto};
+use self::{id::IdConexion, mensaje::Mensaje, respuesta::Respuesta, tick_contexto::TickContexto};
 pub struct Conexion {
     /// El identificador de la conexión. Global y único
     id: IdConexion,
@@ -133,7 +135,7 @@ impl Conexion {
 
             if !self.autenticado {
                 match mensaje {
-                    Message::Connect(_) => {
+                    Mensaje::Conectar(_) => {
                         self.autenticado = true;
                         self.escribir_respuesta(&Respuesta::Ok(Some("connect".to_string())));
                     }
@@ -150,7 +152,7 @@ impl Conexion {
 
             // proximo mensaje va a leer los bytes nuevos y devuelve si es una accion valida
             match mensaje {
-                Message::Pub(subject, replay_to, payload) => {
+                Mensaje::Publicar(subject, replay_to, payload) => {
                     self.registrador.info(
                         &format!("Publicación: {:?} {:?} {:?}", subject, replay_to, payload),
                         Some(self.id),
@@ -159,7 +161,7 @@ impl Conexion {
                     contexto.publicar(Publicacion::new(subject, payload, None, replay_to));
                     self.escribir_ok(Some("pub".to_string()));
                 }
-                Message::Hpub(subject, replay_to, headers, payload) => {
+                Mensaje::PublicarConHeader(subject, replay_to, headers, payload) => {
                     self.registrador.info(
                         &format!(
                             "Publicación con header: {:?} {:?} {:?} {:?}",
@@ -171,7 +173,7 @@ impl Conexion {
                     contexto.publicar(Publicacion::new(subject, payload, Some(headers), replay_to));
                     self.escribir_ok(Some("hpub".to_string()));
                 }
-                Message::Sub(topico, grupo, id) => match Topico::new(topico) {
+                Mensaje::Suscribir(topico, grupo, id) => match Topico::new(topico) {
                     Ok(topico) => {
                         contexto.suscribir(Suscripcion::new(
                             contexto.id_hilo,
@@ -186,18 +188,18 @@ impl Conexion {
                         self.escribir_err(Some("Tópico de subscripción incorrecto".to_string()));
                     }
                 },
-                Message::Unsub(id, _max_msgs) => {
+                Mensaje::Desuscribir(id, _max_msgs) => {
                     contexto.desuscribir(id);
                     self.escribir_ok(Some("unsub".to_string()));
                 }
-                Message::Err(msg) => {
+                Mensaje::Error(msg) => {
                     // self.respuestas.push(Respuesta::Err(msg));
                     self.escribir_err(Some(msg));
                 }
-                Message::Connect(_) => {
+                Mensaje::Conectar(_) => {
                     self.escribir_err(Some("Ya se recibió un mensaje de conexión".to_string()));
                 }
-                Message::Ping() => {
+                Mensaje::Ping() => {
                     self.escribir_respuesta(&Respuesta::Pong());
                 }
             }

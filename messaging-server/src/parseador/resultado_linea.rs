@@ -7,5 +7,5 @@ pub enum ResultadoLinea {
     Sub(String, Option<String>, String),
     Unsub(String, Option<u64>),
     Ping,
-    Connect
+    Connect,
 }

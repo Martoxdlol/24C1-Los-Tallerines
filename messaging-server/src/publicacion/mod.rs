@@ -1,4 +1,6 @@
-use crate::publicacion_mensaje::PublicacionMensaje;
+use self::mensaje::PublicacionMensaje;
+
+pub mod mensaje;
 
 /// Representa un mensaje que se va a publicar en un tópico
 #[derive(Debug, Clone)]
@@ -25,6 +27,11 @@ impl Publicacion {
     }
 
     pub fn mensaje(&self, sid: String) -> PublicacionMensaje {
-        PublicacionMensaje::new(sid, self.payload.clone(), self.header.clone(), self.replay_to.clone())
+        PublicacionMensaje::new(
+            sid,
+            self.payload.clone(),
+            self.header.clone(),
+            self.replay_to.clone(),
+        )
     }
 }

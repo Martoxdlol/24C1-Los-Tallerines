@@ -1,8 +1,12 @@
-use crate::{conexion::id::IdConexion, publicacion::Publicacion, suscripciones::{id::IdSuscripcion, suscripcion::Suscripcion}};
+use crate::{
+    conexion::id::IdConexion,
+    publicacion::Publicacion,
+    suscripciones::{id::IdSuscripcion, suscripcion::Suscripcion},
+};
 
 /// Las instrucciones se envian entre "threads" o hilos
 #[derive(Clone, Debug)]
-pub enum Instrucciones {
+pub enum Instruccion {
     /// Añadir una suscripción
     Suscribir(Suscripcion),
     /// Eliminar una suscripción
