@@ -1,5 +1,8 @@
-use crate::resultado_linea::ResultadoLinea;
-use crate::mensaje::Mensaje;
+pub mod mensaje;
+mod resultado_linea;
+
+use self::mensaje::Mensaje;
+use self::resultado_linea::ResultadoLinea;
 
 pub struct Parseador {
     // Bytes que fue acumulando que todavía no se pudieron convertir en ninguna estructura

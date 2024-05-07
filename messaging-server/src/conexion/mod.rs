@@ -1,18 +1,18 @@
 pub mod id;
-pub mod mensaje;
 pub mod respuesta;
 pub mod tick_contexto;
 use std::{fmt::Debug, io};
+use lib::parseador::Parseador;
+use lib::parseador::mensaje::Mensaje;
 
 use crate::{
-    parseador::Parseador,
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
     registrador::Registrador,
     stream::Stream,
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
-use self::{id::IdConexion, mensaje::Mensaje, respuesta::Respuesta, tick_contexto::TickContexto};
+use self::{id::IdConexion, respuesta::Respuesta, tick_contexto::TickContexto};
 pub struct Conexion {
     /// El identificador de la conexión. Global y único
     id: IdConexion,

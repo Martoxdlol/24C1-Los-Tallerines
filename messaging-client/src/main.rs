@@ -1,4 +1,4 @@
-use cliente::Cliente;
+use messaging_client::cliente::Cliente;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
