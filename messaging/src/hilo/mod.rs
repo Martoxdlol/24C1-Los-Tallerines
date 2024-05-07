@@ -74,7 +74,7 @@ impl Hilo {
         self.recibir_conexiones();
         self.recibir_instrucciones();
         self.tick_conexiones();
-        // self.eliminar_conexiones_terminadas();
+        self.eliminar_conexiones_terminadas();
     }
 
     pub fn recibir_conexiones(&mut self) {
@@ -202,15 +202,25 @@ impl Hilo {
     }
 
     pub fn eliminar_conexiones_terminadas(&mut self) {
+        let mut suscripciones_eliminar = Vec::new();
+
         self.conexiones.retain(|id_conexion, conexion| {
             let esta_conextado = conexion.esta_conectado();
 
             if !esta_conextado {
                 self.registrador
                     .info("Conexión terminada", Some(*id_conexion));
+
+                for suscripcion in self.suscripciones.suscripciones_conexion(id_conexion) {
+                    suscripciones_eliminar.push((*id_conexion, suscripcion.id().to_owned()));
+                }
             }
 
             esta_conextado
         });
+
+        for (id_conexion, id_suscripcion) in suscripciones_eliminar {
+            self.enviar_instruccion(Instrucciones::Desuscribir(id_conexion, id_suscripcion));
+        }
     }
 }

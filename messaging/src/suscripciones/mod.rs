@@ -85,4 +85,11 @@ impl Suscripciones {
 
         ids_hilos
     }
+
+    pub fn suscripciones_conexion(&self, id_conexion: &IdConexion) -> Vec<&Suscripcion> {
+        self.suscripciones
+            .iter()
+            .filter(|suscripcion| suscripcion.id_conexion().eq(id_conexion))
+            .collect()
+    }
 }

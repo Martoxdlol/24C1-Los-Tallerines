@@ -5,7 +5,14 @@ use super::registro::Registro;
 pub fn hilo_registrador(rx: Receiver<Registro>) {
     thread::spawn(move || loop {
         match rx.recv() {
-            Ok(registro) => println!("{}", registro.to_string()),
+            Ok(registro) => match registro.nivel {
+                super::registro::NivelRegistro::Advertencia => {
+                    eprintln!("{}", registro.to_string())
+                }
+                _ => {
+                    println!("{}", registro.to_string())
+                }
+            },
             Err(_) => break,
         }
     });

@@ -63,7 +63,7 @@ impl Conexion {
 
         if let Err(_) = self.escribir_bytes(&mensaje.serializar_msg()) {
             self.registrador
-                .error("Error al enviar mensaje", Some(self.id));
+                .advertencia("Error al enviar mensaje", Some(self.id));
         }
     }
 
@@ -94,7 +94,7 @@ impl Conexion {
     pub fn escribir_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
         if let Err(e) = self.stream.write_all(bytes) {
             self.registrador
-                .error(&format!("Error al escribir al stream {}", e), Some(self.id));
+                .advertencia(&format!("Error al escribir al stream {}", e), Some(self.id));
             self.desconectado = true;
             return Err(e);
         }
