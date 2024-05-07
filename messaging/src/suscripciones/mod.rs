@@ -3,7 +3,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use crate::{hilo::id::IdHilo, id_cliente::IdCliente, topico::Topico};
+use crate::{conexion::id::IdConexion, hilo::id::IdHilo, topico::Topico};
 
 use self::{grupo::Grupo, id::IdSuscripcion, suscripcion::Suscripcion};
 
@@ -13,10 +13,15 @@ pub mod suscripcion;
 pub struct Suscripciones {
     suscripciones: HashSet<Rc<Suscripcion>>,
     suscripciones_por_topico: HashMap<Topico, Vec<Weak<Suscripcion>>>,
-    suscripciones_por_cliente: HashMap<IdCliente, Vec<Weak<Suscripcion>>>,
+    suscripciones_por_cliente: HashMap<IdConexion, Vec<Weak<Suscripcion>>>,
     suscripciones_por_hilo: HashMap<IdHilo, Vec<Weak<Suscripcion>>>,
     grupos: HashMap<IdSuscripcion, Grupo>,
 }
+
+// Nos permite enviar el objeto `Suscripciones` a otro thread
+// Si bien usa `unsafe`, no lo es porque solo se envía una vez y las referencias nunca se generan en el thread de origen
+// https://stackoverflow.com/questions/63433718/how-to-freeze-an-rc-data-structure-and-send-it-across-threads
+unsafe impl Send for Suscripciones {}
 
 impl Suscripciones {
     pub fn new() -> Self {
@@ -30,8 +35,10 @@ impl Suscripciones {
     }
 
     pub fn suscribir(&mut self, suscripcion: Suscripcion) {
-        if let Some(id_grupo) = suscripcion.id_grupo() {
-            self.suscribir_grupo(suscripcion, *id_grupo);
+        if let Some(id_grupo) = &suscripcion.id_grupo() {
+            let id = id_grupo.to_string();
+            self.suscribir_grupo(suscripcion, &id);
+            return;
         }
 
         let suscripcion_rc = Rc::new(suscripcion);
@@ -51,7 +58,7 @@ impl Suscripciones {
         // Insertar en suscripciones_por_hilo HashMap
         let suscripciones_por_cliente = self
             .suscripciones_por_cliente
-            .entry(*suscripcion_rc.id_cliente())
+            .entry(*suscripcion_rc.id_conexion())
             .or_insert_with(Vec::new);
 
         suscripciones_por_cliente.push(suscripcion_weak.clone());
@@ -66,6 +73,11 @@ impl Suscripciones {
     }
 
     pub fn desuscribir(&mut self, suscripcion: &Suscripcion) {
+        if let Some(id_grupo) = suscripcion.id_grupo() {
+            self.desuscribir_grupo(suscripcion, id_grupo.to_string());
+            return;
+        }
+
         let suscripcion_rc = Rc::new(suscripcion.clone());
         let suscripcion_weak = Rc::downgrade(&suscripcion_rc);
 
@@ -91,17 +103,17 @@ impl Suscripciones {
         // Eliminar de suscripciones_por_cliente HashMap
         if let Some(suscripciones_por_cliente) = self
             .suscripciones_por_cliente
-            .get_mut(suscripcion_rc.id_cliente())
+            .get_mut(suscripcion_rc.id_conexion())
         {
             suscripciones_por_cliente.retain(|s| !s.ptr_eq(&suscripcion_weak));
         }
     }
 
-    fn suscribir_grupo(&mut self, suscripcion: Suscripcion, id_grupo: IdSuscripcion) {
-        let grupo = self
-            .grupos
-            .entry(id_grupo)
-            .or_insert_with(|| Grupo::new(id_grupo, suscripcion.topico().clone()));
+    fn suscribir_grupo(&mut self, suscripcion: Suscripcion, id_grupo: &IdSuscripcion) {
+        let grupo = self.grupos.entry(id_grupo.to_owned()).or_insert(Grupo::new(
+            id_grupo.to_owned(),
+            suscripcion.topico().clone(),
+        ));
 
         grupo.suscribir(suscripcion);
     }
@@ -116,12 +128,16 @@ impl Suscripciones {
         &self.suscripciones
     }
 
-    pub fn visitar_suscripciones_por_topico<F>(&self, topico: &Topico, mut f: F)
+    pub fn visitar_suscripciones_por_topico<F>(&self, topico_test: &String, mut f: F)
     where
         F: FnMut(&Rc<Suscripcion>),
     {
-        if let Some(suscripciones_por_topico) = self.suscripciones_por_topico.get(topico) {
-            for suscripcion in suscripciones_por_topico {
+        for (topico, suscripciones) in &self.suscripciones_por_topico {
+            if !topico.test(topico_test) {
+                continue;
+            }
+
+            for suscripcion in suscripciones {
                 if let Some(suscripcion) = suscripcion.upgrade() {
                     f(&suscripcion);
                 }
@@ -129,7 +145,7 @@ impl Suscripciones {
         }
     }
 
-    pub fn visitar_suscripciones_por_cliente<F>(&self, id_cliente: &IdCliente, mut f: F)
+    pub fn visitar_suscripciones_por_cliente<F>(&self, id_cliente: &IdConexion, mut f: F)
     where
         F: FnMut(&Rc<Suscripcion>),
     {

@@ -1,6 +1,10 @@
-use super::{message::Message, resultado_linea::ResultadoLinea};
+mod resultado_linea;
 
-pub struct Parser {
+use crate::conexion::message::Message;
+
+use self::resultado_linea::ResultadoLinea;
+
+pub struct Parseador {
     // Bytes que fue acumulando que todavía no se pudieron convertir en ninguna estructura
     bytes_pendientes: Vec<u8>,
     /// Se utiliza internamente para llevar el estado del parseo en diferentes casos
@@ -21,13 +25,13 @@ pub struct Parser {
 ///
 /// El parser se encarga de ir liberando los bytes que ya utilizó y de tener en cuenta los estados intermedios
 /// (es decir, si le llega un mensaje que no está completo, lo guarda y espera a que lleguen más bytes)
-impl Default for Parser {
+impl Default for Parseador {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Parser {
+impl Parseador {
     pub fn new() -> Self {
         Self {
             bytes_pendientes: Vec::new(),
@@ -324,19 +328,21 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use crate::parseador::resultado_linea::ResultadoLinea;
+
     #[test]
     fn linea_sub() {
-        let parser = super::Parser::new();
+        let parser = super::Parseador::new();
         let resultado = parser.parsear_linea("sub subject sid");
         assert_eq!(
             resultado,
-            super::ResultadoLinea::Sub("subject".to_string(), None, "sid".to_string())
+            ResultadoLinea::Sub("subject".to_string(), None, "sid".to_string())
         );
 
         let resultado = parser.parsear_linea("sub subject queue_group sid");
         assert_eq!(
             resultado,
-            super::ResultadoLinea::Sub(
+            ResultadoLinea::Sub(
                 "subject".to_string(),
                 Some("queue_group".to_string()),
                 "sid".to_string()
@@ -344,6 +350,6 @@ mod tests {
         );
 
         let resultado = parser.parsear_linea("sub");
-        assert_eq!(resultado, super::ResultadoLinea::MensajeIncorrecto);
+        assert_eq!(resultado, ResultadoLinea::MensajeIncorrecto);
     }
 }

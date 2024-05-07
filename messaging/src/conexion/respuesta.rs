@@ -1,9 +1,6 @@
-use crate::publicacion_mensaje::PublicacionMensaje;
-
 #[derive(Debug)]
 pub enum Respuesta {
-    Msg(PublicacionMensaje),
-    Err(String),
+    Err(Option<String>),
     Ok(Option<String>),
     Pong(),
     Info(),
@@ -12,11 +9,12 @@ pub enum Respuesta {
 impl Respuesta {
     pub fn serializar(&mut self) -> Vec<u8> {
         match self {
-            Respuesta::Msg(publicacion) => publicacion.serializar_msg(),
             Respuesta::Err(error) => {
                 let mut bytes = Vec::new();
                 bytes.extend_from_slice(b"-ERR ");
-                bytes.extend_from_slice(error.as_bytes());
+                if let Some(error) = error {
+                    bytes.extend_from_slice(error.as_bytes());
+                }
                 bytes.extend_from_slice(b"\r\n");
                 bytes
             }

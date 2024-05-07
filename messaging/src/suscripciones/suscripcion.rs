@@ -1,24 +1,30 @@
-use crate::{hilo::id::IdHilo, id_cliente::IdCliente, topico::Topico};
+use crate::{conexion::id::IdConexion, hilo::id::IdHilo, topico::Topico};
 
 use super::id::IdSuscripcion;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct Suscripcion {
     id_hilo: IdHilo,
-    id_cliente: IdCliente,
+    id_cliente: IdConexion,
     id: IdSuscripcion,
     topico: Topico,
-    id_grupo: Option<IdSuscripcion>
+    id_grupo: Option<IdSuscripcion>,
 }
 
 impl Suscripcion {
-    pub fn new(id_hilo: IdHilo, id_cliente: IdCliente, topico: Topico, id: IdSuscripcion, grupo: Option<IdSuscripcion>) -> Self {
+    pub fn new(
+        id_hilo: IdHilo,
+        id_cliente: IdConexion,
+        topico: Topico,
+        id: IdSuscripcion,
+        grupo: Option<IdSuscripcion>,
+    ) -> Self {
         Self {
             id_hilo,
             id_cliente,
             topico,
             id,
-            id_grupo: grupo
+            id_grupo: grupo,
         }
     }
 
@@ -34,7 +40,7 @@ impl Suscripcion {
         &self.id_hilo
     }
 
-    pub fn id_cliente(&self) -> &IdCliente {
+    pub fn id_conexion(&self) -> &IdConexion {
         &self.id_cliente
     }
 
