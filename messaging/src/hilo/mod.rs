@@ -73,6 +73,8 @@ impl Hilo {
     pub fn tick(&mut self) {
         self.recibir_conexiones();
         self.recibir_instrucciones();
+        self.tick_conexiones();
+        // self.eliminar_conexiones_terminadas();
     }
 
     pub fn recibir_conexiones(&mut self) {
@@ -85,10 +87,8 @@ impl Hilo {
 
     pub fn recibir_instrucciones(&mut self) {
         while let Ok(instruccion) = self.canal_recibir_instrucciones.try_recv() {
-            println!(
-                "[hilo: {}] Recibida instrucción: {:?}",
-                self.id, &instruccion
-            );
+            self.registrador
+                .info(&format!("Recibida instrucción: {:?}", &instruccion), None);
             self.recibir_instruccion(instruccion);
         }
     }
@@ -137,21 +137,21 @@ impl Hilo {
         let mut salidas = Vec::new();
 
         for (id_conexion, conexion) in self.conexiones.iter_mut() {
-            let mut tick_salida = TickContexto::new(*id_conexion, self.id);
+            let mut tick_salida = TickContexto::new(self.id, *id_conexion);
             conexion.tick(&mut tick_salida);
             salidas.push(tick_salida);
         }
 
         for salida in salidas {
             for suscripcion in salida.suscripciones {
-                self.suscripciones.suscribir(suscripcion);
+                self.enviar_instruccion(Instrucciones::Suscribir(suscripcion));
             }
 
             for id_suscripcion in salida.desuscripciones {
-                self.suscripciones
-                    .desuscribir(salida.id_conexion, &id_suscripcion);
-
-                self.enviar_instruccion(Instrucciones::Desuscribir(salida.id_conexion, id_suscripcion));
+                self.enviar_instruccion(Instrucciones::Desuscribir(
+                    salida.id_conexion,
+                    id_suscripcion,
+                ));
             }
 
             for publicacion in salida.publicaciones {
@@ -164,19 +164,23 @@ impl Hilo {
         for (_, tx) in &self.canales_enviar_instrucciones {
             let r = tx.send(instruccion.clone());
             if r.is_err() {
-                self.registrador.error("No se pudo enviar la instrucción a otro proceso", None);
+                self.registrador
+                    .error("No se pudo enviar la instrucción a otro proceso", None);
             }
         }
     }
 
     pub fn enviar_instruccion_publicar(&self, publicacion: Publicacion) {
-        let hilos = self.suscripciones.hilos_suscriptos_topico(&publicacion.topico);
+        let hilos = self
+            .suscripciones
+            .hilos_suscriptos_topico(&publicacion.topico);
 
         for hilo in hilos {
             if let Some(tx) = self.canales_enviar_instrucciones.get(&hilo) {
                 let r = tx.send(Instrucciones::Publicar(publicacion.clone()));
                 if r.is_err() {
-                    self.registrador.error("No se pudo enviar la instrucción a otro proceso", None);
+                    self.registrador
+                        .error("No se pudo enviar la instrucción a otro proceso", None);
                 }
             }
         }
@@ -184,12 +188,29 @@ impl Hilo {
         for grupo in self.suscripciones.grupos_topico(&publicacion.topico) {
             if let Some(suscripcion) = grupo.suscripcion_random() {
                 if let Some(tx) = self.canales_enviar_instrucciones.get(suscripcion.id_hilo()) {
-                    let r = tx.send(Instrucciones::PublicarExacto(suscripcion.clone(), publicacion.clone()));
+                    let r = tx.send(Instrucciones::PublicarExacto(
+                        suscripcion.clone(),
+                        publicacion.clone(),
+                    ));
                     if r.is_err() {
-                        self.registrador.error("No se pudo enviar la instrucción a otro proceso", None);
+                        self.registrador
+                            .error("No se pudo enviar la instrucción a otro proceso", None);
                     }
                 }
             }
         }
+    }
+
+    pub fn eliminar_conexiones_terminadas(&mut self) {
+        self.conexiones.retain(|id_conexion, conexion| {
+            let esta_conextado = conexion.esta_conectado();
+
+            if !esta_conextado {
+                self.registrador
+                    .info("Conexión terminada", Some(*id_conexion));
+            }
+
+            esta_conextado
+        });
     }
 }

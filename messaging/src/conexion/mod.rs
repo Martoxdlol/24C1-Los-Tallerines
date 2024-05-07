@@ -2,7 +2,7 @@ pub mod id;
 pub mod message;
 pub mod respuesta;
 pub mod tick_contexto;
-use std::io;
+use std::{fmt::Debug, io};
 
 use crate::{
     parseador::Parseador, publicacion::Publicacion, publicacion_mensaje::PublicacionMensaje,
@@ -11,7 +11,6 @@ use crate::{
 };
 
 use self::{id::IdConexion, message::Message, respuesta::Respuesta, tick_contexto::TickContexto};
-
 pub struct Conexion {
     /// El identificador de la conexión. Global y único
     id: IdConexion,
@@ -31,14 +30,18 @@ pub struct Conexion {
 
 impl Conexion {
     pub fn new(id: IdConexion, stream: Box<dyn Stream>, registrador: Registrador) -> Self {
-        Self {
+        let mut con = Self {
             id,
             stream,
             parser: Parseador::new(),
             registrador,
             desconectado: false,
             autenticado: false,
-        }
+        };
+
+        con.enviar_info();
+
+        return con;
     }
 
     pub fn tick(&mut self, salida: &mut TickContexto) {
@@ -55,6 +58,9 @@ impl Conexion {
 
     /// Este método lo envia el Hilo cuando recibe un mensaje
     pub fn escribir_publicacion_mensaje(&mut self, mensaje: &PublicacionMensaje) {
+        self.registrador
+            .info(&format!("MSG: {:?}", mensaje), Some(self.id));
+
         if let Err(_) = self.escribir_bytes(&mensaje.serializar_msg()) {
             self.registrador
                 .error("Error al enviar mensaje", Some(self.id));
@@ -110,6 +116,10 @@ impl Conexion {
 
     pub fn escribir_err(&mut self, msg: Option<String>) {
         self.escribir_respuesta(&Respuesta::Err(msg));
+    }
+
+    pub fn enviar_info(&mut self) {
+        self.escribir_respuesta(&Respuesta::Info());
     }
 
     pub fn leer_mensajes(&mut self, contexto: &mut TickContexto) {
@@ -188,5 +198,19 @@ impl Conexion {
                 }
             }
         }
+    }
+
+    pub fn esta_conectado(&self) -> bool {
+        !self.desconectado
+    }
+}
+
+impl Debug for Conexion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Conexion")
+            .field("id", &self.id)
+            .field("desconectado", &self.desconectado)
+            .field("autenticado", &self.autenticado)
+            .finish()
     }
 }

@@ -56,8 +56,12 @@ impl Servidor {
 
             // Creamos el canal para enviar nuevas conexiones al hilo
             let (tx_conexiones, rx_conexiones) = mpsc::channel();
+            // Creamos el registrador para el hilo
+            let mut registrador = registrador.clone();
+            // Establecemos el hilo actual para el registrador
+            registrador.establecer_hilo(id_hilo);
             // Creamos el hilo
-            let hilo = Hilo::new(id_hilo, rx_conexiones, todos_los_canales, rx, registrador.clone());
+            let hilo = Hilo::new(id_hilo, rx_conexiones, todos_los_canales, rx, registrador);
 
             // Iniciamos el thread del hilo
             let handle = Hilo::iniciar(hilo);
@@ -105,7 +109,11 @@ impl Servidor {
                     // Generamos un nuevo id único para la nueva conexión
                     let id_conexion = self.nuevo_id_conexion();
 
-                    let conexion = Conexion::new(id_conexion, Box::new(stream), registrador_para_nueva_conexion);
+                    let conexion = Conexion::new(
+                        id_conexion,
+                        Box::new(stream),
+                        registrador_para_nueva_conexion,
+                    );
 
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];
                     match tx.send((id_conexion, conexion)) {
