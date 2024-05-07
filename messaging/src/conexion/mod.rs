@@ -61,7 +61,7 @@ impl Conexion {
         self.registrador
             .info(&format!("MSG: {:?}", mensaje), Some(self.id));
 
-        if let Err(_) = self.escribir_bytes(&mensaje.serializar_msg()) {
+        if self.escribir_bytes(&mensaje.serializar_msg()).is_err() {
             self.registrador
                 .advertencia("Error al enviar mensaje", Some(self.id));
         }
@@ -108,7 +108,7 @@ impl Conexion {
 
     pub fn escribir_respuesta(&mut self, respuesta: &Respuesta) {
         let bytes = &respuesta.serializar();
-        if let Err(_) = self.escribir_bytes(bytes) {
+        if self.escribir_bytes(bytes).is_err() {
             self.registrador
                 .error("Error al enviar respuesta", Some(self.id));
         }

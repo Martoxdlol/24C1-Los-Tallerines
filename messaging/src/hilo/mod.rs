@@ -161,7 +161,7 @@ impl Hilo {
     }
 
     pub fn enviar_instruccion(&self, instruccion: Instrucciones) {
-        for (_, tx) in &self.canales_enviar_instrucciones {
+        for tx in self.canales_enviar_instrucciones.values() {
             let r = tx.send(instruccion.clone());
             if r.is_err() {
                 self.registrador

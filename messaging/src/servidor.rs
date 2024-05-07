@@ -13,8 +13,10 @@ use crate::{
 
 use super::{conexion::Conexion, hilo::Hilo};
 
+type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
+
 pub struct Servidor {
-    hilos: Vec<(Sender<(IdConexion, Conexion)>, JoinHandle<()>)>,
+    hilos: Vec<InfoHilo>,
     _configuracion: Configuracion,
     proximo_id_hilo: usize, // Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion,
