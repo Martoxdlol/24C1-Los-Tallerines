@@ -6,7 +6,8 @@ use std::{
 };
 
 use lib::parseador::Parseador;
-use crate::{instruccion::Instruccion, mensaje::Mensaje, publicacion::Publicacion};
+use lib::parseador::mensaje::Mensaje;
+use crate::{instruccion::Instruccion, publicacion::Publicacion};
 
 /// El hilo del cliente posee el stream de la conexion, el canal por el cual se
 /// reciben mensajes, los canales de suscripciones que están asociados a un id
