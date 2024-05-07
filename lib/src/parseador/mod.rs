@@ -172,6 +172,18 @@ impl Parseador {
                 ResultadoLinea::Connect => {
                     return Some(Mensaje::Conectar("".to_string()));
                 }
+                ResultadoLinea::Info => {
+                    return Some(Mensaje::Info());
+                }
+                ResultadoLinea::Pong => {
+                    return Some(Mensaje::Pong());
+                }
+                ResultadoLinea::Hmsg(topico, id_suscipcion, responder_a, bytes_header, bytes_contenido) => {
+                    todo!();
+                }
+                ResultadoLinea::Msg(topico,id_suscripcion ,responder_a ,bytes_contenido ) => {
+                    todo!();
+                }
             }
         }
         None

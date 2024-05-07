@@ -1,9 +1,9 @@
 pub mod id;
 pub mod respuesta;
 pub mod tick_contexto;
-use std::{fmt::Debug, io};
-use lib::parseador::Parseador;
 use lib::parseador::mensaje::Mensaje;
+use lib::parseador::Parseador;
+use std::{fmt::Debug, io};
 
 use crate::{
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
@@ -201,6 +201,11 @@ impl Conexion {
                 }
                 Mensaje::Ping() => {
                     self.escribir_respuesta(&Respuesta::Pong());
+                }
+                _ => {
+                    self.escribir_respuesta(&Respuesta::Err(Some(
+                        "Mensaje no reconocido".to_string(),
+                    )));
                 }
             }
         }

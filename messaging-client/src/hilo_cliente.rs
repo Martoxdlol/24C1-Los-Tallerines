@@ -5,9 +5,9 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use lib::parseador::Parseador;
-use lib::parseador::mensaje::Mensaje;
 use crate::{instruccion::Instruccion, publicacion::Publicacion};
+use lib::parseador::mensaje::Mensaje;
+use lib::parseador::Parseador;
 
 /// El hilo del cliente posee el stream de la conexion, el canal por el cual se
 /// reciben mensajes, los canales de suscripciones que están asociados a un id
@@ -52,7 +52,14 @@ impl HiloCliente {
     fn gestionar_nuevo_mensaje(&mut self, mensaje: Mensaje) -> std::io::Result<()> {
         match mensaje {
             // Ejemplo: MSG 1 4\r\nhola\r\n
-            Mensaje::Publicacion(id_suscripcion, publicacion) => {
+            Mensaje::Publicacion(topico, id_suscripcion, responder_a, contenido) => {
+                let publicacion = Publicacion {
+                    header: None,
+                    payload: contenido,
+                    replay_to: responder_a,
+                    subject: topico,
+                };
+
                 if let Some(canal) = self.canales_subscripciones.get(&id_suscripcion) {
                     if let Err(e) = canal.send(publicacion) {
                         return Err(std::io::Error::new(std::io::ErrorKind::Other, e));
@@ -60,11 +67,11 @@ impl HiloCliente {
                 }
             }
             // Ejemplo: INFO {"server_id":"a","version":"2.1.0","go":"go1.15.6","host":"...
-            Mensaje::Info => {
+            Mensaje::Info() => {
                 self.stream.write_all(b"CONNECT {}\r\n")?;
             }
             // Ejemplo: PING\r\n
-            Mensaje::Ping => {
+            Mensaje::Ping() => {
                 self.stream.write_all(b"PONG\r\n")?;
             }
             _ => {}
