@@ -55,17 +55,15 @@ impl ToString for Registro {
                     self.mensaje
                 )
             }
+        } else if let Some(conexion) = self.conexion {
+            format!(
+                "{} [cliente: {}] {}",
+                self.nivel.to_string(),
+                conexion,
+                self.mensaje
+            )
         } else {
-            if let Some(conexion) = self.conexion {
-                format!(
-                    "{} [cliente: {}] {}",
-                    self.nivel.to_string(),
-                    conexion,
-                    self.mensaje
-                )
-            } else {
-                format!("{} {}", self.nivel.to_string(), self.mensaje)
-            }
+            format!("{} {}", self.nivel.to_string(), self.mensaje)
         }
     }
 }

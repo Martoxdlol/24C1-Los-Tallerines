@@ -80,7 +80,7 @@ impl Servidor {
 
     pub fn nuevo_id_conexion(&mut self) -> IdConexion {
         self.ultimo_id_conexion += 1;
-        return self.ultimo_id_conexion;
+        self.ultimo_id_conexion
     }
 
     pub fn iniciar(mut servidor: Servidor) -> JoinHandle<()> {

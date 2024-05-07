@@ -46,7 +46,7 @@ impl PublicacionMensaje {
             bytes.extend_from_slice(b" ");
             bytes.extend_from_slice(self.payload.len().to_string().as_bytes());
             bytes.extend_from_slice(b"\r\n");
-            bytes.extend_from_slice(&header);
+            bytes.extend_from_slice(header);
             bytes.extend_from_slice(b"\r\n");
         } else {
             bytes.extend_from_slice(self.payload.len().to_string().as_bytes());

@@ -12,6 +12,12 @@ pub struct Suscripciones {
     grupos: HashMap<IdSuscripcion, Grupo>,
 }
 
+impl Default for Suscripciones {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Suscripciones {
     pub fn new() -> Self {
         Self {

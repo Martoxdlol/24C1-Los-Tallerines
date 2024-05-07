@@ -41,7 +41,7 @@ impl Conexion {
 
         con.enviar_info();
 
-        return con;
+        con
     }
 
     pub fn tick(&mut self, salida: &mut TickContexto) {
@@ -90,7 +90,6 @@ impl Conexion {
                 self.registrador.error("Error al leer bytes", Some(self.id));
 
                 self.desconectado = true;
-                return;
             }
         }
     }
@@ -109,7 +108,7 @@ impl Conexion {
 
     pub fn escribir_respuesta(&mut self, respuesta: &Respuesta) {
         let bytes = &respuesta.serializar();
-        if let Err(_) = self.escribir_bytes(&bytes) {
+        if let Err(_) = self.escribir_bytes(bytes) {
             self.registrador
                 .error("Error al enviar respuesta", Some(self.id));
         }

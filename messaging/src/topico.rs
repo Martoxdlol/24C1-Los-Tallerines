@@ -72,7 +72,7 @@ impl ToString for Topico {
         for segmento in &self.patron {
             match segmento {
                 Segmento::Texto(t) => s.push_str(t),
-                Segmento::Asteriso => s.push_str("*"),
+                Segmento::Asteriso => s.push('*'),
             }
             s.push('.');
         }

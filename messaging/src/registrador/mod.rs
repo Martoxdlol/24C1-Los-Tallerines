@@ -12,6 +12,12 @@ pub struct Registrador {
     hilo: Option<IdHilo>,
 }
 
+impl Default for Registrador {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Registrador {
     pub fn new() -> Self {
         // crear channel
