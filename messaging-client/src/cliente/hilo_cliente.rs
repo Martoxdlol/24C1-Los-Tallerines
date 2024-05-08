@@ -17,6 +17,7 @@ pub struct HiloCliente {
     pub canal_recibir: Receiver<Instruccion>,
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
+    pub autenticado: bool,
     parseador: Parseador,
 }
 
@@ -27,21 +28,24 @@ impl HiloCliente {
             canal_recibir,
             canales_subscripciones: HashMap::new(),
             parseador: Parseador::new(),
+            autenticado: false,
         }
     }
 
     pub fn ejecutar(&mut self) -> std::io::Result<()> {
         let mut desconectar = false;
 
-        // Se confirma la conexión
-        self.stream.write_all(b"CONNECT {}\r\n")?;
-
         while !desconectar {
-            if let Some(mensaje) = self.proximo_mensaje()? {
+            while let Some(mensaje) = self.proximo_mensaje()? {
                 self.gestionar_nuevo_mensaje(mensaje)?;
             }
 
-            if let Ok(instruccion) = self.canal_recibir.try_recv() {
+            // Esperar a que termine de autenticarse para procesar instrucciones
+            if !self.autenticado {
+                continue;
+            }
+
+            while let Ok(instruccion) = self.canal_recibir.try_recv() {
                 desconectar = self.gestionar_nueva_instruccion(instruccion)?;
             }
         }
@@ -69,12 +73,15 @@ impl HiloCliente {
             // Ejemplo: INFO {"server_id":"a","version":"2.1.0","go":"go1.15.6","host":"...
             Mensaje::Info() => {
                 self.stream.write_all(b"CONNECT {}\r\n")?;
+                self.autenticado = true;
             }
             // Ejemplo: PING\r\n
             Mensaje::Ping() => {
                 self.stream.write_all(b"PONG\r\n")?;
             }
-            _ => {}
+            _ => {
+                eprintln!("Mensaje no reconocido: {:?}", mensaje)
+            }
         }
 
         Ok(())
@@ -177,7 +184,6 @@ impl HiloCliente {
         match self.stream.read(&mut buffer) {
             Ok(n) => {
                 self.parseador.agregar_bytes(&buffer[..n]);
-                return Ok(self.parseador.proximo_mensaje());
             }
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // No hay datos para leer (no hay que hacer nada acá)
@@ -186,6 +192,6 @@ impl HiloCliente {
                 return Err(e);
             }
         }
-        Ok(None)
+        return Ok(self.parseador.proximo_mensaje());
     }
 }

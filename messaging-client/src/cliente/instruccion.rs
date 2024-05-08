@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 use super::publicacion::Publicacion;
 
 // Instrucciones posibles que puede realizar el cliente
+#[derive(Debug)]
 pub enum Instruccion {
     Publicar(Publicacion),
     Suscribir {

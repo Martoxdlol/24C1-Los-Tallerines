@@ -310,7 +310,7 @@ impl Parseador {
             return ResultadoLinea::Pong;
         }
 
-        if primera_palabra.eq("-ok") {
+        if primera_palabra.eq("+ok") {
             return ResultadoLinea::Ok;
         }
 

@@ -18,7 +18,7 @@ use self::{
 /// Cliente tiene su hilo donde se gestionan los mensajes, el canal por el cual
 /// se envian mensajes al servidor, y el id del cliente
 pub struct Cliente {
-    hilo_cliente: JoinHandle<()>,
+    _hilo_cliente: JoinHandle<()>,
     canal_instrucciones: Sender<Instruccion>,
     id: usize,
 }
@@ -32,11 +32,15 @@ impl Cliente {
 
         let hilo_cliente = thread::spawn(move || {
             let mut hilo_cliente = HiloCliente::new(stream, rx);
-            hilo_cliente.ejecutar().unwrap();
+            if let Err(e) = hilo_cliente.ejecutar() {
+                eprintln!("Error en hilo cliente: {}", e)
+            } else {
+                println!("Hilo cliente finalizado")
+            }
         });
 
         Ok(Cliente {
-            hilo_cliente,
+            _hilo_cliente: hilo_cliente,
             canal_instrucciones: tx,
             id: 0,
         })
