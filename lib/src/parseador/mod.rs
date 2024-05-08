@@ -138,7 +138,67 @@ impl Parseador {
             }
         }
 
-        // TODO: Leer payload y header de: MSG y/o HMSG
+        // Si actualmente se está parseando un MSG buscamos el payload
+        if let Some(ResultadoLinea::Msg(topic, id_suscripcion, reply_to, total_bytes)) = &self.actual {
+            // No hay suficientes bytes para el payload
+            if self.bytes_pendientes.len() < *total_bytes {
+                return None;
+            }
+
+            self.continuar_en_indice = *total_bytes;
+
+            // Si hay suficientes bytes para el payload, devolvemos el mensaje
+            let resultado = Some(Mensaje::Publicacion(
+                topic.to_string(),
+                id_suscripcion.to_string(),
+                reply_to.clone(),
+                self.bytes_pendientes[..*total_bytes].to_vec(),
+            ));
+
+            self.resetear_todo();
+
+            return resultado;
+        }
+
+        // Si actualmente se está parseando un HMSG buscamos el payload
+        if let Some(ResultadoLinea::Hmsg(topic, sid, reply_to, headers_bytes, total_bytes)) =
+            &self.actual
+        {
+            let bytes_totales_con_salto_de_linea = *total_bytes + 2;
+
+            // Si ya habíamos encontrado los headers antes,
+            // tenemos todo para buscar el payload y si está completo devolver el mensaje
+            if let Some(headers) = &self.header {
+                // No hay suficientes bytes para el payload
+                if self.bytes_pendientes.len() < bytes_totales_con_salto_de_linea {
+                    return None;
+                }
+
+                self.continuar_en_indice = bytes_totales_con_salto_de_linea;
+
+                // Si hay suficientes bytes para el payload, devolvemos el mensaje
+                let resultado = Some(Mensaje::PublicacionConHeader(
+                    topic.to_string(),
+                    sid.to_string(),
+                    reply_to.clone(),
+                    headers.clone(),
+                    self.bytes_pendientes[..*total_bytes].to_vec(),
+                ));
+
+                self.resetear_todo();
+
+                return resultado;
+            } else {
+                // Si no encontramos los headers antes, buscamos los headers
+                if self.bytes_pendientes.len() < *headers_bytes {
+                    return None;
+                }
+
+                self.header = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
+                self.continuar_en_indice = *headers_bytes;
+                return self.proximo_mensaje();
+            }
+        }
 
         // Si actualmente no se está parseando nada, buscamos la próxima línea
         if self.actual.is_none() {
