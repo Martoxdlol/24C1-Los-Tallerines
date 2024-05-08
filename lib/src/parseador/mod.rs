@@ -134,7 +134,7 @@ impl Parseador {
 
                 self.header = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
                 self.continuar_en_indice = *headers_bytes;
-                return None;
+                return self.proximo_mensaje();
             }
         }
 
@@ -167,6 +167,7 @@ impl Parseador {
                 }
                 ResultadoLinea::Pub(subject, reply_to, bytes) => {
                     self.actual = Some(ResultadoLinea::Pub(subject, reply_to, bytes));
+                    return self.proximo_mensaje();
                 }
                 ResultadoLinea::Ping => {
                     return Some(Mensaje::Ping());

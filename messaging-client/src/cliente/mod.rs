@@ -1,19 +1,17 @@
+mod hilo_cliente;
 mod instruccion;
 mod publicacion;
 mod suscripcion;
-mod hilo_cliente;
 
 use std::{
     io,
     net::TcpStream,
-    sync::mpsc::{SendError, Sender, channel},
+    sync::mpsc::{channel, SendError, Sender},
     thread::{self, JoinHandle},
 };
 
 use self::{
-    hilo_cliente::HiloCliente,
-    instruccion::Instruccion,
-    publicacion::Publicacion,
+    hilo_cliente::HiloCliente, instruccion::Instruccion, publicacion::Publicacion,
     suscripcion::Suscripcion,
 };
 
@@ -89,7 +87,7 @@ impl Cliente {
         queue_group: Option<&str>,
     ) -> Result<Suscripcion, SendError<Instruccion>> {
         //if subject.is_empty() {
-        //    return 
+        //    return
         //}
 
         self.id += 1;
@@ -117,7 +115,6 @@ impl Drop for Cliente {
 }
 
 #[cfg(test)]
-
 #[test]
 fn test01_assert_cliente_se_conecta_correctamente() {
     let cliente = Cliente::conectar("localhost:4222");
@@ -125,7 +122,8 @@ fn test01_assert_cliente_se_conecta_correctamente() {
 }
 
 #[test]
-fn test02_assert_cliente_se_suscribe_a_topico_sin_queue_group_correctamente() -> Result<(), Box<dyn std::error::Error>> {
+fn test02_assert_cliente_se_suscribe_a_topico_sin_queue_group_correctamente(
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
     let sub = cliente.suscribirse("asd", None);
 
@@ -145,7 +143,8 @@ fn test03_assert_cliente_no_se_suscribe_sin_topico() -> Result<(), Box<dyn std::
 }
 
 #[test]
-fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido() -> Result<(), Box<dyn std::error::Error>> {
+fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido(
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
     let sub = cliente.suscribirse("abc", None);
 
@@ -155,7 +154,8 @@ fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido() -> Result<(), B
 }
 
 #[test]
-fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido() -> Result<(), Box<dyn std::error::Error>> {
+fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido(
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
     let sub = cliente.suscribirse("abc", None);
 
@@ -165,7 +165,8 @@ fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido() -> Result<
 }
 
 #[test]
-fn test06_assert_cliente_publica_con_topico_y_mensaje_correctos() -> Result<(), Box<dyn std::error::Error>> {
+fn test06_assert_cliente_publica_con_topico_y_mensaje_correctos(
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
     let sub = cliente.suscribirse("abc", None);
 

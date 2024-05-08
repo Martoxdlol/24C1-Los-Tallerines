@@ -21,5 +21,5 @@ pub enum Mensaje {
     // MSG <subject> <sid> [reply-to] payload
     Publicacion(String, String, Option<String>, Vec<u8>),
     // HMSG <subject> <sid> [reply-to] headers payload
-    PublicacionConHeader(String, String, Option<String>, Vec<u8>,  Vec<u8>),
+    PublicacionConHeader(String, String, Option<String>, Vec<u8>, Vec<u8>),
 }

@@ -119,7 +119,7 @@ impl HiloCliente {
                             )
                             .as_bytes(),
                         )?;
-                        self.stream.write_all(&header)?;
+                        self.stream.write_all(header)?;
                         self.stream.write_all(b"\r\n")?;
                         self.stream.write_all(&publicacion.payload)?;
                         self.stream.write_all(b"\r\n")?;
@@ -146,7 +146,7 @@ impl HiloCliente {
                         )
                         .as_bytes(),
                     )?;
-                    self.stream.write_all(&header)?;
+                    self.stream.write_all(header)?;
                     self.stream.write_all(b"\r\n")?;
                     self.stream.write_all(&publicacion.payload)?;
                     self.stream.write_all(b"\r\n")?;
