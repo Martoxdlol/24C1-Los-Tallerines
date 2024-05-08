@@ -139,7 +139,9 @@ impl Parseador {
         }
 
         // Si actualmente se está parseando un MSG buscamos el payload
-        if let Some(ResultadoLinea::Msg(topic, id_suscripcion, reply_to, total_bytes)) = &self.actual {
+        if let Some(ResultadoLinea::Msg(topic, id_suscripcion, reply_to, total_bytes)) =
+            &self.actual
+        {
             // No hay suficientes bytes para el payload
             if self.bytes_pendientes.len() < *total_bytes {
                 return None;
@@ -253,11 +255,16 @@ impl Parseador {
                         id_suscripcion,
                         responder_a,
                         bytes_header,
-                        bytes_contenido
+                        bytes_contenido,
                     ));
                 }
                 ResultadoLinea::Msg(topico, id_suscripcion, responder_a, bytes_contenido) => {
-                    self.actual = Some(ResultadoLinea::Msg(topico, id_suscripcion, responder_a, bytes_contenido));
+                    self.actual = Some(ResultadoLinea::Msg(
+                        topico,
+                        id_suscripcion,
+                        responder_a,
+                        bytes_contenido,
+                    ));
                     return self.proximo_mensaje();
                 }
                 ResultadoLinea::Ok => {}
@@ -434,7 +441,12 @@ impl Parseador {
                 Err(_) => return ResultadoLinea::MensajeIncorrecto,
             };
 
-            return ResultadoLinea::Msg(palabras[0].to_string(), palabras[1].to_string(), None, bytes);
+            return ResultadoLinea::Msg(
+                palabras[0].to_string(),
+                palabras[1].to_string(),
+                None,
+                bytes,
+            );
         }
 
         if palabras.len() == 4 {
@@ -466,7 +478,13 @@ impl Parseador {
                 Err(_) => return ResultadoLinea::MensajeIncorrecto,
             };
 
-            return ResultadoLinea::Hmsg(palabras[0].to_string(), palabras[1].to_string(), None, headers_bytes, bytes);
+            return ResultadoLinea::Hmsg(
+                palabras[0].to_string(),
+                palabras[1].to_string(),
+                None,
+                headers_bytes,
+                bytes,
+            );
         }
 
         if palabras.len() == 5 {
