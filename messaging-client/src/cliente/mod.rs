@@ -1,3 +1,8 @@
+mod instruccion;
+mod publicacion;
+mod suscripcion;
+mod hilo_cliente;
+
 use std::{
     io,
     net::TcpStream,
@@ -5,8 +10,10 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use crate::{
-    hilo_cliente::HiloCliente, instruccion::Instruccion, publicacion::Publicacion,
+use self::{
+    hilo_cliente::HiloCliente,
+    instruccion::Instruccion,
+    publicacion::Publicacion,
     suscripcion::Suscripcion,
 };
 

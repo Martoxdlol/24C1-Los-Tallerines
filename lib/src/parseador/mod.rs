@@ -138,6 +138,8 @@ impl Parseador {
             }
         }
 
+        // TODO: Leer payload y header de: MSG y/o HMSG
+
         // Si actualmente no se está parseando nada, buscamos la próxima línea
         if self.actual.is_none() {
             let linea = self.proxima_linea()?;
@@ -178,12 +180,20 @@ impl Parseador {
                 ResultadoLinea::Pong => {
                     return Some(Mensaje::Pong());
                 }
-                ResultadoLinea::Hmsg(topico, id_suscipcion, responder_a, bytes_header, bytes_contenido) => {
+                ResultadoLinea::Hmsg(
+                    topico,
+                    id_suscipcion,
+                    responder_a,
+                    bytes_header,
+                    bytes_contenido,
+                ) => {
                     todo!();
                 }
-                ResultadoLinea::Msg(topico,id_suscripcion ,responder_a ,bytes_contenido ) => {
+                ResultadoLinea::Msg(topico, id_suscripcion, responder_a, bytes_contenido) => {
                     todo!();
                 }
+                ResultadoLinea::Ok => {}
+                ResultadoLinea::Err => {}
             }
         }
         None
@@ -216,12 +226,32 @@ impl Parseador {
         if primera_palabra.eq("") {
             return ResultadoLinea::StringVacio;
         }
+
         if primera_palabra.eq("ping") {
             return ResultadoLinea::Ping;
         }
+
+        if primera_palabra.eq("pong") {
+            return ResultadoLinea::Pong;
+        }
+
+        if primera_palabra.eq("-ok") {
+            return ResultadoLinea::Ok;
+        }
+
+        if primera_palabra.eq("-err") {
+            return ResultadoLinea::Err;
+        }
+
         if primera_palabra.eq("connect") {
             return ResultadoLinea::Connect;
         }
+
+        if primera_palabra.eq("info") {
+            return ResultadoLinea::Info;
+        }
+
+        // TODO: Detectar MSG y HMSG
 
         ResultadoLinea::MensajeIncorrecto
     }

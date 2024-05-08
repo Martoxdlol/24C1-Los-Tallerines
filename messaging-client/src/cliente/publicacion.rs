@@ -1,4 +1,5 @@
 /// Estructura de una publicación (Pub)
+#[derive(Debug)]
 pub struct Publicacion {
     pub subject: String,
     pub replay_to: Option<String>,

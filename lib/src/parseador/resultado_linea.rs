@@ -12,4 +12,6 @@ pub enum ResultadoLinea {
     Pong,
     Info,
     Connect,
+    Ok,
+    Err,
 }

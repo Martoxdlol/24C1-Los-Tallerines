@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use crate::publicacion::Publicacion;
+use super::publicacion::Publicacion;
 
 // Instrucciones posibles que puede realizar el cliente
 pub enum Instruccion {

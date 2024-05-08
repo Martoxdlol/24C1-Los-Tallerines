@@ -5,7 +5,7 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use crate::{instruccion::Instruccion, publicacion::Publicacion};
+use super::{instruccion::Instruccion, publicacion::Publicacion};
 use lib::parseador::mensaje::Mensaje;
 use lib::parseador::Parseador;
 
@@ -173,9 +173,9 @@ impl HiloCliente {
 
     fn proximo_mensaje(&mut self) -> std::io::Result<Option<Mensaje>> {
         let mut buffer = [0; 1024];
+
         match self.stream.read(&mut buffer) {
             Ok(n) => {
-                let mut bytes_pendientes: Vec<u8> = Vec::new();
                 self.parseador.agregar_bytes(&buffer[..n]);
                 return Ok(self.parseador.proximo_mensaje());
             }

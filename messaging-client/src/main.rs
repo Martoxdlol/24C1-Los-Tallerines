@@ -6,15 +6,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sub = cliente.suscribirse("asd", None)?;
 
-    //cliente.publicar("asd", b"hola", None)?;
+    cliente.publicar("asd", b"hola", None)?;
 
-    // for msg in sub {}
-
-    //  match sub.try_recv() {
-    //     Ok(msg) => {
-    //         println!("Mensaje: {:?}", msg);
-    //     }
-    //  }
+    if let Ok(publicacion) = sub.leer() {
+        println!("{:?}", publicacion);
+    }
 
     drop(sub);
 
