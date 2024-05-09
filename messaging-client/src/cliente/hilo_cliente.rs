@@ -146,7 +146,7 @@ impl HiloCliente {
                 } else if let Some(header) = &publicacion.header {
                     self.stream.write_all(
                         format!(
-                            "PUB {} {} {}\r\n",
+                            "HPUB {} {} {}\r\n",
                             publicacion.subject,
                             header.len(),
                             publicacion.payload.len()
