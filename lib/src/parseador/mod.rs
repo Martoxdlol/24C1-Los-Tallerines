@@ -1,7 +1,7 @@
+pub mod mensaje;
 mod resultado_linea;
 
-use crate::conexion::mensaje::Mensaje;
-
+use self::mensaje::Mensaje;
 use self::resultado_linea::ResultadoLinea;
 
 pub struct Parseador {
@@ -134,7 +134,71 @@ impl Parseador {
 
                 self.header = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
                 self.continuar_en_indice = *headers_bytes;
+                return self.proximo_mensaje();
+            }
+        }
+
+        // Si actualmente se está parseando un MSG buscamos el payload
+        if let Some(ResultadoLinea::Msg(topic, id_suscripcion, reply_to, total_bytes)) =
+            &self.actual
+        {
+            // No hay suficientes bytes para el payload
+            if self.bytes_pendientes.len() < *total_bytes {
                 return None;
+            }
+
+            self.continuar_en_indice = *total_bytes;
+
+            // Si hay suficientes bytes para el payload, devolvemos el mensaje
+            let resultado = Some(Mensaje::Publicacion(
+                topic.to_string(),
+                id_suscripcion.to_string(),
+                reply_to.clone(),
+                self.bytes_pendientes[..*total_bytes].to_vec(),
+            ));
+
+            self.resetear_todo();
+
+            return resultado;
+        }
+
+        // Si actualmente se está parseando un HMSG buscamos el payload
+        if let Some(ResultadoLinea::Hmsg(topic, sid, reply_to, headers_bytes, total_bytes)) =
+            &self.actual
+        {
+            let bytes_totales_con_salto_de_linea = *total_bytes + 2;
+
+            // Si ya habíamos encontrado los headers antes,
+            // tenemos todo para buscar el payload y si está completo devolver el mensaje
+            if let Some(headers) = &self.header {
+                // No hay suficientes bytes para el payload
+                if self.bytes_pendientes.len() < bytes_totales_con_salto_de_linea {
+                    return None;
+                }
+
+                self.continuar_en_indice = bytes_totales_con_salto_de_linea;
+
+                // Si hay suficientes bytes para el payload, devolvemos el mensaje
+                let resultado = Some(Mensaje::PublicacionConHeader(
+                    topic.to_string(),
+                    sid.to_string(),
+                    reply_to.clone(),
+                    headers.clone(),
+                    self.bytes_pendientes[..*total_bytes].to_vec(),
+                ));
+
+                self.resetear_todo();
+
+                return resultado;
+            } else {
+                // Si no encontramos los headers antes, buscamos los headers
+                if self.bytes_pendientes.len() < *headers_bytes {
+                    return None;
+                }
+
+                self.header = Some(self.bytes_pendientes[..*headers_bytes].to_vec());
+                self.continuar_en_indice = *headers_bytes;
+                return self.proximo_mensaje();
             }
         }
 
@@ -165,6 +229,7 @@ impl Parseador {
                 }
                 ResultadoLinea::Pub(subject, reply_to, bytes) => {
                     self.actual = Some(ResultadoLinea::Pub(subject, reply_to, bytes));
+                    return self.proximo_mensaje();
                 }
                 ResultadoLinea::Ping => {
                     return Some(Mensaje::Ping());
@@ -172,6 +237,38 @@ impl Parseador {
                 ResultadoLinea::Connect => {
                     return Some(Mensaje::Conectar("".to_string()));
                 }
+                ResultadoLinea::Info => {
+                    return Some(Mensaje::Info());
+                }
+                ResultadoLinea::Pong => {
+                    return Some(Mensaje::Pong());
+                }
+                ResultadoLinea::Hmsg(
+                    topico,
+                    id_suscripcion,
+                    responder_a,
+                    bytes_header,
+                    bytes_contenido,
+                ) => {
+                    self.actual = Some(ResultadoLinea::Hmsg(
+                        topico,
+                        id_suscripcion,
+                        responder_a,
+                        bytes_header,
+                        bytes_contenido,
+                    ));
+                }
+                ResultadoLinea::Msg(topico, id_suscripcion, responder_a, bytes_contenido) => {
+                    self.actual = Some(ResultadoLinea::Msg(
+                        topico,
+                        id_suscripcion,
+                        responder_a,
+                        bytes_contenido,
+                    ));
+                    return self.proximo_mensaje();
+                }
+                ResultadoLinea::Ok => {}
+                ResultadoLinea::Err => {}
             }
         }
         None
@@ -204,11 +301,37 @@ impl Parseador {
         if primera_palabra.eq("") {
             return ResultadoLinea::StringVacio;
         }
+
         if primera_palabra.eq("ping") {
             return ResultadoLinea::Ping;
         }
+
+        if primera_palabra.eq("pong") {
+            return ResultadoLinea::Pong;
+        }
+
+        if primera_palabra.eq("+ok") {
+            return ResultadoLinea::Ok;
+        }
+
+        if primera_palabra.eq("-err") {
+            return ResultadoLinea::Err;
+        }
+
         if primera_palabra.eq("connect") {
             return ResultadoLinea::Connect;
+        }
+
+        if primera_palabra.eq("info") {
+            return ResultadoLinea::Info;
+        }
+
+        if primera_palabra.eq("msg") {
+            return Self::linea_msg(&palabras[1..]);
+        }
+
+        if primera_palabra.eq("hmsg") {
+            return Self::linea_hmsg(&palabras[1..]);
         }
 
         ResultadoLinea::MensajeIncorrecto
@@ -308,6 +431,82 @@ impl Parseador {
         let max_msgs = palabras.get(2).map(|s| s.parse::<u64>().unwrap());
 
         ResultadoLinea::Unsub(sid.to_string(), max_msgs)
+    }
+
+    fn linea_msg(palabras: &[String]) -> ResultadoLinea {
+        // Buscamos si es de 3 o 4 para saber si tiene reply_to
+        if palabras.len() == 3 {
+            let bytes = match palabras[2].parse() {
+                Ok(b) => b,
+                Err(_) => return ResultadoLinea::MensajeIncorrecto,
+            };
+
+            return ResultadoLinea::Msg(
+                palabras[0].to_string(),
+                palabras[1].to_string(),
+                None,
+                bytes,
+            );
+        }
+
+        if palabras.len() == 4 {
+            let bytes = match palabras[3].parse() {
+                Ok(b) => b,
+                Err(_) => return ResultadoLinea::MensajeIncorrecto,
+            };
+
+            return ResultadoLinea::Msg(
+                palabras[0].to_string(),
+                palabras[1].to_string(),
+                Some(palabras[2].to_string()),
+                bytes,
+            );
+        }
+
+        ResultadoLinea::MensajeIncorrecto
+    }
+
+    fn linea_hmsg(palabras: &[String]) -> ResultadoLinea {
+        // Buscamos si es de 4 o 5 para saber si tiene reply_to
+        if palabras.len() == 4 {
+            let bytes = match palabras[3].parse() {
+                Ok(b) => b,
+                Err(_) => return ResultadoLinea::MensajeIncorrecto,
+            };
+            let headers_bytes = match palabras[2].parse() {
+                Ok(b) => b,
+                Err(_) => return ResultadoLinea::MensajeIncorrecto,
+            };
+
+            return ResultadoLinea::Hmsg(
+                palabras[0].to_string(),
+                palabras[1].to_string(),
+                None,
+                headers_bytes,
+                bytes,
+            );
+        }
+
+        if palabras.len() == 5 {
+            let bytes = match palabras[4].parse() {
+                Ok(b) => b,
+                Err(_) => return ResultadoLinea::MensajeIncorrecto,
+            };
+            let headers_bytes = match palabras[3].parse() {
+                Ok(b) => b,
+                Err(_) => return ResultadoLinea::MensajeIncorrecto,
+            };
+
+            return ResultadoLinea::Hmsg(
+                palabras[0].to_string(),
+                palabras[1].to_string(),
+                Some(palabras[2].to_string()),
+                headers_bytes,
+                bytes,
+            );
+        }
+
+        ResultadoLinea::MensajeIncorrecto
     }
 
     /// Libera los bytes de la parte del mensaje que ya se parseó

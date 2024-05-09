@@ -97,7 +97,7 @@ impl eframe::App for Aplicacion {
                 let mapa_final = mapa_a_mostrar
                     .with_plugin(plugins::mostrar_incidentes(&self.incidentes))
                     .with_plugin(plugins::SombreadoCircular {
-                        posiciones: self.incidentes.iter().map(|i | (i.posicion, 50.)).collect(),
+                        posiciones: self.incidentes.iter().map(|i| (i.posicion, 50.)).collect(),
                     })
                     .with_plugin(&mut self.clicks);
 
@@ -127,9 +127,11 @@ impl eframe::App for Aplicacion {
                                 ui.text_edit_multiline(&mut self.nombre_incidente)
                             });
 
-                            if !self.nombre_incidente.trim().is_empty() && ui
+                            if !self.nombre_incidente.trim().is_empty()
+                                && ui
                                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
-                                    .clicked() {
+                                    .clicked()
+                            {
                                 let incidente = Incidente::new(
                                     clicked_at.lon(),
                                     clicked_at.lat(),

@@ -12,6 +12,14 @@ pub enum Mensaje {
     Error(String),
     // Mensaje para generar la conexión
     Conectar(String),
-    // Mensaje para revisar la conexión
+    // Mensaje para preservar la conexión
     Ping(),
+    // Mensaje para preservar la conexión
+    Pong(),
+    //
+    Info(),
+    // MSG <subject> <sid> [reply-to] payload
+    Publicacion(String, String, Option<String>, Vec<u8>),
+    // HMSG <subject> <sid> [reply-to] headers payload
+    PublicacionConHeader(String, String, Option<String>, Vec<u8>, Vec<u8>),
 }
