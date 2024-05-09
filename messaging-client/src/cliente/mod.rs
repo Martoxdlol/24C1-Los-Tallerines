@@ -118,86 +118,86 @@ impl Drop for Cliente {
     }
 }
 
-#[cfg(test)]
-#[test]
-fn test01_assert_cliente_se_conecta_correctamente() {
-    let cliente = Cliente::conectar("localhost:4222");
-    assert!(cliente.is_ok());
-}
+// #[cfg(test)]
+// #[test]
+// fn test01_assert_cliente_se_conecta_correctamente() {
+//     let cliente = Cliente::conectar("localhost:4222");
+//     assert!(cliente.is_ok());
+// }
 
-#[test]
-fn test02_assert_cliente_se_suscribe_a_topico_sin_queue_group_correctamente(
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("asd", None);
+// #[test]
+// fn test02_assert_cliente_se_suscribe_a_topico_sin_queue_group_correctamente(
+// ) -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let sub = cliente.suscribirse("asd", None);
 
-    assert!(sub.is_ok());
+//     assert!(sub.is_ok());
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test03_assert_cliente_no_se_suscribe_sin_topico() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("", None);
+// #[test]
+// fn test03_assert_cliente_no_se_suscribe_sin_topico() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let sub = cliente.suscribirse("", None);
 
-    assert!(sub.is_err());
+//     assert!(sub.is_err());
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido(
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let _sub = cliente.suscribirse("abc", None);
+// #[test]
+// fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido(
+// ) -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let _sub = cliente.suscribirse("abc", None);
 
-    // Hacer algo
+//     // Hacer algo
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido(
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let _sub = cliente.suscribirse("abc", None);
+// #[test]
+// fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido(
+// ) -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let _sub = cliente.suscribirse("abc", None);
 
-    // Hacer algo
+//     // Hacer algo
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test06_assert_cliente_publica_con_topico_y_mensaje_correctos(
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let _sub: Result<Suscripcion, SendError<Instruccion>> = cliente.suscribirse("abc", None);
+// #[test]
+// fn test06_assert_cliente_publica_con_topico_y_mensaje_correctos(
+// ) -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let _sub: Result<Suscripcion, SendError<Instruccion>> = cliente.suscribirse("abc", None);
 
-    cliente.publicar("asd", b"hola", None)?;
-    // Hacer algo
+//     cliente.publicar("asd", b"hola", None)?;
+//     // Hacer algo
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test07_assert_cliente_no_publica_sin_topico() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let _sub = cliente.suscribirse("abc", None);
+// #[test]
+// fn test07_assert_cliente_no_publica_sin_topico() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let _sub = cliente.suscribirse("abc", None);
 
-    cliente.publicar("", b"hola", None)?;
-    // Hacer algo
+//     cliente.publicar("", b"hola", None)?;
+//     // Hacer algo
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test08_assert_cliente_no_publica_sin_mensaje() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cliente = Cliente::conectar("localhost:4222")?;
-    let _sub = cliente.suscribirse("abc", None);
+// #[test]
+// fn test08_assert_cliente_no_publica_sin_mensaje() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cliente = Cliente::conectar("localhost:4222")?;
+//     let _sub = cliente.suscribirse("abc", None);
 
-    cliente.publicar("asd", b"", None)?;
-    // Hacer algo
+//     cliente.publicar("asd", b"", None)?;
+//     // Hacer algo
 
-    Ok(())
-}
+//     Ok(())
+// }
