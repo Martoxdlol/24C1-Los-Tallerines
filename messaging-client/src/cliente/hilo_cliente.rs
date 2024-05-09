@@ -192,6 +192,6 @@ impl HiloCliente {
                 return Err(e);
             }
         }
-        return Ok(self.parseador.proximo_mensaje());
+        Ok(self.parseador.proximo_mensaje())
     }
 }
