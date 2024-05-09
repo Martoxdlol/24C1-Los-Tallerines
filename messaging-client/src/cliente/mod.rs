@@ -150,7 +150,7 @@ fn test03_assert_cliente_no_se_suscribe_sin_topico() -> Result<(), Box<dyn std::
 fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("abc", None);
+    let _sub = cliente.suscribirse("abc", None);
 
     // Hacer algo
 
@@ -161,7 +161,7 @@ fn test04_assert_cliente_se_desuscribe_de_topico_con_id_valido(
 fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("abc", None);
+    let _sub = cliente.suscribirse("abc", None);
 
     // Hacer algo
 
@@ -172,7 +172,7 @@ fn test05_assert_cliente_no_se_desuscribe_de_topico_con_id_invalido(
 fn test06_assert_cliente_publica_con_topico_y_mensaje_correctos(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("abc", None);
+    let _sub: Result<Suscripcion, SendError<Instruccion>> = cliente.suscribirse("abc", None);
 
     cliente.publicar("asd", b"hola", None)?;
     // Hacer algo
@@ -183,7 +183,7 @@ fn test06_assert_cliente_publica_con_topico_y_mensaje_correctos(
 #[test]
 fn test07_assert_cliente_no_publica_sin_topico() -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("abc", None);
+    let _sub = cliente.suscribirse("abc", None);
 
     cliente.publicar("", b"hola", None)?;
     // Hacer algo
@@ -194,7 +194,7 @@ fn test07_assert_cliente_no_publica_sin_topico() -> Result<(), Box<dyn std::erro
 #[test]
 fn test08_assert_cliente_no_publica_sin_mensaje() -> Result<(), Box<dyn std::error::Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
-    let sub = cliente.suscribirse("abc", None);
+    let _sub = cliente.suscribirse("abc", None);
 
     cliente.publicar("asd", b"", None)?;
     // Hacer algo
