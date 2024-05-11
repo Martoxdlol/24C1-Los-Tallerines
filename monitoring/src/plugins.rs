@@ -1,5 +1,5 @@
 use crate::incidente::Incidente;
-use egui::{Color32, Painter, Response};
+use egui::{Color32, Painter, Response, Ui};
 use walkers::{
     extras::{Place, Places},
     Plugin, Position, Projector,
@@ -50,9 +50,20 @@ pub struct ClickWatcher {
     pub clicked_at: Option<Position>,
 }
 
+fn posicion_click(ui: &mut Ui, clicked_at: Position) {
+    ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
+        .on_hover_text("Posición donde hiciste click");
+}
+
+fn click_cerrar(ui: &mut Ui, clickwatcher: &mut ClickWatcher) {
+    if ui.button("Cerrar").clicked() {
+        clickwatcher.clear()
+    }
+}
+
 impl ClickWatcher {
     // Donde hiciste click
-    pub fn mostrar_posicion(&mut self, ui: &egui::Ui) {
+    pub fn mostrar_posicion(&mut self, ui: &Ui) {
         if let Some(clicked_at) = self.clicked_at {
             egui::Window::new("Posicion clickeada")
                 .collapsible(false)
@@ -61,11 +72,8 @@ impl ClickWatcher {
                 .anchor(egui::Align2::CENTER_BOTTOM, [0., -10.])
                 .show(ui.ctx(), |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
-                            .on_hover_text("Posición donde hiciste click");
-                        if ui.button("Cerrar").clicked() {
-                            self.clear()
-                        }
+                        posicion_click(ui, clicked_at);
+                        click_cerrar(ui, self);
                     });
                 });
         }
