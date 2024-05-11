@@ -16,6 +16,7 @@ use dron::Dron;
 use camara::Camara;
 use proveer_carto::MapaCarto;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
+use crate::plugins::ClickWatcher;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Provider {
@@ -83,6 +84,62 @@ impl Aplicacion {
     }
 }
 
+fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mut Aplicacion) {
+    egui::Window::new("Agregar Incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(false)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
+
+            ui.add_sized([350., 40.], |ui: &mut Ui| {
+                ui.text_edit_multiline(&mut aplicacion.nombre_incidente)
+            });
+
+            if !aplicacion.nombre_incidente.trim().is_empty()
+                && ui
+                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                    .clicked()
+            {
+                let incidente = Incidente::new(
+                    clicked_at.lon(),
+                    clicked_at.lat(),
+                    aplicacion.nombre_incidente.clone(),
+                );
+
+                aplicacion.nombre_incidente.clear();
+
+                aplicacion.clicks.clear();
+
+                aplicacion.incidentes.push(incidente);
+            }
+        });
+}
+
+fn mostrado_de_incidentes<'a>(mapa_a_mostrar: Map<'a, 'a, 'a>, incidentes: &[Incidente], clicks: &'a mut ClickWatcher) -> Map<'a, 'a, 'a> {
+    mapa_a_mostrar
+        .with_plugin(plugins::mostrar_incidentes(incidentes))
+        .with_plugin(plugins::SombreadoCircular {
+            posiciones: incidentes.iter().map(|i| (i.posicion, 50.)).collect(),
+        })
+        .with_plugin(clicks)
+}
+
+fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
+    if !incidentes.is_empty() {
+        egui::Window::new("Lista de incidentes")
+            .collapsible(false)
+            .movable(true)
+            .resizable(false)
+            .collapsible(true)
+            .anchor(egui::Align2::RIGHT_TOP, [10., 10.])
+            .show(ui.ctx(), |ui| {
+            });
+    }
+}
+
 impl eframe::App for Aplicacion {
     fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
         let frame = egui::Frame {
@@ -105,12 +162,7 @@ impl eframe::App for Aplicacion {
                 let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
                 // HARDCODEO INCIDENTE
-                let mapa_final = mapa_a_mostrar
-                    .with_plugin(plugins::mostrar_incidentes(&self.incidentes))
-                    .with_plugin(plugins::SombreadoCircular {
-                        posiciones: self.incidentes.iter().map(|i| (i.posicion, 50.)).collect(),
-                    })
-                    .with_plugin(&mut self.clicks);
+                let mapa_final = mostrado_de_incidentes(mapa_a_mostrar, &self.incidentes, &mut self.clicks);            
 
                 /*
                 // HARDCODEO DRON
@@ -145,49 +197,10 @@ impl eframe::App for Aplicacion {
                 }
 
                 if let Some(clicked_at) = self.clicks.clicked_at {
-                    egui::Window::new("Agregar Incidente")
-                        .collapsible(false)
-                        .movable(true)
-                        .resizable(false)
-                        .collapsible(true)
-                        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
-                        .show(ui.ctx(), |ui| {
-                            ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
-
-                            ui.add_sized([350., 40.], |ui: &mut Ui| {
-                                ui.text_edit_multiline(&mut self.nombre_incidente)
-                            });
-
-                            if !self.nombre_incidente.trim().is_empty()
-                                && ui
-                                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
-                                    .clicked()
-                            {
-                                let incidente = Incidente::new(
-                                    clicked_at.lon(),
-                                    clicked_at.lat(),
-                                    self.nombre_incidente.clone(),
-                                );
-
-                                self.nombre_incidente.clear();
-
-                                self.clicks.clear();
-
-                                self.incidentes.push(incidente);
-                            }
-                        });
+                    agregar_incidente(ui, clicked_at, self);
                 }
 
-                if !self.incidentes.is_empty() {
-                    egui::Window::new("Lista de incidentes")
-                        .collapsible(false)
-                        .movable(true)
-                        .resizable(false)
-                        .collapsible(true)
-                        .anchor(egui::Align2::RIGHT_TOP, [10., 10.])
-                        .show(ui.ctx(), |ui| {
-                        });
-                }
+                lista_de_incidentes_actuales(ui, &self.incidentes);
 
                 /*
                 if !self.drones.is_empty() {
