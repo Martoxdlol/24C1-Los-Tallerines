@@ -40,9 +40,16 @@ impl MockHandler {
     }
 
     pub fn intentar_recibir_string(&mut self) -> Option<String> {
-        self.recibir
-            .try_recv()
-            .ok()
-            .map(|bytes| String::from_utf8_lossy(&bytes).to_string())
+        let mut bytes_todos = Vec::new();
+
+        while let Ok(bytes) = self.recibir.try_recv() {
+            bytes_todos.extend_from_slice(&bytes)
+        }
+ 
+        if bytes_todos.is_empty() {
+            return None;
+        }
+
+        Some(String::from_utf8_lossy(&bytes_todos).to_string())
     }
 }
