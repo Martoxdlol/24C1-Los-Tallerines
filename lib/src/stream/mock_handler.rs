@@ -1,6 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 
-use lib::parseador::{mensaje::Mensaje, Parseador};
+use crate::parseador::{mensaje::Mensaje, Parseador};
 
 use super::mock::MockStream;
 

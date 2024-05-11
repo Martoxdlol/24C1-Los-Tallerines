@@ -1,14 +1,13 @@
 pub mod id;
 pub mod respuesta;
 pub mod tick_contexto;
-use lib::parseador::mensaje::Mensaje;
 use lib::parseador::Parseador;
+use lib::{parseador::mensaje::Mensaje, stream::Stream};
 use std::{fmt::Debug, io};
 
 use crate::{
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
     registrador::Registrador,
-    stream::Stream,
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
@@ -228,7 +227,9 @@ impl Debug for Conexion {
 
 #[cfg(test)]
 mod tests {
-    use crate::{registrador::Registrador, stream::mock_handler::MockHandler};
+    use lib::stream::mock_handler::MockHandler;
+
+    use crate::registrador::Registrador;
 
     use super::{tick_contexto::TickContexto, Conexion};
 
