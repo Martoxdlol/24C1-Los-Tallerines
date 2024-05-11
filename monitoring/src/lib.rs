@@ -1,6 +1,7 @@
 mod botones;
 mod iconos;
 mod incidente;
+mod camara;
 mod dron;
 mod plugins;
 mod proveer_carto;
@@ -12,6 +13,7 @@ use std::collections::HashMap;
 use egui::{Context, Ui};
 use incidente::Incidente;
 use dron::Dron;
+use camara::Camara;
 use proveer_carto::MapaCarto;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 
@@ -55,9 +57,11 @@ pub struct Aplicacion {
     memoria_mapa: MapMemory, // guarda el zoom, la posicion, el centro del mapa
     nombre_incidente: String,
     nombre_dron: String,
+    nombre_camara: String,
     clicks: plugins::ClickWatcher,
     incidentes: Vec<incidente::Incidente>,
     drones: Vec<dron::Dron>,
+    camaras: Vec<camara::Camara>,
 }
 
 impl Aplicacion {
@@ -71,8 +75,10 @@ impl Aplicacion {
             clicks: Default::default(),
             nombre_incidente: String::new(),
             nombre_dron: String::new(),
+            nombre_camara: String::new(),
             incidentes: Vec::new(),
             drones: Vec::new(),
+            camaras: Vec::new(),
         }
     }
 }
@@ -112,6 +118,16 @@ impl eframe::App for Aplicacion {
                     .with_plugin(plugins::mostrar_drones(&self.drones))
                     .with_plugin(plugins::SombreadoCircular {
                         posiciones: self.drones.iter().map(|i| (i.posicion, 50.)).collect(),
+                    })
+                    .with_plugin(&mut self.clicks);
+                */
+
+                /*
+                // HARDCODEO CAMARA
+                let mapa_final = mapa_a_mostrar
+                    .with_plugin(plugins::mostrar_camaras(&self.camaras))
+                    .with_plugin(plugins::SombreadoCircular {
+                        posiciones: self.camaras.iter().map(|i| (i.posicion, 50.)).collect(),
                     })
                     .with_plugin(&mut self.clicks);
                 */
@@ -194,7 +210,41 @@ impl eframe::App for Aplicacion {
                                 self.drones.push(dron);
                             }
                         });
-                    */
+                */
+
+                /*
+                    egui::Window::new("Agregar Camara")
+                        .collapsible(false)
+                        .movable(true)
+                        .resizable(false)
+                        .collapsible(true)
+                        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+                        .show(ui.ctx(), |ui| {
+                            ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
+
+                            ui.add_sized([350., 40.], |ui: &mut Ui| {
+                                ui.text_edit_multiline(&mut self.nombre_camara)
+                            });
+
+                            if !self.nombre_camara.trim().is_empty()
+                                && ui
+                                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                                    .clicked()
+                            {
+                                let camara = Camara::new(
+                                    clicked_at.lon(),
+                                    clicked_at.lat(),
+                                    self.nombre_camara.clone(),
+                                );
+
+                                self.nombre_camara.clear();
+
+                                self.clicks.clear();
+
+                                self.camaras.push(camara);
+                            }
+                        });
+                */
             });
     }
 }
