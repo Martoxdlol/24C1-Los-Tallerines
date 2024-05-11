@@ -221,10 +221,13 @@ mod tests {
 
         let mut cliente = HiloCliente::new(Box::new(stream), rx);
 
+        // Simulas ser el servidor y envias el info
         control.escribir_bytes(b"INFO {}\r\n");
 
+        // Haces un ciclo del cliente
         cliente.ciclo().unwrap();
 
+        // El cliente debería haber enviado un connect
         assert!(control
             .intentar_recibir_string()
             .unwrap()
