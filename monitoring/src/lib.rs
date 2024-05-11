@@ -93,7 +93,6 @@ impl eframe::App for Aplicacion {
                 let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
                 // HARDCODEO INCIDENTE
-
                 let mapa_final = mapa_a_mostrar
                     .with_plugin(plugins::mostrar_incidentes(&self.incidentes))
                     .with_plugin(plugins::SombreadoCircular {
@@ -110,7 +109,7 @@ impl eframe::App for Aplicacion {
 
                     zoom(ui, &mut self.memoria_mapa);
                     ir_a_posicion_inicial(ui, &mut self.memoria_mapa);
-                    self.clicks.show_position(ui);
+                    self.clicks.mostrar_posicion(ui);
                 }
 
                 if let Some(clicked_at) = self.clicks.clicked_at {

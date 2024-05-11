@@ -52,9 +52,9 @@ pub struct ClickWatcher {
 
 impl ClickWatcher {
     // Donde hiciste click
-    pub fn show_position(&mut self, ui: &egui::Ui) {
+    pub fn mostrar_posicion(&mut self, ui: &egui::Ui) {
         if let Some(clicked_at) = self.clicked_at {
-            egui::Window::new("Clicked Position")
+            egui::Window::new("Posicion clickeada")
                 .collapsible(false)
                 .resizable(false)
                 .title_bar(false)
@@ -63,7 +63,7 @@ impl ClickWatcher {
                     ui.horizontal(|ui| {
                         ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
                             .on_hover_text("Posición donde hiciste click");
-                        if ui.button("cerrar").clicked() {
+                        if ui.button("Cerrar").clicked() {
                             self.clear()
                         }
                     });
@@ -84,8 +84,8 @@ impl Plugin for &mut ClickWatcher {
                 .map(|p| projector.unproject(p - response.rect.center()));
         }
 
-        if let Some(position) = self.clicked_at {
-            painter.circle_filled(projector.project(position).to_pos2(), 5.0, Color32::BLUE);
+        if let Some(posicion) = self.clicked_at {
+            painter.circle_filled(projector.project(posicion).to_pos2(), 5.0, Color32::BLUE);
         }
     }
 }
