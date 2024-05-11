@@ -205,3 +205,30 @@ impl HiloCliente {
         Ok(self.parseador.proximo_mensaje())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use lib::stream::mock_handler::MockHandler;
+
+    use super::HiloCliente;
+
+    #[test]
+    fn conectar() {
+        // Simula ser el servidor
+        let (mut control, stream) = MockHandler::new();
+
+        let (_tx, rx) = std::sync::mpsc::channel();
+
+        let mut cliente = HiloCliente::new(Box::new(stream), rx);
+
+        control.escribir_bytes(b"INFO {}\r\n");
+
+        cliente.ciclo().unwrap();
+
+        assert!(control
+            .intentar_recibir_string()
+            .unwrap()
+            .to_uppercase()
+            .starts_with("CONNECT"));
+    }
+}
