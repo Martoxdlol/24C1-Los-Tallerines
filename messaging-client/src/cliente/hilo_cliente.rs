@@ -1,19 +1,21 @@
 use std::{
     collections::HashMap,
     io::{self, Read, Write},
-    net::TcpStream,
     sync::mpsc::{Receiver, Sender},
 };
 
+use lib::{
+    parseador::{mensaje::Mensaje, Parseador},
+    stream::Stream,
+};
+
 use super::{instruccion::Instruccion, publicacion::Publicacion};
-use lib::parseador::mensaje::Mensaje;
-use lib::parseador::Parseador;
 
 /// El hilo del cliente posee el stream de la conexion, el canal por el cual se
 /// reciben mensajes, los canales de suscripciones que están asociados a un id
 /// de suscripción, y el Parseador
 pub struct HiloCliente {
-    pub stream: TcpStream,
+    pub stream: Box<dyn Stream>,
     pub canal_recibir: Receiver<Instruccion>,
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
@@ -22,7 +24,7 @@ pub struct HiloCliente {
 }
 
 impl HiloCliente {
-    pub fn new(stream: TcpStream, canal_recibir: Receiver<Instruccion>) -> Self {
+    pub fn new(stream: Box<dyn Stream>, canal_recibir: Receiver<Instruccion>) -> Self {
         Self {
             stream,
             canal_recibir,
@@ -33,24 +35,32 @@ impl HiloCliente {
     }
 
     pub fn ejecutar(&mut self) -> std::io::Result<()> {
-        let mut desconectar = false;
-
-        while !desconectar {
-            while let Some(mensaje) = self.proximo_mensaje()? {
-                self.gestionar_nuevo_mensaje(mensaje)?;
-            }
-
-            // Esperar a que termine de autenticarse para procesar instrucciones
-            if !self.autenticado {
-                continue;
-            }
-
-            while let Ok(instruccion) = self.canal_recibir.try_recv() {
-                desconectar = self.gestionar_nueva_instruccion(instruccion)?;
+        loop {
+            if !self.ciclo()? {
+                break;
             }
         }
 
         Ok(())
+    }
+
+    fn ciclo(&mut self) -> std::io::Result<bool> {
+        let mut conectado = false;
+
+        while let Some(mensaje) = self.proximo_mensaje()? {
+            self.gestionar_nuevo_mensaje(mensaje)?;
+        }
+
+        // Esperar a que termine de autenticarse para procesar instrucciones
+        if !self.autenticado {
+            return Ok(conectado);
+        }
+
+        while let Ok(instruccion) = self.canal_recibir.try_recv() {
+            conectado = self.gestionar_nueva_instruccion(instruccion)?;
+        }
+
+        Ok(conectado)
     }
 
     fn gestionar_nuevo_mensaje(&mut self, mensaje: Mensaje) -> std::io::Result<()> {
@@ -171,11 +181,11 @@ impl HiloCliente {
                 }
             }
             Instruccion::Desconectar => {
-                return Ok(true);
+                return Ok(false);
             }
         }
 
-        Ok(false)
+        Ok(true)
     }
 
     fn proximo_mensaje(&mut self) -> std::io::Result<Option<Mensaje>> {
