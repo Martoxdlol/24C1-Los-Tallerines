@@ -178,6 +178,41 @@ impl eframe::App for Aplicacion {
                         });
                 }
 
+                if !self.incidentes.is_empty() {
+                    egui::Window::new("Lista de incidentes")
+                        .collapsible(false)
+                        .movable(true)
+                        .resizable(false)
+                        .collapsible(true)
+                        .anchor(egui::Align2::RIGHT_TOP, [10., 10.])
+                        .show(ui.ctx(), |ui| {
+                        });
+                }
+
+                /*
+                if !self.drones.is_empty() {
+                    egui::Window::new("Lista de drones")
+                        .collapsible(false)
+                        .movable(true)
+                        .resizable(false)
+                        .collapsible(true)
+                        .anchor(egui::Align2::RIGHT_TOP, [10., 110.])
+                        .show(ui.ctx(), |ui| {
+                        });
+                }
+
+                if !self.camaras.is_empty() {
+                    egui::Window::new("Lista de camaras")
+                        .collapsible(false)
+                        .movable(true)
+                        .resizable(false)
+                        .collapsible(true)
+                        .anchor(egui::Align2::RIGHT_TOP, [10., 210.])
+                        .show(ui.ctx(), |ui| {
+                        });
+                }
+                */
+
                 /*
                     egui::Window::new("Agregar Dron")
                         .collapsible(false)
@@ -245,6 +280,7 @@ impl eframe::App for Aplicacion {
                             }
                         });
                 */
+
             });
     }
 }
