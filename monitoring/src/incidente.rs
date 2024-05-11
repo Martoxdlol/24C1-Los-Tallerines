@@ -8,9 +8,9 @@ pub struct Incidente {
     pub radio: f64,
 }
 impl Incidente {
-    pub fn new(longitud: f64, latitude: f64, nombre: String) -> Self {
+    pub fn new(longitud: f64, latitud: f64, nombre: String) -> Self {
         Incidente {
-            posicion: Position::from_lon_lat(longitud, latitude),
+            posicion: Position::from_lon_lat(longitud, latitud),
             nombre,
             icono: '🚨',
             estilo: Style::default(),
