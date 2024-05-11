@@ -210,6 +210,8 @@ impl HiloCliente {
 mod tests {
     use lib::stream::mock_handler::MockHandler;
 
+    use crate::cliente::{instruccion::Instruccion, publicacion::Publicacion};
+
     use super::HiloCliente;
 
     #[test]
@@ -233,5 +235,52 @@ mod tests {
             .unwrap()
             .to_uppercase()
             .starts_with("CONNECT"));
+    }
+
+    #[test]
+    fn publicar() {
+        // Simula ser el servidor
+        let (mut control, stream) = MockHandler::new();
+
+        let (tx, rx) = std::sync::mpsc::channel();
+
+        let mut cliente = HiloCliente::new(Box::new(stream), rx);
+
+        // Simulas ser el servidor y envias el info
+        control.escribir_bytes(b"INFO {}\r\n");
+
+        // Haces un ciclo del cliente
+        cliente.ciclo().unwrap();
+
+        // El cliente debería haber enviado un connect
+        assert!(control
+            .intentar_recibir_string()
+            .unwrap()
+            .to_uppercase()
+            .starts_with("CONNECT"));
+
+        // Haces un ciclo del cliente
+        cliente.ciclo().unwrap();
+
+        tx.send(Instruccion::Publicar(Publicacion{
+            header: None,
+            replay_to: None,
+            payload: b"Hola".to_vec(),
+            subject: "Saludar".to_string()
+        })).unwrap();
+
+        // Haces un ciclo del cliente
+        cliente.ciclo().unwrap();
+
+        assert!(control
+            .intentar_recibir_string()
+            .unwrap()
+            .starts_with("PUB Saludar 4\r\n"));
+
+        assert!(control
+            .intentar_recibir_string()
+            .unwrap()
+            .starts_with("Hola"));
+
     }
 }
