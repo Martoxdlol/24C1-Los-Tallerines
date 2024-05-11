@@ -225,3 +225,85 @@ impl Debug for Conexion {
             .finish()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{registrador::Registrador, stream::mock_handler::MockHandler};
+
+    use super::{tick_contexto::TickContexto, Conexion};
+
+    #[test]
+    fn probar_info() {
+        // El MockStream simula ser el stream del cliente, el control permite leer y escribir al stream
+        let (mut control, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        // Conexion representa el cliente del lado del servidor
+        Conexion::new(1, Box::new(stream), registrador);
+
+        assert!(control
+            .intentar_recibir_string()
+            .unwrap()
+            .to_uppercase()
+            .starts_with("INFO"));
+    }
+
+    #[test]
+    fn probar_autenticacion() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador);
+
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        assert!(con.autenticado);
+    }
+
+    #[test]
+    fn probar_suscripcion() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        mock.escribir_bytes(b"SUB x 1\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        assert_eq!(contexto.suscripciones.len(), 1);
+        assert_eq!(contexto.suscripciones[0].id(), "1");
+        assert_eq!(contexto.suscripciones[0].topico().to_string(), "x");
+    }
+
+    #[test]
+    fn probar_publicar() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        mock.escribir_bytes(b"PUB x 4\r\nhola\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        println!("{:?}", contexto);
+
+        assert_eq!(contexto.publicaciones.len(), 1);
+        assert_eq!(contexto.publicaciones[0].topico, "x");
+        assert_eq!(contexto.publicaciones[0].payload, b"hola");
+    }
+}
