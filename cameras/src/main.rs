@@ -28,7 +28,7 @@ fn main() {
                 Comando::Desconectar(id) => match estado.desconectar_camara(id) {
                     Ok(()) => enviar_respuesta.send(Respuesta::Ok).unwrap(),
                     Err(e) => enviar_respuesta.send(Respuesta::Error(e)).unwrap(),
-                }
+                },
                 Comando::ListarCamaras => {
                     let camaras: Vec<Camara> = estado.camaras().into_iter().cloned().collect();
                     if camaras.is_empty() {
@@ -39,24 +39,32 @@ fn main() {
                         enviar_respuesta.send(Respuesta::Camaras(camaras)).unwrap();
                     }
                 }
-                Comando::ModificarUbicacion(id,lat ,lon ) => {
+                Comando::MostrarCamara(id) => {
+                    if let Some(camara) = estado.camara(id) {
+                        enviar_respuesta
+                            .send(Respuesta::Camara(camara.clone()))
+                            .unwrap();
+                    } else {
+                        enviar_respuesta
+                            .send(Respuesta::Error(
+                                "No existe una cámara con ese ID".to_string(),
+                            ))
+                            .unwrap();
+                    }
+                }
+                Comando::ModificarUbicacion(id, lat, lon) => {
                     match estado.modificar_ubicacion(id, lat, lon) {
                         Ok(()) => enviar_respuesta.send(Respuesta::Ok).unwrap(),
                         Err(e) => enviar_respuesta.send(Respuesta::Error(e)).unwrap(),
                     }
-                
                 }
-                Comando::ModifciarRango(id,rango) => {
-                    match estado.modificar_rango(id, rango) {
-                        Ok(()) => enviar_respuesta.send(Respuesta::Ok).unwrap(),
-                        Err(e) => enviar_respuesta.send(Respuesta::Error(e)).unwrap(),
-                    }
-                
-                }
+                Comando::ModifciarRango(id, rango) => match estado.modificar_rango(id, rango) {
+                    Ok(()) => enviar_respuesta.send(Respuesta::Ok).unwrap(),
+                    Err(e) => enviar_respuesta.send(Respuesta::Error(e)).unwrap(),
+                },
                 Comando::Ayuda => {
                     enviar_respuesta.send(Respuesta::Ayuda).unwrap();
-                }  
-
+                }
             }
         }
     }

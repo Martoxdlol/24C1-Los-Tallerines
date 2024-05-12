@@ -49,6 +49,10 @@ fn interpretar_comando(input: &str) -> Option<Comando> {
             Some(Comando::Desconectar(id))
         }
         Some("listar") => Some(Comando::ListarCamaras),
+        Some("camara") => {
+            let id = palabras.next()?.parse().ok()?;
+            Some(Comando::MostrarCamara(id))
+        }
         Some("modificar ubicacion") => {
             let id = palabras.next()?.parse().ok()?;
             let lat = palabras.next()?.parse().ok()?;
@@ -59,7 +63,7 @@ fn interpretar_comando(input: &str) -> Option<Comando> {
             let id = palabras.next()?.parse().ok()?;
             let rango = palabras.next()?.parse().ok()?;
             Some(Comando::ModifciarRango(id, rango))
-    }
+        }
         Some("ayuda") => Some(Comando::Ayuda),
         _ => None,
     }
