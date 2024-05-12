@@ -1,9 +1,7 @@
 // use messaging::client::NATSClient;
 
-use std::ops::RangeBounds;
-
 use cameras::{
-    camara::{id, Camara},
+    camara::Camara,
     estado::Estado,
     interfaz::{comando::Comando, interfaz, respuesta::Respuesta},
 };

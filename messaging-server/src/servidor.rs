@@ -24,7 +24,8 @@ pub struct Servidor {
 }
 
 impl Servidor {
-    pub fn procesos(cantidad: usize) -> Servidor { // La cantidad es la cantidad de hilos que se van a crear
+    pub fn procesos(cantidad: usize) -> Servidor {
+        // La cantidad es la cantidad de hilos que se van a crear
         // Vector con los canales para enviar nuevas conexiones y handle de los threads
         let mut hilos = Vec::new();
 
@@ -51,7 +52,7 @@ impl Servidor {
             for (id_canal_a_enviar, tx) in canales_enviar.iter().enumerate() {
                 let id = id_canal_a_enviar as IdHilo;
                 canales_a_enviar_mensajes.insert(id, tx.clone()); // El id es el id del hilo. Yo quiero mandarle mensaje a todos los hilos.
-                // a cada id, le asigno un emisor a ese hilo. (id 2, le asigno un emisor al hilo 2)
+                                                                  // a cada id, le asigno un emisor a ese hilo. (id 2, le asigno un emisor al hilo 2)
             }
 
             // Obtengo el id del hilo
@@ -64,7 +65,13 @@ impl Servidor {
             // Establecemos el hilo actual para el registrador
             registrador.establecer_hilo(id_hilo);
             // Creamos el hilo
-            let hilo = Hilo::new(id_hilo, rx_conexiones, canales_a_enviar_mensajes, rx, registrador);
+            let hilo = Hilo::new(
+                id_hilo,
+                rx_conexiones,
+                canales_a_enviar_mensajes,
+                rx,
+                registrador,
+            );
 
             // Iniciamos el thread del hilo
             let handle = Hilo::iniciar(hilo);
@@ -119,7 +126,8 @@ impl Servidor {
                     );
 
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];
-                    match tx.send((id_conexion, conexion)) { // Envio la conexion al hilo
+                    match tx.send((id_conexion, conexion)) {
+                        // Envio la conexion al hilo
                         Ok(_) => {
                             self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();
                         }

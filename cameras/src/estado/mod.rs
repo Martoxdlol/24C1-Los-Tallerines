@@ -6,6 +6,12 @@ pub struct Estado {
     camaras: HashMap<IdCamara, Camara>,
 }
 
+impl Default for Estado {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Estado {
     pub fn new() -> Self {
         Estado {

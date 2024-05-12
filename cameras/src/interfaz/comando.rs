@@ -8,5 +8,4 @@ pub enum Comando {
     ModificarUbicacion(IdCamara, f64, f64),
     ModifciarRango(IdCamara, f64),
     Ayuda,
-    
 }

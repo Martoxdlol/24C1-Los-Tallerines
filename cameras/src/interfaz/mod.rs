@@ -16,7 +16,7 @@ pub fn interfaz() -> (Sender<Respuesta>, Receiver<Comando>) {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let comando = interpretar_comando(&input.trim());
+        let comando = interpretar_comando(input.trim());
 
         if let Some(comando) = comando {
             if let Err(_e) = enviar_comando.send(comando) {

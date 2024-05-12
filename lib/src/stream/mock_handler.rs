@@ -45,7 +45,7 @@ impl MockHandler {
         while let Ok(bytes) = self.recibir.try_recv() {
             bytes_todos.extend_from_slice(&bytes)
         }
- 
+
         if bytes_todos.is_empty() {
             return None;
         }

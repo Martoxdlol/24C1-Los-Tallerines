@@ -37,8 +37,11 @@ impl Respuesta {
         )
     }
 
-    fn camaras_string(&self, camaras: &Vec<Camara>) -> String {
-        let lineas = camaras.iter().map(|c| self.camara_string(c)).collect::<Vec<String>>();
+    fn camaras_string(&self, camaras: &[Camara]) -> String {
+        let lineas = camaras
+            .iter()
+            .map(|c| self.camara_string(c))
+            .collect::<Vec<String>>();
         lineas.join("\n")
     }
 }
