@@ -1,3 +1,4 @@
+pub mod incidente;
 pub mod parseador;
 pub mod stream;
 
