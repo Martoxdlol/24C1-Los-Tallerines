@@ -30,7 +30,7 @@ pub fn distancia_coordenadas(p1: &Position, p2: &Position) -> f64 {
     6_371_000.0 * c
 }
 
-pub fn metros_a_pixeles_en_mapa(metros: f64, position: &Position, projector: &Projector) -> f64 {
+pub fn metros_a_pixeles_en_mapa(position: &Position, projector: &Projector) -> f64 {
     let p2 = Position::from_lat_lon(position.lat(), position.lon() + 1.);
     let metros_un_grado = distancia_coordenadas(position, &p2);
 
@@ -38,8 +38,7 @@ pub fn metros_a_pixeles_en_mapa(metros: f64, position: &Position, projector: &Pr
 
     let pixeles_por_grado = grados_a_pixeles(position, projector);
 
-    let pixeles_por_metro = (pixeles_por_grado as f64) * grados_en_un_metro;
-    pixeles_por_metro
+    return (pixeles_por_grado as f64) * grados_en_un_metro;
 }
 
 #[cfg(test)]

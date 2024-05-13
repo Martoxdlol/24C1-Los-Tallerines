@@ -34,10 +34,6 @@ pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {
         });
 }
 
-fn coordenadas_actuales(ui: &mut Ui, posicion: walkers::Position) {
-    ui.label("centro del mapa: ");
-    ui.label(format!("{:.04} {:.04}", posicion.lon(), posicion.lat()));
-}
 
 fn click_boton_ir_a_inicio(ui: &mut Ui, map_memory: &mut MapMemory) {
     if ui
