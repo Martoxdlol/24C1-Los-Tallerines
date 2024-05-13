@@ -29,6 +29,7 @@ pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {
             ui.horizontal(|ui| {
                 chequear_acercar(ui, map_memory);
                 chequear_alejar(ui, map_memory);
+                click_boton_ir_a_inicio(ui, map_memory)
             });
         });
 }
@@ -39,21 +40,9 @@ fn coordenadas_actuales(ui: &mut Ui, posicion: walkers::Position) {
 }
 
 fn click_boton_ir_a_inicio(ui: &mut Ui, map_memory: &mut MapMemory) {
-    if ui.button(RichText::new("Ir al inicio").heading()).clicked() {
+    if ui.add_sized([40., 40.],egui::Button::new(RichText::new("📍").heading())).clicked() {
         map_memory.follow_my_position();
     }
 }
 
-pub fn ir_a_posicion_inicial(ui: &Ui, map_memory: &mut MapMemory) {
-    if let Some(posicion) = map_memory.detached() {
-        Window::new("Center")
-            .collapsible(false)
-            .resizable(false)
-            .title_bar(false)
-            .anchor(Align2::RIGHT_BOTTOM, [-10., -10.])
-            .show(ui.ctx(), |ui| {
-                coordenadas_actuales(ui, posicion);
-                click_boton_ir_a_inicio(ui, map_memory);
-            });
-    }
-}
+
