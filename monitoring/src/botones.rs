@@ -40,9 +40,10 @@ fn coordenadas_actuales(ui: &mut Ui, posicion: walkers::Position) {
 }
 
 fn click_boton_ir_a_inicio(ui: &mut Ui, map_memory: &mut MapMemory) {
-    if ui.add_sized([40., 40.],egui::Button::new(RichText::new("📍").heading())).clicked() {
+    if ui
+        .add_sized([40., 40.], egui::Button::new(RichText::new("📍").heading()))
+        .clicked()
+    {
         map_memory.follow_my_position();
     }
 }
-
-
