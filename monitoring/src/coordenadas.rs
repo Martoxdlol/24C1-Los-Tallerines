@@ -38,7 +38,7 @@ pub fn metros_a_pixeles_en_mapa(position: &Position, projector: &Projector) -> f
 
     let pixeles_por_grado = grados_a_pixeles(position, projector);
 
-    return (pixeles_por_grado as f64) * grados_en_un_metro;
+    (pixeles_por_grado as f64) * grados_en_un_metro
 }
 
 #[cfg(test)]
