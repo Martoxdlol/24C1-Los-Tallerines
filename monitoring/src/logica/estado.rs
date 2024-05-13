@@ -7,6 +7,12 @@ pub struct Estado {
     incidentes: Vec<Incidente>,
 }
 
+impl Default for Estado {
+     fn default() -> Self {
+      Self::new()
+   }
+}
+
 impl Estado {
     pub fn new() -> Self {
         Estado {

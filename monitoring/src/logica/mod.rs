@@ -39,5 +39,4 @@ pub fn inicio_conexion(
 
     }
 
-    Ok(())
 }
