@@ -5,6 +5,7 @@ mod camara;
 mod dron;
 mod plugins;
 mod proveer_carto;
+mod coordenadas;
 
 use std::collections::HashMap;
 
@@ -12,8 +13,8 @@ use std::collections::HashMap;
 
 use egui::{Context, Ui};
 use incidente::Incidente;
-use dron::Dron;
-use camara::Camara;
+
+
 use proveer_carto::MapaCarto;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 use crate::plugins::ClickWatcher;
@@ -56,9 +57,7 @@ pub struct Aplicacion {
     opciones_mapa: HashMap<Provider, Box<dyn TilesManager + Send>>,
     estilo_mapa_elegido: Provider,
     memoria_mapa: MapMemory, // guarda el zoom, la posicion, el centro del mapa
-    nombre_incidente: String,
-    nombre_dron: String,
-    nombre_camara: String,
+    nombre_incidente: String, // El input de cuando lo creas.
     clicks: plugins::ClickWatcher,
     incidentes: Vec<incidente::Incidente>,
     drones: Vec<dron::Dron>,
@@ -75,8 +74,6 @@ impl Aplicacion {
             memoria_mapa: MapMemory::default(),
             clicks: Default::default(),
             nombre_incidente: String::new(),
-            nombre_dron: String::new(),
-            nombre_camara: String::new(),
             incidentes: Vec::new(),
             drones: Vec::new(),
             camaras: Vec::new(),
@@ -135,7 +132,7 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
             .resizable(false)
             .collapsible(true)
             .anchor(egui::Align2::RIGHT_TOP, [10., 10.])
-            .show(ui.ctx(), |ui| {
+            .show(ui.ctx(), |_ui| {
             });
     }
 }

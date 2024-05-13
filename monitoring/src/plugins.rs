@@ -1,4 +1,4 @@
-use crate::incidente::Incidente;
+use crate::{coordenadas::metros_a_pixeles_en_mapa, incidente::Incidente};
 use egui::{Color32, Painter, Response, Ui};
 use walkers::{
     extras::{Place, Places},
@@ -27,18 +27,25 @@ pub struct SombreadoCircular {
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        for (posicion, radio) in &self.posiciones {
+        for (posicion, radio_metros) in &self.posiciones {
             // Project it into the position on the screen.
-            let posicion = projector.project(*posicion).to_pos2();
+            let posicion_x_y = projector.project(*posicion).to_pos2();
+
+            let radio_como_f64 = *radio_metros as f64;
+            let radio = (metros_a_pixeles_en_mapa(radio_como_f64, posicion, projector) as f32)
+                * radio_metros;
+
+            println!("XY: {:?}", posicion_x_y);
+            println!("Radio: {}", radio);
 
             let flotar = response
                 .hover_pos()
-                .map(|hover_pos| hover_pos.distance(posicion) < *radio)
+                .map(|hover_pos| hover_pos.distance(posicion_x_y) < radio)
                 .unwrap_or(false);
 
             painter.circle_filled(
-                posicion,
-                *radio,
+                posicion_x_y,
+                radio,
                 Color32::BLACK.gamma_multiply(if flotar { 0.5 } else { 0.2 }),
             );
         }

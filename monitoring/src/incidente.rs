@@ -5,7 +5,7 @@ pub struct Incidente {
     pub nombre: String,
     pub icono: char,
     pub estilo: Style,
-    pub radio: f64,
+
 }
 impl Incidente {
     pub fn new(longitud: f64, latitud: f64, nombre: String) -> Self {
@@ -14,7 +14,7 @@ impl Incidente {
             nombre,
             icono: '🚨',
             estilo: Style::default(),
-            radio: 150.,
+
         }
     }
 }
