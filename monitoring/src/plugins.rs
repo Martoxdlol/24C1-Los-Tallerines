@@ -1,5 +1,5 @@
-use crate::incidente::Incidente;
-use egui::{Color32, Painter, Response};
+use crate::{coordenadas::metros_a_pixeles_en_mapa, incidente::Incidente};
+use egui::{Color32, Painter, Response, Ui};
 use walkers::{
     extras::{Place, Places},
     Plugin, Position, Projector,
@@ -27,18 +27,22 @@ pub struct SombreadoCircular {
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        for (posicion, radio) in &self.posiciones {
+        for (posicion, radio_metros) in &self.posiciones {
             // Project it into the position on the screen.
-            let posicion = projector.project(*posicion).to_pos2();
+            let posicion_x_y = projector.project(*posicion).to_pos2();
+
+            //let radio_como_f64 = *radio_metros as f64;
+            let radio = (metros_a_pixeles_en_mapa( posicion, projector) as f32)
+                * radio_metros;
 
             let flotar = response
                 .hover_pos()
-                .map(|hover_pos| hover_pos.distance(posicion) < *radio)
+                .map(|hover_pos| hover_pos.distance(posicion_x_y) < radio)
                 .unwrap_or(false);
 
             painter.circle_filled(
-                posicion,
-                *radio,
+                posicion_x_y,
+                radio,
                 Color32::BLACK.gamma_multiply(if flotar { 0.5 } else { 0.2 }),
             );
         }
@@ -50,22 +54,30 @@ pub struct ClickWatcher {
     pub clicked_at: Option<Position>,
 }
 
+fn posicion_click(ui: &mut Ui, clicked_at: Position) {
+    ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
+        .on_hover_text("Posición donde hiciste click");
+}
+
+fn click_cerrar(ui: &mut Ui, clickwatcher: &mut ClickWatcher) {
+    if ui.button("Cerrar").clicked() {
+        clickwatcher.clear()
+    }
+}
+
 impl ClickWatcher {
     // Donde hiciste click
-    pub fn show_position(&mut self, ui: &egui::Ui) {
+    pub fn mostrar_posicion(&mut self, ui: &Ui) {
         if let Some(clicked_at) = self.clicked_at {
-            egui::Window::new("Clicked Position")
+            egui::Window::new("Posicion clickeada")
                 .collapsible(false)
                 .resizable(false)
                 .title_bar(false)
                 .anchor(egui::Align2::CENTER_BOTTOM, [0., -10.])
                 .show(ui.ctx(), |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
-                            .on_hover_text("Posición donde hiciste click");
-                        if ui.button("cerrar").clicked() {
-                            self.clear()
-                        }
+                        posicion_click(ui, clicked_at);
+                        click_cerrar(ui, self);
                     });
                 });
         }
@@ -84,8 +96,8 @@ impl Plugin for &mut ClickWatcher {
                 .map(|p| projector.unproject(p - response.rect.center()));
         }
 
-        if let Some(position) = self.clicked_at {
-            painter.circle_filled(projector.project(position).to_pos2(), 5.0, Color32::BLUE);
+        if let Some(posicion) = self.clicked_at {
+            painter.circle_filled(projector.project(posicion).to_pos2(), 5.0, Color32::BLUE);
         }
     }
 }

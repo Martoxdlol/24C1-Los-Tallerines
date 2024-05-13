@@ -1,19 +1,21 @@
 use walkers::{extras::Style, Position};
 
 #[derive(Clone)]
-pub struct Incidente {
+pub struct Camara {
     pub posicion: Position,
-    pub nombre: String,
+    pub id: u64,
     pub icono: char,
     pub estilo: Style,
+    pub radio: f64,
 }
-impl Incidente {
-    pub fn new(longitud: f64, latitud: f64, nombre: String) -> Self {
-        Incidente {
+impl Camara {
+    pub fn new(longitud: f64, latitud: f64, id: u64) -> Self {
+        Camara {
             posicion: Position::from_lon_lat(longitud, latitud),
-            nombre,
-            icono: '🚨',
+            id,
+            icono: '📹',
             estilo: Style::default(),
+            radio: 150.,
         }
     }
 }

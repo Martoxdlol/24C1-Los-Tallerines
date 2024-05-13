@@ -1,19 +1,21 @@
 use walkers::{extras::Style, Position};
 
 #[derive(Clone)]
-pub struct Incidente {
+pub struct Dron {
     pub posicion: Position,
     pub nombre: String,
     pub icono: char,
     pub estilo: Style,
+    pub radio: f64,
 }
-impl Incidente {
+impl Dron {
     pub fn new(longitud: f64, latitud: f64, nombre: String) -> Self {
-        Incidente {
+        Dron {
             posicion: Position::from_lon_lat(longitud, latitud),
             nombre,
-            icono: '🚨',
+            icono: '🚁',
             estilo: Style::default(),
+            radio: 150.,
         }
     }
 }
