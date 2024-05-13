@@ -45,7 +45,7 @@ impl HiloCliente {
     }
 
     fn ciclo(&mut self) -> std::io::Result<bool> {
-        let mut conectado = false;
+        let mut conectado = true;
 
         while let Some(mensaje) = self.proximo_mensaje()? {
             self.gestionar_nuevo_mensaje(mensaje)?;
