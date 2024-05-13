@@ -129,13 +129,23 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
         egui::Window::new("Lista de incidentes")
             .collapsible(false)
             .movable(true)
-            .resizable(false)
+            .resizable(true)
             .collapsible(true)
-            .anchor(egui::Align2::RIGHT_TOP, [10., 10.])
-            .show(ui.ctx(), |_ui| {
+            .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
+            .show(ui.ctx(), |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for incidente in incidentes {
+                        let nombre = format!("{}: {}", incidente.icono, incidente.nombre);
+
+                        ui.add_sized([350., 40.], |ui: &mut Ui| {
+                            ui.label(nombre)
+                        });
+                    }
+                });
             });
     }
 }
+
 
 impl eframe::App for Aplicacion {
     fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
@@ -189,7 +199,6 @@ impl eframe::App for Aplicacion {
                     use botones::*;
 
                     zoom(ui, &mut self.memoria_mapa);
-                    ir_a_posicion_inicial(ui, &mut self.memoria_mapa);
                     self.clicks.mostrar_posicion(ui);
                 }
 

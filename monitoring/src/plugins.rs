@@ -35,9 +35,6 @@ impl Plugin for SombreadoCircular {
             let radio = (metros_a_pixeles_en_mapa(radio_como_f64, posicion, projector) as f32)
                 * radio_metros;
 
-            println!("XY: {:?}", posicion_x_y);
-            println!("Radio: {}", radio);
-
             let flotar = response
                 .hover_pos()
                 .map(|hover_pos| hover_pos.distance(posicion_x_y) < radio)
