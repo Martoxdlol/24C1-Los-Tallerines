@@ -1,5 +1,6 @@
 use walkers::{extras::Style, Position};
 
+#[derive(Clone)]
 pub struct Camara {
     pub posicion: Position,
     pub id: u64,

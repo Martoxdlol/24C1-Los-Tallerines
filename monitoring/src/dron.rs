@@ -1,5 +1,6 @@
 use walkers::{extras::Style, Position};
 
+#[derive(Clone)]
 pub struct Dron {
     pub posicion: Position,
     pub nombre: String,
