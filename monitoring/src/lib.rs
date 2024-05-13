@@ -299,7 +299,7 @@ impl eframe::App for Aplicacion {
                             }
                         });
                 */
-
+                egui::Context::request_repaint(contexto)
             });
     }
 }
