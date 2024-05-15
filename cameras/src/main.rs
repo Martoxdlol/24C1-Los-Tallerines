@@ -1,7 +1,7 @@
 // use messaging::client::NATSClient;
 
 use cameras::{
-    camara::Camara,
+    camara::{id::IdCamara, Camara},
     estado::Estado,
     interfaz::{comando::Comando, interfaz, respuesta::Respuesta},
 };

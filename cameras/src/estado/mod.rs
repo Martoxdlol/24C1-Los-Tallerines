@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::camara::{id::IdCamara, Camara};
 
-/// Estado del sistema entero. Registra todo.
+/// Estado del sistema de camaras.
 /// TODO: Estado de incidentes y de drones
 pub struct Estado {
     camaras: HashMap<IdCamara, Camara>,

@@ -1,5 +1,6 @@
 use crate::camara::Camara;
 
+/// Respuesta a un comando.
 pub enum Respuesta {
     Ok,
     Error(String),
@@ -9,13 +10,13 @@ pub enum Respuesta {
 }
 
 impl Respuesta {
-    pub fn ok() -> Self {
-        Respuesta::Ok
-    }
+    //pub fn ok() -> Self {
+    //    Respuesta::Ok
+    //}
 
-    pub fn error<T: Into<String>>(error: T) -> Self {
-        Respuesta::Error(error.into())
-    }
+    //pub fn error<T: Into<String>>(error: T) -> Self {
+    //    Respuesta::Error(error.into())
+    //}
 
     pub fn como_string(&self) -> String {
         match self {
