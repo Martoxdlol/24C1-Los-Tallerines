@@ -6,8 +6,8 @@ use std::{
 };
 
 use super::{instruccion::Instruccion, publicacion::Publicacion};
-use lib::parseador::mensaje::Mensaje;
 use lib::parseador::Parseador;
+use lib::parseador::{mensaje::Mensaje, parametros_conectar::ParametrosConectar};
 
 /// El hilo del cliente posee el stream de la conexion, el canal por el cual se
 /// reciben mensajes, los canales de suscripciones que están asociados a un id
@@ -18,6 +18,8 @@ pub struct HiloCliente {
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
     pub autenticado: bool,
+    pub user: Option<String>,
+    pub pass: Option<String>,
     parseador: Parseador,
 }
 
@@ -29,6 +31,8 @@ impl HiloCliente {
             canales_subscripciones: HashMap::new(),
             parseador: Parseador::new(),
             autenticado: false,
+            user: None,
+            pass: None,
         }
     }
 
@@ -71,8 +75,29 @@ impl HiloCliente {
                 }
             }
             // Ejemplo: INFO {"server_id":"a","version":"2.1.0","go":"go1.15.6","host":"...
-            Mensaje::Info() => {
-                self.stream.write_all(b"CONNECT {}\r\n")?;
+            Mensaje::Info(parametros) => {
+                if !parametros.auth_required {
+                    self.stream.write_all(b"CONNECT {}\r\n")?;
+                } else {
+                    let user = match &self.user {
+                        Some(user) => user,
+                        None => "",
+                    };
+
+                    let pass = match &self.pass {
+                        Some(pass) => pass,
+                        None => "",
+                    };
+
+                    self.stream.write_all(
+                        &format!(
+                            "CONNECT {}",
+                            ParametrosConectar::user_pass(user, pass).to_json()
+                        )
+                        .as_bytes(),
+                    )?;
+                }
+
                 self.autenticado = true;
             }
             // Ejemplo: PING\r\n

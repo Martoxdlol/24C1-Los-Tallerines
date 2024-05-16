@@ -24,7 +24,17 @@ pub struct Cliente {
 }
 
 impl Cliente {
-    pub fn conectar(direccion: &str) -> io::Result<Cliente> {
+    pub fn conectar(
+        direccion: &str,
+    ) -> io::Result<Cliente> {
+        return Self::conectar_user_pass(direccion, None, None);
+    }
+
+    pub fn conectar_user_pass(
+        direccion: &str,
+        user: Option<String>,
+        pass: Option<String>,
+    ) -> io::Result<Cliente> {
         let stream = TcpStream::connect(direccion)?;
         stream.set_nonblocking(true)?;
 
@@ -32,6 +42,8 @@ impl Cliente {
 
         let hilo_cliente = thread::spawn(move || {
             let mut hilo_cliente = HiloCliente::new(stream, rx);
+            hilo_cliente.user = user;
+            hilo_cliente.pass = pass;
             if let Err(e) = hilo_cliente.ejecutar() {
                 eprintln!("Error en hilo cliente: {}", e)
             } else {

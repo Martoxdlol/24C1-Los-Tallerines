@@ -3,8 +3,10 @@ pub mod respuesta;
 pub mod tick_contexto;
 use lib::parseador::Parseador;
 use lib::{parseador::mensaje::Mensaje, stream::Stream};
+use std::sync::Arc;
 use std::{fmt::Debug, io};
 
+use crate::cuenta::{self, Cuenta};
 use crate::{
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
     registrador::Registrador,
@@ -27,10 +29,18 @@ pub struct Conexion {
     /// Indica si la conexión está autenticada.
     /// Es decir, si ya se envió un mensaje de conexión (`CONNECT {...}`)
     pub autenticado: bool,
+
+    /// Cuentas de usuario
+    pub cuentas: Option<Arc<Vec<Cuenta>>>,
 }
 
 impl Conexion {
-    pub fn new(id: IdConexion, stream: Box<dyn Stream>, registrador: Registrador) -> Self {
+    pub fn new(
+        id: IdConexion,
+        stream: Box<dyn Stream>,
+        registrador: Registrador,
+        cuentas: Option<Arc<Vec<Cuenta>>>,
+    ) -> Self {
         let mut con = Self {
             id,
             stream,
@@ -38,6 +48,7 @@ impl Conexion {
             registrador,
             desconectado: false,
             autenticado: false,
+            cuentas,
         };
 
         con.enviar_info();
@@ -134,7 +145,27 @@ impl Conexion {
 
             if !self.autenticado {
                 match mensaje {
-                    Mensaje::Conectar(_) => {
+                    Mensaje::Conectar(parametros) => {
+                        if let Some(cuentas) = &self.cuentas {
+                            for cuenta in cuentas.iter() {
+                                if cuenta.matches(&parametros.user_str(), &parametros.pass_str()) {
+                                    self.registrador.info(
+                                        &format!("Usuario autenticado: {}", cuenta.user),
+                                        Some(self.id),
+                                    );
+
+                                    self.autenticado = true;
+                                    self.escribir_respuesta(&Respuesta::Ok(Some(
+                                        "connect".to_string(),
+                                    )));
+                                    return;
+                                }
+                            }
+
+                            self.escribir_err(Some("Usuario o contraseña incorrectos".to_string()));
+                            self.desconectado = true;
+                        }
+
                         self.autenticado = true;
                         self.escribir_respuesta(&Respuesta::Ok(Some("connect".to_string())));
                     }
@@ -240,7 +271,7 @@ mod tests {
         let registrador = Registrador::new();
 
         // Conexion representa el cliente del lado del servidor
-        Conexion::new(1, Box::new(stream), registrador);
+        Conexion::new(1, Box::new(stream), registrador, None);
 
         assert!(control
             .intentar_recibir_string()
@@ -254,7 +285,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
 
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
@@ -269,7 +300,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
@@ -290,7 +321,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);

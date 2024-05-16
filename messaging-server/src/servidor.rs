@@ -2,13 +2,12 @@ use std::{
     collections::HashMap,
     io,
     net::TcpListener,
-    sync::mpsc::{self, Sender},
+    sync::{mpsc::{self, Sender}, Arc},
     thread::{self, JoinHandle},
 };
 
 use crate::{
-    conexion::id::IdConexion, configuracion::Configuracion, hilo::id::IdHilo,
-    registrador::Registrador,
+    conexion::id::IdConexion, configuracion::Configuracion, cuenta::Cuenta, hilo::id::IdHilo, registrador::Registrador
 };
 
 use super::{conexion::Conexion, hilo::Hilo};
@@ -21,6 +20,7 @@ pub struct Servidor {
     proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
     registrador: Registrador,
+    cuentas: Arc<Vec<Cuenta>>
 }
 
 impl Servidor {
@@ -78,6 +78,7 @@ impl Servidor {
             proximo_id_hilo: 0,
             ultimo_id_conexion: 0,
             registrador,
+            cuentas: Arc::new(Vec::new())
         }
     }
 
@@ -116,7 +117,9 @@ impl Servidor {
                         id_conexion,
                         Box::new(stream),
                         registrador_para_nueva_conexion,
+                        Some(self.cuentas.clone()),
                     );
+
 
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];
                     match tx.send((id_conexion, conexion)) { // Envio la conexion al hilo

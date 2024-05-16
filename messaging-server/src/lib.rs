@@ -5,3 +5,4 @@ pub mod publicacion;
 pub mod registrador;
 pub mod servidor;
 pub mod suscripciones;
+pub mod cuenta;

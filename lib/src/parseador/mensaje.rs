@@ -1,3 +1,5 @@
+use super::{parametros_conectar::ParametrosConectar, parametros_info::ParametrosInfo};
+
 #[derive(Debug)]
 pub enum Mensaje {
     // 'topico', 'replay_to' payload
@@ -11,13 +13,13 @@ pub enum Mensaje {
     // Mensaje de error (cuando no se pudo parsear el mensaje)
     Error(String),
     // Mensaje para generar la conexión
-    Conectar(String),
+    Conectar(ParametrosConectar),
     // Mensaje para preservar la conexión
     Ping(),
     // Mensaje para preservar la conexión
     Pong(),
     //
-    Info(),
+    Info(ParametrosInfo),
     // MSG <subject> <sid> [reply-to] payload
     Publicacion(String, String, Option<String>, Vec<u8>),
     // HMSG <subject> <sid> [reply-to] headers payload
