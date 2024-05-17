@@ -121,7 +121,28 @@ impl Servidor {
     }
 
     pub fn inicio(&mut self) {
-        let listener = TcpListener::bind("127.0.0.1:3000").unwrap();
+        let argumentos: Vec<String> = env::args().collect();
+
+        if argumentos.len() != 2 {
+            println!("No se mandó archivo de configuración");
+            process::exit(1);
+        }
+
+        let path_archivo = &argumentos[1];
+
+        // Leer el contenido del archivo de configuración
+        let contenido = fs::read_to_string(path_archivo).unwrap_or_else(|err| {
+            eprintln!("No se pudo leer el archivo de configuración: {}", err);
+            process::exit(1);
+        });
+
+        // Parsear el contenido del archivo de configuración
+        let configuracion: Config = toml::from_str(&contenido).unwrap_or_else(|err| {
+            eprintln!("No se pudo parsear el archivo de configuración: {}", err);
+            process::exit(1);
+        });
+
+        let listener = TcpListener::bind(format!("{}:{}", configuracion.direccion, configuracion.puerto)).unwrap();
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
