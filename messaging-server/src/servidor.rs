@@ -100,7 +100,7 @@ impl Servidor {
     }
 
     pub fn inicio(&mut self) {
-        let listener = TcpListener::bind("127.0.0.1:3000").unwrap();
+        let listener = TcpListener::bind("0.0.0.0:4222").unwrap();
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
