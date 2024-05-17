@@ -1,4 +1,5 @@
 use std::{
+    io::{self, ErrorKind},
     sync::mpsc::{Receiver, RecvError, RecvTimeoutError, Sender, TryRecvError},
     time::Duration,
 };
@@ -29,11 +30,20 @@ impl Suscripcion {
         }
     }
 
-    pub fn leer(&self) -> Result<Publicacion, RecvError> {
-        self.canal_publicaciones.recv()
+    pub fn leer(&self) -> io::Result<Publicacion> {
+        match self.canal_publicaciones.recv() {
+            Ok(publicacion) => Ok(publicacion),
+            Err(_) => {
+                self.conectado = false;
+                Err(io::Error::new(
+                    ErrorKind::ConnectionReset,
+                    "El cliente está desconectado".to_string(),
+                ))
+            }
+        }
     }
 
-    pub fn intentar_leer(&mut self) -> Result<Option<Publicacion>, TryRecvError> {
+    pub fn intentar_leer(&mut self) -> io::Result<Option<Publicacion>> {
         match self.canal_publicaciones.try_recv() {
             Ok(publicacion) => Ok(Some(publicacion)),
             Err(e) => {
@@ -41,7 +51,10 @@ impl Suscripcion {
                     Ok(None)
                 } else {
                     self.conectado = false;
-                    Err(e)
+                    Err(io::Error::new(
+                        ErrorKind::ConnectionReset,
+                        "El cliente está desconectado".to_string(),
+                    ))
                 }
             }
         }
@@ -50,15 +63,18 @@ impl Suscripcion {
     pub fn leer_con_limite_de_tiempo(
         &mut self,
         limite: Duration,
-    ) -> Result<Publicacion, RecvTimeoutError> {
+    ) -> io::Result<Option<Publicacion>> {
         match self.canal_publicaciones.recv_timeout(limite) {
-            Ok(publicacion) => Ok(publicacion),
+            Ok(publicacion) => Ok(Some(publicacion)),
             Err(e) => {
                 if let RecvTimeoutError::Timeout = e {
-                    Err(e)
+                    Ok(None)
                 } else {
                     self.conectado = false;
-                    Err(e)
+                    Err(io::Error::new(
+                        ErrorKind::ConnectionReset,
+                        "El cliente está desconectado",
+                    ))
                 }
             }
         }
@@ -75,7 +91,7 @@ impl Drop for Suscripcion {
 }
 
 impl Iterator for Suscripcion {
-    type Item = Result<Publicacion, RecvError>;
+    type Item = io::Result<Publicacion>;
 
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.leer())
