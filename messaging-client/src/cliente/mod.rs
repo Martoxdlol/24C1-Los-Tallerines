@@ -31,7 +31,7 @@ impl Cliente {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let hilo_cliente = thread::spawn(move || {
-            let mut hilo_cliente = HiloCliente::new(stream, rx);
+            let mut hilo_cliente = HiloCliente::new(Box::new(stream), rx);
             if let Err(e) = hilo_cliente.ejecutar() {
                 eprintln!("Error en hilo cliente: {}", e)
             } else {

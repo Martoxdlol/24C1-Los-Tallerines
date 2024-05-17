@@ -1,3 +1,6 @@
+pub mod mock;
+pub mod mock_handler;
+
 use std::{
     io::{Read, Write},
     net::TcpStream,

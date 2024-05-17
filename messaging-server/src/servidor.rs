@@ -18,13 +18,14 @@ type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 pub struct Servidor {
     hilos: Vec<InfoHilo>,
     _configuracion: Configuracion,
-    proximo_id_hilo: usize, // Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
-    ultimo_id_conexion: IdConexion,
+    proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
+    ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
     registrador: Registrador,
 }
 
 impl Servidor {
     pub fn procesos(cantidad: usize) -> Servidor {
+        // La cantidad es la cantidad de hilos que se van a crear
         // Vector con los canales para enviar nuevas conexiones y handle de los threads
         let mut hilos = Vec::new();
 
@@ -45,16 +46,17 @@ impl Servidor {
 
         for (indice_hilo, rx) in canales_recibir.drain(..).enumerate() {
             // HashMap con las puntas emisoras a cada hilo para enviar instrucciones a los mismos
-            let mut todos_los_canales = HashMap::new();
+            let mut canales_a_enviar_mensajes = HashMap::new();
 
             // Insertamos las puntas emisoras de los canales en el HashMap
-            for (canal_i, tx) in canales_enviar.iter().enumerate() {
-                let id = canal_i as IdHilo;
-                todos_los_canales.insert(id, tx.clone());
+            for (id_canal_a_enviar, tx) in canales_enviar.iter().enumerate() {
+                let id = id_canal_a_enviar as IdHilo;
+                canales_a_enviar_mensajes.insert(id, tx.clone()); // El id es el id del hilo. Yo quiero mandarle mensaje a todos los hilos.
+                                                                  // a cada id, le asigno un emisor a ese hilo. (id 2, le asigno un emisor al hilo 2)
             }
 
             // Obtengo el id del hilo
-            let id_hilo: u64 = indice_hilo as IdHilo;
+            let id_hilo: u64 = indice_hilo as IdHilo; // Id del hilo actual. Suponiendo cronologia; 1, 2...
 
             // Creamos el canal para enviar nuevas conexiones al hilo
             let (tx_conexiones, rx_conexiones) = mpsc::channel();
@@ -63,11 +65,17 @@ impl Servidor {
             // Establecemos el hilo actual para el registrador
             registrador.establecer_hilo(id_hilo);
             // Creamos el hilo
-            let hilo = Hilo::new(id_hilo, rx_conexiones, todos_los_canales, rx, registrador);
+            let hilo = Hilo::new(
+                id_hilo,
+                rx_conexiones,
+                canales_a_enviar_mensajes,
+                rx,
+                registrador,
+            );
 
             // Iniciamos el thread del hilo
             let handle = Hilo::iniciar(hilo);
-            // Guardamos el canal y el handle del hilo
+            // Tx_conexciones es por donde le van a asignar conexiones al hilo y el handle del hilo
             hilos.push((tx_conexiones, handle));
         }
 
@@ -119,6 +127,7 @@ impl Servidor {
 
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];
                     match tx.send((id_conexion, conexion)) {
+                        // Envio la conexion al hilo
                         Ok(_) => {
                             self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();
                         }

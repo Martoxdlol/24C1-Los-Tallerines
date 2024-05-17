@@ -6,6 +6,7 @@ use crate::{
 
 use super::id::IdConexion;
 
+#[derive(Debug)]
 pub struct TickContexto {
     pub suscripciones: Vec<Suscripcion>,
     pub desuscripciones: Vec<IdSuscripcion>,

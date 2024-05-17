@@ -7,10 +7,10 @@ pub fn hilo_registrador(rx: Receiver<Registro>) {
         while let Ok(registro) = rx.recv() {
             match registro.nivel {
                 super::registro::NivelRegistro::Advertencia => {
-                    eprintln!("{}", registro.to_string())
+                    eprintln!("{}", registro)
                 }
                 _ => {
-                    println!("{}", registro.to_string())
+                    println!("{}", registro)
                 }
             }
         }
