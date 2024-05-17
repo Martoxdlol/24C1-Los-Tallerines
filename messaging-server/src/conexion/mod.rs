@@ -6,7 +6,7 @@ use lib::{parseador::mensaje::Mensaje, stream::Stream};
 use std::sync::Arc;
 use std::{fmt::Debug, io};
 
-use crate::cuenta::{self, Cuenta};
+use crate::cuenta::Cuenta;
 use crate::{
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
     registrador::Registrador,
@@ -15,7 +15,7 @@ use crate::{
 
 use self::{id::IdConexion, respuesta::Respuesta, tick_contexto::TickContexto};
 pub struct Conexion {
-    /// El identificador de la conexión. Global y único
+    /// El identificador de la conexión. Global y único0
     id: IdConexion,
     /// El stream de la conexión
     stream: Box<dyn Stream>,

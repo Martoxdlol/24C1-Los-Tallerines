@@ -2,15 +2,31 @@ use std::{
     collections::HashMap,
     io,
     net::TcpListener,
-    sync::{mpsc::{self, Sender}, Arc},
+    sync::{
+        mpsc::{self, Sender},
+        Arc,
+    },
     thread::{self, JoinHandle},
 };
 
 use crate::{
-    conexion::id::IdConexion, configuracion::Configuracion, cuenta::Cuenta, hilo::id::IdHilo, registrador::Registrador
+    conexion::id::IdConexion, configuracion::Configuracion, cuenta::Cuenta, hilo::id::IdHilo,
+    registrador::Registrador,
 };
 
 use super::{conexion::Conexion, hilo::Hilo};
+
+use serde::Deserialize;
+use std::env;
+use std::fs;
+use std::process;
+
+#[derive(Deserialize)]
+struct Config {
+    direccion: String,
+    puerto: u16,
+}
+
 
 type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 
@@ -20,11 +36,12 @@ pub struct Servidor {
     proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
     registrador: Registrador,
-    cuentas: Arc<Vec<Cuenta>>
+    cuentas: Arc<Vec<Cuenta>>,
 }
 
 impl Servidor {
-    pub fn procesos(cantidad: usize) -> Servidor { // La cantidad es la cantidad de hilos que se van a crear
+    pub fn procesos(cantidad: usize) -> Servidor {
+        // La cantidad es la cantidad de hilos que se van a crear
         // Vector con los canales para enviar nuevas conexiones y handle de los threads
         let mut hilos = Vec::new();
 
@@ -43,6 +60,10 @@ impl Servidor {
             canales_recibir.push(rx);
         }
 
+        // Para cada punta receptora en canales_recibir, se insertan las
+        // puntas emisoras de los canales en canales_a_enviar_mensajes que
+        // tiene las puntas emisoras a cada hilo para enviar instrucciones
+        // a ellos
         for (indice_hilo, rx) in canales_recibir.drain(..).enumerate() {
             // HashMap con las puntas emisoras a cada hilo para enviar instrucciones a los mismos
             let mut canales_a_enviar_mensajes = HashMap::new();
@@ -51,7 +72,7 @@ impl Servidor {
             for (id_canal_a_enviar, tx) in canales_enviar.iter().enumerate() {
                 let id = id_canal_a_enviar as IdHilo;
                 canales_a_enviar_mensajes.insert(id, tx.clone()); // El id es el id del hilo. Yo quiero mandarle mensaje a todos los hilos.
-                // a cada id, le asigno un emisor a ese hilo. (id 2, le asigno un emisor al hilo 2)
+                                                                  // a cada id, le asigno un emisor a ese hilo. (id 2, le asigno un emisor al hilo 2)
             }
 
             // Obtengo el id del hilo
@@ -64,7 +85,13 @@ impl Servidor {
             // Establecemos el hilo actual para el registrador
             registrador.establecer_hilo(id_hilo);
             // Creamos el hilo
-            let hilo = Hilo::new(id_hilo, rx_conexiones, canales_a_enviar_mensajes, rx, registrador);
+            let hilo = Hilo::new(
+                id_hilo,
+                rx_conexiones, // punta receptora para recibir conexiones
+                canales_a_enviar_mensajes, // punta emisora para enviar instrucciones
+                rx, // punta receptora para recibir instrucciones
+                registrador,
+            );
 
             // Iniciamos el thread del hilo
             let handle = Hilo::iniciar(hilo);
@@ -78,7 +105,7 @@ impl Servidor {
             proximo_id_hilo: 0,
             ultimo_id_conexion: 0,
             registrador,
-            cuentas: Arc::new(Vec::new())
+            cuentas: Arc::new(Vec::new()),
         }
     }
 
@@ -120,9 +147,9 @@ impl Servidor {
                         Some(self.cuentas.clone()),
                     );
 
-
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];
-                    match tx.send((id_conexion, conexion)) { // Envio la conexion al hilo
+                    match tx.send((id_conexion, conexion)) {
+                        // Envio la conexion al hilo
                         Ok(_) => {
                             self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();
                         }

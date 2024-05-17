@@ -24,9 +24,7 @@ pub struct Cliente {
 }
 
 impl Cliente {
-    pub fn conectar(
-        direccion: &str,
-    ) -> io::Result<Cliente> {
+    pub fn conectar(direccion: &str) -> io::Result<Cliente> {
         return Self::conectar_user_pass(direccion, None, None);
     }
 

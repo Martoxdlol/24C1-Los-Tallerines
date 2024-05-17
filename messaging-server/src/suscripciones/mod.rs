@@ -27,6 +27,10 @@ impl Suscripciones {
         }
     }
 
+    // Se inserta una suscripcion, y si hay id de
+    // grupo, se realiza una suscripcion al grupo, obteniendo el grupo
+    // (O creandolo con el id de grupo y el topico de la suscripcion),
+    // insertando la suscripcion en las suscripciones del grupo.
     pub fn suscribir(&mut self, suscripcion: Suscripcion) {
         self.suscripciones.insert(suscripcion.clone());
 
@@ -35,6 +39,7 @@ impl Suscripciones {
         }
     }
 
+    // Por cada suscripciones individual, si
     pub fn desuscribir(&mut self, id_conexion: IdConexion, id_suscripcion: &IdSuscripcion) {
         let mut desuscripciones_grupos = Vec::new();
 
