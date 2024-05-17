@@ -276,11 +276,6 @@ mod tests {
         assert!(control
             .intentar_recibir_string()
             .unwrap()
-            .starts_with("PUB Saludar 4\r\n"));
-
-        assert!(control
-            .intentar_recibir_string()
-            .unwrap()
-            .starts_with("Hola"));
+            .starts_with("PUB Saludar 4\r\nHola"));
     }
 }
