@@ -150,6 +150,7 @@ impl Servidor {
             configuracion.direccion, configuracion.puerto
         ))
         .unwrap();
+
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
