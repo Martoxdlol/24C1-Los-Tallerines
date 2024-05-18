@@ -131,12 +131,20 @@ impl Cliente {
         self.publicar(subject, body, reply_to)
     }
 
-    pub fn request(&self, subject: &str, body: &[u8]) -> Result<&[u8], SendError<Instruccion>> {
+    pub fn request(&self, subject: &str, body: &[u8]) -> Result<Publicacion, Error> {
         self.request_con_headers_o_timeout(subject, body, None, None)
     }
 
-    pub fn request_con_timeout(&self, subject: &str, body: &[u8], timeout: Duration) -> Result<&[u8], SendError<Instruccion>> {
-        self.request_con_headers_o_timeout(subject, body, None, timeout)
+    pub fn request_con_timeout(&self, subject: &str, body: &[u8], timeout: Duration) -> Result<Publicacion, Error> {
+        self.request_con_headers_o_timeout(subject, body, None, Some(timeout))
+    }
+
+    pub fn request_multi(&self, subject: &str, body: &[u8]) -> Result<Suscripcion, Error> {
+        let reply = self.nuevo_inbox();
+        let sub = self.suscribirse(&reply, None)?;
+        self.publicar(subject, body, Some(reply.as_str()))?;
+
+        Ok(sub)
     }
 
     fn request_con_headers_o_timeout(
@@ -145,34 +153,37 @@ impl Cliente {
         body: &[u8],
         header: Option<&[u8]>,
         timeout: Option<Duration>,
-    ) -> io::Result<Mensaje> {
+    ) -> Result<Publicacion, Error> {
         // Publicar la request
         let reply = self.nuevo_inbox();
-        let sub = self.suscribirse(&reply, None)?;
+        let mut sub = self.suscribirse(&reply, None)?;
         if let Some(header_ok) = header {
-            let sub = self.publicar_con_header(subject, body, header_ok, Some(&reply))?;
+            self.publicar_con_header(subject, body, header_ok, Some(&reply))?;
         } else {
-            let sub = self.publicar(subject, body, Some(&reply))?;
+            self.publicar(subject, body, Some(&reply))?;
         }
 
         // Esperar por una respuesta
-        let result = if let Some(timeout_ok) = timeout {
+        let result: Result<Publicacion, Error>;
+        if let Some(timeout_ok) = timeout {
             match sub.leer_con_limite_de_tiempo(timeout_ok) {
-                Ok(res) => res,
-                Err(er) => Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                Ok(op_pub) => {
+                    if let Some(pub_ok) = op_pub {
+                        result = Ok(pub_ok)
+                    } else {
+                        result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                    }
+                },
+                Err(er) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
             }
-        } else if let Some(msg) = sub.next() {
-            Ok(msg)
+        } else if let Some(res_pub) = sub.next() {
+            match res_pub {
+                Ok(msg_ok) => result = Ok(msg_ok),
+                Err(er) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+            }
         } else {
-            Err(ErrorKind::ConnectionReset.into())
+            result = Err(ErrorKind::ConnectionReset.into())
         };
-
-        // Check for no responder status.
-        if let Ok(msg) = result.as_ref() {
-            if msg.is_no_responders() {
-                return Err(Error::new(ErrorKind::NotFound, "Sin respuestas"));
-            }
-        }
 
         result
     }

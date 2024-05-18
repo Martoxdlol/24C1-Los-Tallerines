@@ -1,6 +1,6 @@
 use std::{
     io::{self, ErrorKind},
-    sync::mpsc::{Receiver, RecvError, RecvTimeoutError, Sender, TryRecvError},
+    sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError},
     time::Duration,
 };
 
