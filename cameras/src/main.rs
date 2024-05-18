@@ -89,7 +89,7 @@ fn iniciar(
                         enviar_respuesta.send(Respuesta::Camaras(camaras)).unwrap();
                     }
                 }
-                Comando::MostrarCamara(id) => {
+                Comando::Camara(id) => {
                     if let Some(camara) = estado.camara(id) {
                         enviar_respuesta
                             .send(Respuesta::Camara(camara.clone()))

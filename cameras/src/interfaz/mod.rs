@@ -8,7 +8,6 @@ use std::{
 
 use self::{comando::Comando, respuesta::Respuesta};
 
-
 /// Inicializa la terminal como interfaz de usuario. Devuelve un par de canales para enviar comandos y recibir respuestas.
 pub fn interfaz() -> (Sender<Respuesta>, Receiver<Comando>) {
     let (enviar_comando, recibir_comandos) = mpsc::channel::<Comando>();
@@ -56,7 +55,7 @@ fn interpretar_comando(input: &str) -> Option<Comando> {
 
         Some("camara") => {
             let id = palabras.next()?.parse().ok()?;
-            Some(Comando::MostrarCamara(id))
+            Some(Comando::Camara(id))
         }
         Some("modificar") => {
             let subcomando = palabras.next()?;
@@ -72,7 +71,7 @@ fn interpretar_comando(input: &str) -> Option<Comando> {
                     let rango = palabras.next()?.parse().ok()?;
                     Some(Comando::ModifciarRango(id, rango))
                 }
-                _ => None
+                _ => None,
             }
         }
         Some("ayuda") => Some(Comando::Ayuda),

@@ -5,7 +5,7 @@ pub enum Comando {
     Conectar(IdCamara, f64, f64, f64),
     Desconectar(IdCamara),
     ListarCamaras,
-    MostrarCamara(IdCamara),
+    Camara(IdCamara),
     ModificarUbicacion(IdCamara, f64, f64),
     ModifciarRango(IdCamara, f64),
     Ayuda,

@@ -44,7 +44,7 @@ impl Sistema {
     /// Inicia el bucle de eventos del sistema
     ///
     /// Este bucle puede terminar por un error de conexión
-    pub fn inicio(&mut self) -> io::Result<()> {
+    fn inicio(&mut self) -> io::Result<()> {
         // Conectar el cliente al servidor de NATS
         let cliente = self.conectar()?;
 
@@ -52,7 +52,7 @@ impl Sistema {
         self.publicar_estado_general()?;
 
         loop {
-            self.ciclo()?;
+            self.ciclo(&cliente)?;
         }
     }
 
@@ -65,7 +65,81 @@ impl Sistema {
         todo!()
     }
 
-    pub fn ciclo(&mut self) -> io::Result<()> {
+    fn ciclo(&mut self, cliente: &Cliente) -> io::Result<()> {
+        self.leer_incidentes(cliente)?;
+        self.leer_comandos(cliente)?;
+        Ok(())
+    }
+
+    fn leer_incidentes(&mut self, cliente: &Cliente) -> io::Result<()> {
+        todo!()
+    }
+
+    fn leer_comandos(&mut self, cliente: &Cliente) -> io::Result<()> {
+        while let Ok(comando) = self.recibir_comandos.try_recv() {
+            match comando {
+                Comando::Conectar(id, lat, lon, rango) => {
+                    self.comando_conectar_camara(cliente, id, lat, lon, rango)?
+                }
+                Comando::Desconectar(id) => self.comando_desconectar_camara(cliente, id)?,
+                Comando::ListarCamaras => self.comando_listar_camaras(cliente)?,
+                Comando::ModifciarRango(id, rango) => {
+                    self.comando_modificar_rango(cliente, id, rango)?
+                }
+                Comando::ModificarUbicacion(id, lat, lon) => {
+                    self.comando_modificar_ubicacion(cliente, id, lat, lon)?
+                }
+                Comando::Camara(id) => self.comando_mostrar_camara(cliente, id)?,
+                Comando::Ayuda => self.comando_ayuda(cliente)?,
+            }
+        }
+
+        Ok(())
+    }
+
+    fn comando_conectar_camara(
+        &mut self,
+        cliente: &Cliente,
+        id: u64,
+        lat: f64,
+        lon: f64,
+        rango: f64,
+    ) -> io::Result<()> {
+        todo!()
+    }
+
+    fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
+        todo!()
+    }
+
+    fn comando_listar_camaras(&mut self, cliente: &Cliente) -> io::Result<()> {
+        todo!()
+    }
+
+    fn comando_modificar_rango(
+        &mut self,
+        cliente: &Cliente,
+        id: u64,
+        rango: f64,
+    ) -> io::Result<()> {
+        todo!()
+    }
+
+    fn comando_modificar_ubicacion(
+        &mut self,
+        cliente: &Cliente,
+        id: u64,
+        lat: f64,
+        lon: f64,
+    ) -> io::Result<()> {
+        todo!()
+    }
+
+    fn comando_mostrar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
+        todo!()
+    }
+
+    fn comando_ayuda(&mut self, cliente: &Cliente) -> io::Result<()> {
         todo!()
     }
 }
