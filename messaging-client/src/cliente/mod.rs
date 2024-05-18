@@ -16,7 +16,7 @@ use self::{
 };
 
 /// Cliente tiene su hilo donde se gestionan los mensajes, el canal por el cual
-/// se envian mensajes al servidor, y el id del cliente
+/// se envían mensajes al servidor, y el id del cliente
 pub struct Cliente {
     _hilo_cliente: JoinHandle<()>,
     canal_instrucciones: Sender<Instruccion>,
@@ -47,7 +47,7 @@ impl Cliente {
     }
 
     pub fn publicar(
-        &mut self,
+        &self,
         subject: &str,
         body: &[u8],
         reply_to: Option<&str>,
@@ -70,7 +70,7 @@ impl Cliente {
     }
 
     pub fn publicar_con_header(
-        &mut self,
+        &self,
         subject: &str,
         body: &[u8],
         header: &[u8],
