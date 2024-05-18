@@ -1,7 +1,7 @@
 mod hilo_cliente;
 mod instruccion;
-mod publicacion;
-mod suscripcion;
+pub mod publicacion;
+pub mod suscripcion;
 
 use std::{
     io,
@@ -46,12 +46,7 @@ impl Cliente {
         })
     }
 
-    pub fn publicar(
-        &self,
-        subject: &str,
-        body: &[u8],
-        reply_to: Option<&str>,
-    ) -> io::Result<()> {
+    pub fn publicar(&self, subject: &str, body: &[u8], reply_to: Option<&str>) -> io::Result<()> {
         let publicacion = Publicacion {
             header: None,
             payload: body.to_vec(),
