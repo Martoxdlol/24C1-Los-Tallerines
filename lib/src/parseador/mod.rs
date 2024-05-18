@@ -246,23 +246,23 @@ impl Parseador {
                 ResultadoLinea::Hmsg(
                     topico,
                     id_suscripcion,
-                    responder_a,
+                    reply_to,
                     bytes_header,
                     bytes_contenido,
                 ) => {
                     self.actual = Some(ResultadoLinea::Hmsg(
                         topico,
                         id_suscripcion,
-                        responder_a,
+                        reply_to,
                         bytes_header,
                         bytes_contenido,
                     ));
                 }
-                ResultadoLinea::Msg(topico, id_suscripcion, responder_a, bytes_contenido) => {
+                ResultadoLinea::Msg(topico, id_suscripcion, reply_to, bytes_contenido) => {
                     self.actual = Some(ResultadoLinea::Msg(
                         topico,
                         id_suscripcion,
-                        responder_a,
+                        reply_to,
                         bytes_contenido,
                     ));
                     return self.proximo_mensaje();

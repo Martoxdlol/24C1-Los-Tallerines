@@ -8,6 +8,9 @@ use std::{
     net::TcpStream,
     sync::mpsc::{channel, SendError, Sender},
     thread::{self, JoinHandle},
+    io::Error,
+    io::ErrorKind,
+    time::Duration
 };
 
 use self::{
@@ -15,12 +18,16 @@ use self::{
     suscripcion::Suscripcion,
 };
 
+use lib::parseador::mensaje::Mensaje;
+use nuid::NUID;
+
 /// Cliente tiene su hilo donde se gestionan los mensajes, el canal por el cual
 /// se envian mensajes al servidor, y el id del cliente
 pub struct Cliente {
     _hilo_cliente: JoinHandle<()>,
     canal_instrucciones: Sender<Instruccion>,
     id: usize,
+    nuid: NUID
 }
 
 impl Cliente {
@@ -43,6 +50,7 @@ impl Cliente {
             _hilo_cliente: hilo_cliente,
             canal_instrucciones: tx,
             id: 0,
+            nuid: NUID::new()
         })
     }
 
@@ -110,6 +118,65 @@ impl Cliente {
 
         Ok(Suscripcion::new(canal_instrucciones, rx, id))
     }
+
+    fn nuevo_inbox(&self) -> String {
+        format!("_INBOX.{}", self.nuid.next())
+    }
+
+    pub fn publicar_request(
+        &mut self,
+        subject: &str,
+        body: &[u8],
+        reply_to: Option<&str>,) -> Result<(), SendError<Instruccion>> {
+        self.publicar(subject, body, reply_to)
+    }
+
+    pub fn request(&self, subject: &str, body: &[u8]) -> Result<&[u8], SendError<Instruccion>> {
+        self.request_con_headers_o_timeout(subject, body, None, None)
+    }
+
+    pub fn request_con_timeout(&self, subject: &str, body: &[u8], timeout: Duration) -> Result<&[u8], SendError<Instruccion>> {
+        self.request_con_headers_o_timeout(subject, body, None, timeout)
+    }
+
+    fn request_con_headers_o_timeout(
+        &self,
+        subject: &str,
+        body: &[u8],
+        header: Option<&[u8]>,
+        timeout: Option<Duration>,
+    ) -> io::Result<Mensaje> {
+        // Publicar la request
+        let reply = self.nuevo_inbox();
+        let sub = self.suscribirse(&reply, None)?;
+        if let Some(header_ok) = header {
+            let sub = self.publicar_con_header(subject, body, header_ok, Some(&reply))?;
+        } else {
+            let sub = self.publicar(subject, body, Some(&reply))?;
+        }
+
+        // Esperar por una respuesta
+        let result = if let Some(timeout_ok) = timeout {
+            match sub.leer_con_limite_de_tiempo(timeout_ok) {
+                Ok(res) => res,
+                Err(er) => Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+            }
+        } else if let Some(msg) = sub.next() {
+            Ok(msg)
+        } else {
+            Err(ErrorKind::ConnectionReset.into())
+        };
+
+        // Check for no responder status.
+        if let Ok(msg) = result.as_ref() {
+            if msg.is_no_responders() {
+                return Err(Error::new(ErrorKind::NotFound, "Sin respuestas"));
+            }
+        }
+
+        result
+    }
+
 }
 
 impl Drop for Cliente {
