@@ -27,7 +27,6 @@ struct Config {
     puerto: u16,
 }
 
-
 type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 
 pub struct Servidor {
@@ -87,9 +86,9 @@ impl Servidor {
             // Creamos el hilo
             let hilo = Hilo::new(
                 id_hilo,
-                rx_conexiones, // punta receptora para recibir conexiones
+                rx_conexiones,             // punta receptora para recibir conexiones
                 canales_a_enviar_mensajes, // punta emisora para enviar instrucciones
-                rx, // punta receptora para recibir instrucciones
+                rx,                        // punta receptora para recibir instrucciones
                 registrador,
             );
 
@@ -146,7 +145,11 @@ impl Servidor {
     pub fn inicio(&mut self) {
         let configuracion = self.obtener_configuracion();
 
-        let listener = TcpListener::bind(format!("{}:{}", configuracion.direccion, configuracion.puerto)).unwrap();
+        let listener = TcpListener::bind(format!(
+            "{}:{}",
+            configuracion.direccion, configuracion.puerto
+        ))
+        .unwrap();
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");

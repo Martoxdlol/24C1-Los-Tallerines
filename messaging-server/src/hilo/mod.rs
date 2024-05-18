@@ -79,8 +79,8 @@ impl Hilo {
 
     // Mientras se reciban conexiones,
     // con su id y la conexion correspondiente, el registrador informa
-    // un evento de informacion con un registro con mensaje, hilo, y 
-    // nivel de tipo "Informacion". Ademas, se insertan en las 
+    // un evento de informacion con un registro con mensaje, hilo, y
+    // nivel de tipo "Informacion". Ademas, se insertan en las
     // conexiones del hilo el id de la conexion y la conexion
     pub fn recibir_conexiones(&mut self) {
         while let Ok((id_conexion, conexion)) = self.canal_recibir_conexiones.try_recv() {
