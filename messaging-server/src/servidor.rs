@@ -120,7 +120,7 @@ impl Servidor {
         })
     }
 
-    pub fn inicio(&mut self) {
+    fn obtener_configuracion(&mut self) -> Config {
         let argumentos: Vec<String> = env::args().collect();
 
         if argumentos.len() != 2 {
@@ -130,17 +130,21 @@ impl Servidor {
 
         let path_archivo = &argumentos[1];
 
-        // Leer el contenido del archivo de configuración
         let contenido = fs::read_to_string(path_archivo).unwrap_or_else(|err| {
             eprintln!("No se pudo leer el archivo de configuración: {}", err);
             process::exit(1);
         });
 
-        // Parsear el contenido del archivo de configuración
         let configuracion: Config = toml::from_str(&contenido).unwrap_or_else(|err| {
             eprintln!("No se pudo parsear el archivo de configuración: {}", err);
             process::exit(1);
         });
+
+        configuracion
+    }
+
+    pub fn inicio(&mut self) {
+        let configuracion = self.obtener_configuracion();
 
         let listener = TcpListener::bind(format!("{}:{}", configuracion.direccion, configuracion.puerto)).unwrap();
         listener
