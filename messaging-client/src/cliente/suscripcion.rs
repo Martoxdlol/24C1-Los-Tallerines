@@ -1,6 +1,6 @@
 use std::{
     io::{self, ErrorKind},
-    sync::mpsc::{Receiver, RecvError, RecvTimeoutError, Sender, TryRecvError},
+    sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError},
     time::Duration,
 };
 
@@ -12,8 +12,7 @@ use super::{instruccion::Instruccion, publicacion::Publicacion};
 pub struct Suscripcion {
     canal_instrucciones: Sender<Instruccion>,
     canal_publicaciones: Receiver<Publicacion>,
-    conectado: bool,
-    id: String,
+    pub id: String,
 }
 
 impl Suscripcion {
@@ -25,7 +24,6 @@ impl Suscripcion {
         Self {
             canal_instrucciones,
             canal_publicaciones,
-            conectado: true,
             id,
         }
     }
@@ -33,26 +31,22 @@ impl Suscripcion {
     pub fn leer(&self) -> io::Result<Publicacion> {
         match self.canal_publicaciones.recv() {
             Ok(publicacion) => Ok(publicacion),
-            Err(_) => {
-                self.conectado = false;
-                Err(io::Error::new(
-                    ErrorKind::ConnectionReset,
-                    "El cliente está desconectado".to_string(),
-                ))
-            }
+            Err(_) => Err(io::Error::new(
+                ErrorKind::Other,
+                "El cliente está desconectado".to_string(),
+            )),
         }
     }
 
-    pub fn intentar_leer(&mut self) -> io::Result<Option<Publicacion>> {
+    pub fn intentar_leer(&self) -> io::Result<Option<Publicacion>> {
         match self.canal_publicaciones.try_recv() {
             Ok(publicacion) => Ok(Some(publicacion)),
             Err(e) => {
                 if let TryRecvError::Empty = e {
                     Ok(None)
                 } else {
-                    self.conectado = false;
                     Err(io::Error::new(
-                        ErrorKind::ConnectionReset,
+                        ErrorKind::Other,
                         "El cliente está desconectado".to_string(),
                     ))
                 }
@@ -61,7 +55,7 @@ impl Suscripcion {
     }
 
     pub fn leer_con_limite_de_tiempo(
-        &mut self,
+        &self,
         limite: Duration,
     ) -> io::Result<Option<Publicacion>> {
         match self.canal_publicaciones.recv_timeout(limite) {
@@ -70,9 +64,8 @@ impl Suscripcion {
                 if let RecvTimeoutError::Timeout = e {
                     Ok(None)
                 } else {
-                    self.conectado = false;
                     Err(io::Error::new(
-                        ErrorKind::ConnectionReset,
+                        ErrorKind::Other,
                         "El cliente está desconectado",
                     ))
                 }
