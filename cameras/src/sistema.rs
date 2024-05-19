@@ -147,7 +147,7 @@ impl Sistema {
         lon: f64,
         rango: f64,
     ) -> io::Result<()> {
-        if let Some(camara) = self.estado.camara(id) {
+        if self.estado.camara(id).is_some() {
             return self.enviar_respuesta(Respuesta::Error(
                 "Ya existe una cámara con ese ID".to_string(),
             ));
@@ -158,7 +158,7 @@ impl Sistema {
     }
 
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
-        if let Some(camara) = self.estado.desconectar_camara(id) {
+        if self.estado.desconectar_camara(id).is_some() {
             self.publicar_estado_general(cliente)
         } else {
             self.enviar_respuesta(Respuesta::Error(
