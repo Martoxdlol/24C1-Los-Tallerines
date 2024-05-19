@@ -40,11 +40,8 @@ impl Estado {
         camara.incidentes_primarios = self.incidentes_en_rango(&camara);
 
         let binding = HashSet::new();
-        let camaras_lindantes = self
-            .camaras_lindantes
-            .get(&camara.id)
-            .unwrap_or(&binding);
-        
+        let camaras_lindantes = self.camaras_lindantes.get(&camara.id).unwrap_or(&binding);
+
         for id in camaras_lindantes.iter() {
             if let Some(camara_lindante) = self.camaras.get_mut(id) {
                 // Agrega los incidentes secundarios a la camara, que son los incidentes primarios de las camaras lindantes

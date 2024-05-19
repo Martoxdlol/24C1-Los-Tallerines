@@ -45,28 +45,13 @@ impl Display for Registro {
                 write!(
                     f,
                     "{} [hilo: {}] [cliente: {}] {}",
-                    self.nivel,
-                    hilo,
-                    conexion,
-                    self.mensaje
+                    self.nivel, hilo, conexion, self.mensaje
                 )
             } else {
-                write!(
-                    f,
-                    "{} [hilo: {}] {}",
-                    self.nivel,
-                    hilo,
-                    self.mensaje
-                )
+                write!(f, "{} [hilo: {}] {}", self.nivel, hilo, self.mensaje)
             }
         } else if let Some(conexion) = self.conexion {
-            write!(
-                f,
-                "{} [cliente: {}] {}",
-                self.nivel,
-                conexion,
-                self.mensaje
-            )
+            write!(f, "{} [cliente: {}] {}", self.nivel, conexion, self.mensaje)
         } else {
             write!(f, "{} {}", self.nivel, self.mensaje)
         }

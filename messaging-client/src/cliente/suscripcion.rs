@@ -54,10 +54,7 @@ impl Suscripcion {
         }
     }
 
-    pub fn leer_con_limite_de_tiempo(
-        &self,
-        limite: Duration,
-    ) -> io::Result<Option<Publicacion>> {
+    pub fn leer_con_limite_de_tiempo(&self, limite: Duration) -> io::Result<Option<Publicacion>> {
         match self.canal_publicaciones.recv_timeout(limite) {
             Ok(publicacion) => Ok(Some(publicacion)),
             Err(e) => {

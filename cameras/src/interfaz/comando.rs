@@ -1,4 +1,3 @@
-
 /// Comandos que podemos pedirle al sistema de cámaras vía terminal.
 pub enum Comando {
     Conectar(u64, f64, f64, f64),

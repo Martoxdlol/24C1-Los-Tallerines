@@ -31,13 +31,10 @@ impl Respuesta {
 
         format!(
             "ID: {}, Lat: {}, Lon: {}, Estado: {}",
-            camara.id,
-            camara.lat,
-            camara.lon,
-            estado
+            camara.id, camara.lat, camara.lon, estado
         )
     }
-    
+
     /// Devuelve la representacion en string de todas las camaras.
     /// Llama en bucle a camara_string.
     fn camaras_string(&self, camaras: &[Camara]) -> String {
