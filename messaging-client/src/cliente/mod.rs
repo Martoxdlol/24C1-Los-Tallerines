@@ -8,7 +8,7 @@ use std::{
     net::TcpStream,
     sync::mpsc::{channel, Sender},
     thread::{self, JoinHandle},
-    time::Duration
+    time::Duration,
 };
 
 use self::{
@@ -24,7 +24,7 @@ pub struct Cliente {
     _hilo_cliente: JoinHandle<()>,
     canal_instrucciones: Sender<Instruccion>,
     id: usize,
-    nuid: NUID
+    nuid: NUID,
 }
 
 impl Cliente {
@@ -47,7 +47,7 @@ impl Cliente {
             _hilo_cliente: hilo_cliente,
             canal_instrucciones: tx,
             id: 0,
-            nuid: NUID::new()
+            nuid: NUID::new(),
         })
     }
 
@@ -108,13 +108,14 @@ impl Cliente {
 
         let (tx, rx) = channel::<Publicacion>();
 
-        canal_instrucciones.send(Instruccion::Suscribir {
-            topico: subject.to_owned(),
-            id_suscripcion: id.to_owned(),
-            queue_group: queue_group.map(|s| s.to_owned()),
-            canal: tx,
-        })
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        canal_instrucciones
+            .send(Instruccion::Suscribir {
+                topico: subject.to_owned(),
+                id_suscripcion: id.to_owned(),
+                queue_group: queue_group.map(|s| s.to_owned()),
+                canal: tx,
+            })
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         Ok(Suscripcion::new(canal_instrucciones, rx, id))
     }
@@ -127,7 +128,8 @@ impl Cliente {
         &mut self,
         subject: &str,
         body: &[u8],
-        reply_to: Option<&str>,) -> io::Result<()> {
+        reply_to: Option<&str>,
+    ) -> io::Result<()> {
         self.publicar(subject, body, reply_to)
     }
 
@@ -135,7 +137,12 @@ impl Cliente {
         self.request_con_headers_o_timeout(subject, body, None, None)
     }
 
-    pub fn request_con_timeout(&mut self, subject: &str, body: &[u8], timeout: Duration) -> io::Result<Publicacion> {
+    pub fn request_con_timeout(
+        &mut self,
+        subject: &str,
+        body: &[u8],
+        timeout: Duration,
+    ) -> io::Result<Publicacion> {
         self.request_con_headers_o_timeout(subject, body, None, Some(timeout))
     }
 
@@ -173,13 +180,17 @@ impl Cliente {
                     } else {
                         result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
                     }
-                },
-                Err(_) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                }
+                Err(_) => {
+                    result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                }
             }
         } else if let Some(res_pub) = sub.next() {
             match res_pub {
                 Ok(msg_ok) => result = Ok(msg_ok),
-                Err(_) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                Err(_) => {
+                    result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                }
             }
         } else {
             result = Err(ErrorKind::ConnectionReset.into())
@@ -187,7 +198,6 @@ impl Cliente {
 
         result
     }
-
 }
 
 impl Drop for Cliente {

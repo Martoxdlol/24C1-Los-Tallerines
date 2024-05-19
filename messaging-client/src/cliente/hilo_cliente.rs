@@ -262,12 +262,13 @@ mod tests {
         // Haces un ciclo del cliente
         cliente.ciclo().unwrap();
 
-        tx.send(Instruccion::Publicar(Publicacion{
+        tx.send(Instruccion::Publicar(Publicacion {
             header: None,
             replay_to: None,
             payload: b"Hola".to_vec(),
-            subject: "Saludar".to_string()
-        })).unwrap();
+            subject: "Saludar".to_string(),
+        }))
+        .unwrap();
 
         // Haces un ciclo del cliente
         cliente.ciclo().unwrap();
@@ -281,6 +282,5 @@ mod tests {
             .intentar_recibir_string()
             .unwrap()
             .starts_with("Hola"));
-
     }
 }
