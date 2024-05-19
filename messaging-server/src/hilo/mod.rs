@@ -1,6 +1,9 @@
 pub mod id;
 pub mod instruccion;
 
+use std::fs::File;
+use std::io;
+
 use std::{
     collections::HashMap,
     sync::mpsc::{Receiver, Sender},
@@ -230,4 +233,25 @@ impl Hilo {
             self.enviar_instruccion(Instruccion::Desuscribir(id_conexion, id_suscripcion));
         }
     }
+
+    /*
+    pub fn guardar_conexiones_en_archivo(conexiones: HashMap<IdConexion, Conexion>) -> io::Result<File> {
+
+        let archivo_conexiones = File::create("conexiones.txt")?;
+
+        for conexion in conexiones {
+            archivo_conexiones.write(conexion);
+        }
+
+        Ok(archivo_conexiones)
+
+    }
+
+    pub fn cargar_conexiones_de_archivo(archivo_conexiones: File) -> io::Result<HashMap<IdConexion, Conexion>> {
+        
+        let conexiones: HashMap<IdConexion, Conexion> = HashMap::new();
+
+        Ok(conexiones)
+    }
+    */
 }

@@ -16,12 +16,9 @@ use crate::{
 
 use super::{conexion::Conexion, hilo::Hilo};
 
-use serde::Deserialize;
-use std::env;
-use std::fs;
-use std::process;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
-#[derive(Deserialize)]
 struct Config {
     direccion: String,
     puerto: u16,
@@ -30,7 +27,7 @@ struct Config {
 type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 
 pub struct Servidor {
-    hilos: Vec<InfoHilo>,
+    pub hilos: Vec<InfoHilo>,
     _configuracion: Configuracion,
     proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
@@ -120,37 +117,43 @@ impl Servidor {
     }
 
     fn obtener_configuracion(&mut self) -> Config {
-        let argumentos: Vec<String> = env::args().collect();
 
-        if argumentos.len() != 2 {
-            println!("No se mandó archivo de configuración");
-            process::exit(1);
+        let archivo = File::open("configuracion/server_config.toml").expect("No se pudo abrir el archivo");
+
+        let lector = BufReader::new(archivo);
+
+        let mut direccion = String::new();
+        let mut puerto = 0;
+
+        for linea in lector.lines() {
+            let linea = linea.expect("Error al leer la línea");
+
+            let partes: Vec<&str> = linea.trim().split('=').map(|s| s.trim()).collect();
+
+            if partes.len() == 2 {
+                match partes[0] {
+                    "direccion" => direccion = partes[1].to_string(),
+                    "puerto" => {
+                        puerto = partes[1].parse().expect("No se pudo convertir el puerto a u16");
+                    }
+                    _ => {}
+                }
+            }
         }
 
-        let path_archivo = &argumentos[1];
-
-        let contenido = fs::read_to_string(path_archivo).unwrap_or_else(|err| {
-            eprintln!("No se pudo leer el archivo de configuración: {}", err);
-            process::exit(1);
-        });
-
-        let configuracion: Config = toml::from_str(&contenido).unwrap_or_else(|err| {
-            eprintln!("No se pudo parsear el archivo de configuración: {}", err);
-            process::exit(1);
-        });
-
-        configuracion
+        Config { direccion: direccion[1..direccion.len() -1].to_string(), puerto }
     }
 
     pub fn inicio(&mut self) {
+        
         let configuracion = self.obtener_configuracion();
-
+    
         let listener = TcpListener::bind(format!(
             "{}:{}",
             configuracion.direccion, configuracion.puerto
         ))
         .unwrap();
-
+       
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
