@@ -4,12 +4,10 @@ mod publicacion;
 mod suscripcion;
 
 use std::{
-    io,
+    io::{self, Error, ErrorKind},
     net::TcpStream,
-    sync::mpsc::{channel, SendError, Sender},
+    sync::mpsc::{channel, Sender},
     thread::{self, JoinHandle},
-    io::Error,
-    io::ErrorKind,
     time::Duration
 };
 
@@ -18,7 +16,6 @@ use self::{
     suscripcion::Suscripcion,
 };
 
-use lib::parseador::mensaje::Mensaje;
 use nuid::NUID;
 
 /// Cliente tiene su hilo donde se gestionan los mensajes, el canal por el cual
@@ -59,7 +56,7 @@ impl Cliente {
         subject: &str,
         body: &[u8],
         reply_to: Option<&str>,
-    ) -> Result<(), SendError<Instruccion>> {
+    ) -> io::Result<()> {
         let publicacion = Publicacion {
             header: None,
             payload: body.to_vec(),
@@ -68,7 +65,8 @@ impl Cliente {
         };
 
         self.canal_instrucciones
-            .send(Instruccion::Publicar(publicacion))?;
+            .send(Instruccion::Publicar(publicacion))
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         Ok(())
     }
@@ -79,7 +77,7 @@ impl Cliente {
         body: &[u8],
         header: &[u8],
         reply_to: Option<&str>,
-    ) -> Result<(), SendError<Instruccion>> {
+    ) -> io::Result<()> {
         let publicacion = Publicacion {
             header: Some(header.to_vec()),
             payload: body.to_vec(),
@@ -88,7 +86,8 @@ impl Cliente {
         };
 
         self.canal_instrucciones
-            .send(Instruccion::Publicar(publicacion))?;
+            .send(Instruccion::Publicar(publicacion))
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         Ok(())
     }
@@ -97,7 +96,7 @@ impl Cliente {
         &mut self,
         subject: &str,
         queue_group: Option<&str>,
-    ) -> Result<Suscripcion, SendError<Instruccion>> {
+    ) -> io::Result<Suscripcion> {
         //if subject.is_empty() {
         //    return
         //}
@@ -114,12 +113,13 @@ impl Cliente {
             id_suscripcion: id.to_owned(),
             queue_group: queue_group.map(|s| s.to_owned()),
             canal: tx,
-        })?;
+        })
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         Ok(Suscripcion::new(canal_instrucciones, rx, id))
     }
 
-    fn nuevo_inbox(&self) -> String {
+    fn nuevo_inbox(&mut self) -> String {
         format!("_INBOX.{}", self.nuid.next())
     }
 
@@ -127,19 +127,19 @@ impl Cliente {
         &mut self,
         subject: &str,
         body: &[u8],
-        reply_to: Option<&str>,) -> Result<(), SendError<Instruccion>> {
+        reply_to: Option<&str>,) -> io::Result<()> {
         self.publicar(subject, body, reply_to)
     }
 
-    pub fn request(&self, subject: &str, body: &[u8]) -> Result<Publicacion, Error> {
+    pub fn request(&mut self, subject: &str, body: &[u8]) -> io::Result<Publicacion> {
         self.request_con_headers_o_timeout(subject, body, None, None)
     }
 
-    pub fn request_con_timeout(&self, subject: &str, body: &[u8], timeout: Duration) -> Result<Publicacion, Error> {
+    pub fn request_con_timeout(&mut self, subject: &str, body: &[u8], timeout: Duration) -> io::Result<Publicacion> {
         self.request_con_headers_o_timeout(subject, body, None, Some(timeout))
     }
 
-    pub fn request_multi(&self, subject: &str, body: &[u8]) -> Result<Suscripcion, Error> {
+    pub fn request_multi(&mut self, subject: &str, body: &[u8]) -> io::Result<Suscripcion> {
         let reply = self.nuevo_inbox();
         let sub = self.suscribirse(&reply, None)?;
         self.publicar(subject, body, Some(reply.as_str()))?;
@@ -148,12 +148,12 @@ impl Cliente {
     }
 
     fn request_con_headers_o_timeout(
-        &self,
+        &mut self,
         subject: &str,
         body: &[u8],
         header: Option<&[u8]>,
         timeout: Option<Duration>,
-    ) -> Result<Publicacion, Error> {
+    ) -> io::Result<Publicacion> {
         // Publicar la request
         let reply = self.nuevo_inbox();
         let mut sub = self.suscribirse(&reply, None)?;
@@ -174,12 +174,12 @@ impl Cliente {
                         result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
                     }
                 },
-                Err(er) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                Err(_) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
             }
         } else if let Some(res_pub) = sub.next() {
             match res_pub {
                 Ok(msg_ok) => result = Ok(msg_ok),
-                Err(er) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
+                Err(_) => result = Err(Error::new(ErrorKind::ConnectionAborted, "Timeout superado"))
             }
         } else {
             result = Err(ErrorKind::ConnectionReset.into())

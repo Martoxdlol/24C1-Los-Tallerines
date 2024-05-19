@@ -30,7 +30,7 @@ impl Suscripcion {
         }
     }
 
-    pub fn leer(&self) -> io::Result<Publicacion> {
+    pub fn leer(&mut self) -> io::Result<Publicacion> {
         match self.canal_publicaciones.recv() {
             Ok(publicacion) => Ok(publicacion),
             Err(_) => {

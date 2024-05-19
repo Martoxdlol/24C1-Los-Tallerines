@@ -4,7 +4,7 @@ use std::error::Error;
 fn main() -> Result<(), Box<dyn Error>> {
     let mut cliente = Cliente::conectar("localhost:4222")?;
 
-    let sub = cliente.suscribirse("asd", None)?;
+    let mut sub = cliente.suscribirse("asd", None)?;
 
     cliente.publicar("asd", b"hola", None)?;
 
