@@ -4,14 +4,13 @@ use std::{
 };
 
 use lib::{
-    coordenadas::Coordenadas,
+    camara::Camara,
     incidente::Incidente,
-    serializables::{camara_serializable::CamaraSerializable, serializar_vec, Serializable},
+    serializables::{serializar_vec, Serializable},
 };
 use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
 
 use crate::{
-    camara::Camara,
     estado::Estado,
     interfaz::{comando::Comando, respuesta::Respuesta},
 };
@@ -75,16 +74,12 @@ impl Sistema {
     }
 
     fn publicar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
-        let camaras_serializables: Vec<CamaraSerializable> = self
-            .estado
-            .camaras()
-            .into_iter()
-            .map(|camara| camara.serializable())
-            .collect();
-        let bytes = serializar_vec(&camaras_serializables);
+        let camaras = self.estado.camaras().into_iter().cloned().collect();
+        let bytes = serializar_vec(&camaras);
         cliente.publicar("camaras", &bytes, None)
     }
 
+    /// Ciclo de eventos del sistema
     fn ciclo(
         &mut self,
         cliente: &Cliente,
@@ -96,6 +91,8 @@ impl Sistema {
         Ok(())
     }
 
+    /// Lee incidentes desde el servidor de NATS
+    /// y los procesa. Cambia el estado del sistema
     fn leer_incidentes(
         &mut self,
         _cliente: &Cliente,
@@ -104,14 +101,14 @@ impl Sistema {
     ) -> io::Result<()> {
         if let Some(mensaje) = sub_nuevos_incidentes.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
-                Ok(incidente) => self.estado.nuevo_incidente(incidente),
+                Ok(incidente) => self.estado.cargar_incidente(incidente),
                 Err(_) => eprintln!("Error al deserializar incidente"),
             }
         }
 
         if let Some(mensaje) = sub_clientes_finalizados.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
-                Ok(incidente) => self.estado.incidente_finalizado(incidente.id),
+                Ok(incidente) => self.estado.finalizar_incidente(incidente.id),
                 Err(_) => eprintln!("Error al deserializar incidente"),
             }
         }
@@ -119,6 +116,7 @@ impl Sistema {
         Ok(())
     }
 
+    /// Lee comandos desde la interfaz y los procesa
     fn leer_comandos(&mut self, cliente: &Cliente) -> io::Result<()> {
         while let Ok(comando) = self.recibir_comandos.try_recv() {
             match comando {
@@ -149,34 +147,23 @@ impl Sistema {
         lon: f64,
         rango: f64,
     ) -> io::Result<()> {
-        let camara = Camara::new(id, lat, lon, rango);
-
-        let camara_serializada = camara.serializable().serializar();
-
-        match self.estado.conectar_camara(camara) {
-            Ok(()) => {
-                cliente.publicar(
-                    &format!("camaras.{}.conectada", id),
-                    &camara_serializada,
-                    None,
-                )?;
-                self.enviar_respuesta(Respuesta::Ok)
-            }
-            Err(mensaje_de_error) => self.enviar_respuesta(Respuesta::Error(mensaje_de_error)),
+        if let Some(camara) = self.estado.camara(id) {
+            return self.enviar_respuesta(Respuesta::Error(
+                "Ya existe una cámara con ese ID".to_string(),
+            ));
         }
+        let camara = Camara::new(id, lat, lon, rango);
+        self.estado.conectar_camara(camara);
+        self.publicar_estado_general(cliente)
     }
 
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
-        match self.estado.desconectar_camara(id) {
-            Ok(camara) => {
-                cliente.publicar(
-                    &format!("camaras.{}.desconectada", id),
-                    &camara.serializable().serializar(),
-                    None,
-                )?;
-                self.enviar_respuesta(Respuesta::Ok)
-            }
-            Err(mensaje_de_error) => self.enviar_respuesta(Respuesta::Error(mensaje_de_error)),
+        if let Some(camara) = self.estado.desconectar_camara(id) {
+            self.publicar_estado_general(cliente)
+        } else {
+            self.enviar_respuesta(Respuesta::Error(
+                "No existe una cámara con ese ID".to_string(),
+            ))
         }
     }
 
@@ -195,13 +182,14 @@ impl Sistema {
         id: u64,
         rango: f64,
     ) -> io::Result<()> {
-        match self.estado.modificar_rango(id, rango) {
-            Ok(()) => {
-                cliente.publicar(&format!("camaras.{}.rango_modificado", id), &[], None)?;
-                self.enviar_respuesta(Respuesta::Ok)
-            }
-            Err(mensaje_de_error) => self.enviar_respuesta(Respuesta::Error(mensaje_de_error)),
+        if self.estado.camara(id).is_none() {
+            return self.enviar_respuesta(Respuesta::Error(
+                "No existe una cámara con ese ID".to_string(),
+            ));
         }
+
+        self.estado.modificar_rango_camara(id, rango);
+        self.publicar_estado_general(cliente)
     }
 
     fn comando_modificar_ubicacion(
@@ -211,31 +199,14 @@ impl Sistema {
         lat: f64,
         lon: f64,
     ) -> io::Result<()> {
-        let pos = Coordenadas::from_lat_lon(lat, lon);
-        let incidentes = self.estado.incidentes_en_rango_de_camara(id, &pos);
-
-        if let Some(camara) = self.estado.camara_mut(id) {
-            camara.lat = lat;
-            camara.lon = lon;
-
-            camara.incidentes = incidentes;
-
-            let camara_serializada = camara.serializable().serializar();
-
-            cliente.publicar(
-                &format!("camaras.{}.conectada", id),
-                &camara_serializada,
-                None,
-            )?;
-
-            self.enviar_respuesta(Respuesta::Ok)?;
-        } else {
+        if self.estado.camara(id).is_none() {
             return self.enviar_respuesta(Respuesta::Error(
                 "No existe una cámara con ese ID".to_string(),
             ));
         }
 
-        Ok(())
+        self.estado.modificar_ubicacion_camara(id, lat, lon);
+        self.publicar_estado_general(cliente)
     }
 
     fn comando_mostrar_camara(&mut self, id: u64) -> io::Result<()> {
