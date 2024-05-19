@@ -1,4 +1,4 @@
-use crate::{csv::csv_encodear_linea, serializables::Serializable};
+use crate::{coordenadas::Coordenadas, csv::csv_encodear_linea, serializables::Serializable};
 
 #[derive(Clone)]
 pub struct Incidente {
@@ -7,6 +7,22 @@ pub struct Incidente {
     pub lat: f64,
     pub lon: f64,
     pub inicio: u64,
+}
+
+impl Incidente {
+    pub fn new(id: u64, detalle: String, lat: f64, lon: f64, inicio: u64) -> Self {
+        Incidente {
+            id,
+            detalle,
+            lat,
+            lon,
+            inicio,
+        }
+    }
+
+    pub fn posicion(&self) -> Coordenadas {
+        Coordenadas::from_lat_lon(self.lat, self.lon)
+    }
 }
 
 impl Serializable for Incidente {

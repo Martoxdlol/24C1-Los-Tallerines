@@ -1,3 +1,4 @@
+pub mod camara;
 pub mod coordenadas;
 pub mod csv;
 pub mod incidente;

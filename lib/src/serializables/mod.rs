@@ -1,6 +1,5 @@
 use self::error::DeserializationError;
 
-pub mod camara_serializable;
 pub mod error;
 
 pub trait Serializable {
