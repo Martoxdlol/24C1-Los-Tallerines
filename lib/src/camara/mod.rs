@@ -31,7 +31,7 @@ impl Camara {
     }
 
     pub fn activa(&self) -> bool {
-        self.incidentes_primarios.len() > 0 || self.incidentes_secundarios.len() > 0
+        !self.incidentes_primarios.is_empty() || !self.incidentes_secundarios.is_empty()
     }
 
     pub fn posicion(&self) -> Coordenadas {
@@ -46,14 +46,8 @@ impl Serializable for Camara {
         parametros.push(format!("{}", self.lat));
         parametros.push(format!("{}", self.lon));
         parametros.push(format!("{}", self.rango));
-        parametros.push(format!(
-            "{}",
-            serializar_vector_incidentes(&self.incidentes_primarios)
-        ));
-        parametros.push(format!(
-            "{}",
-            serializar_vector_incidentes(&self.incidentes_secundarios)
-        ));
+        parametros.push(serializar_vector_incidentes(&self.incidentes_primarios).to_string());
+        parametros.push(serializar_vector_incidentes(&self.incidentes_secundarios).to_string());
         csv_encodear_linea(&parametros).into_bytes()
     }
 
@@ -113,7 +107,7 @@ fn serializar_vector_incidentes(incidentes: &HashSet<u64>) -> String {
 }
 
 fn deserialize_vector_incidentes(data: &str) -> Result<HashSet<u64>, DeserializationError> {
-    data.split(";")
+    data.split(';')
         .map(|id| id.parse().map_err(|_| DeserializationError::InvalidData))
         .collect()
 }

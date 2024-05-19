@@ -141,7 +141,7 @@ impl Estado {
         for id in camaras_lindantes.iter() {
             self.camaras_lindantes
                 .entry(*id)
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(camara.id);
         }
 
