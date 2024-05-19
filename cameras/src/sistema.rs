@@ -197,7 +197,7 @@ impl Sistema {
     ) -> io::Result<()> {
         match self.estado.modificar_rango(id, rango) {
             Ok(()) => {
-                cliente.publicar(&format!("camaras.{}.rango_modificado", id), &vec![], None)?;
+                cliente.publicar(&format!("camaras.{}.rango_modificado", id), &[], None)?;
                 self.enviar_respuesta(Respuesta::Ok)
             }
             Err(mensaje_de_error) => self.enviar_respuesta(Respuesta::Error(mensaje_de_error)),

@@ -2,10 +2,7 @@ pub mod id;
 
 use std::fmt::{self, Display, Formatter};
 
-use lib::{
-    coordenadas::Coordenadas, incidente::Incidente,
-    serializables::camara_serializable::CamaraSerializable,
-};
+use lib::{coordenadas::Coordenadas, serializables::camara_serializable::CamaraSerializable};
 
 use self::id::IdCamara;
 
