@@ -34,7 +34,6 @@ pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {
         });
 }
 
-
 fn click_boton_ir_a_inicio(ui: &mut Ui, map_memory: &mut MapMemory) {
     if ui
         .add_sized([40., 40.], egui::Button::new(RichText::new("📍").heading()))

@@ -36,7 +36,5 @@ pub fn inicio_conexion(
                 }
             }
         }
-
     }
-
 }

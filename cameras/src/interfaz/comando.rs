@@ -1,11 +1,10 @@
-use crate::camara::id::IdCamara;
-
+/// Comandos que podemos pedirle al sistema de cámaras vía terminal.
 pub enum Comando {
-    Conectar(IdCamara, f64, f64, f64),
-    Desconectar(IdCamara),
+    Conectar(u64, f64, f64, f64),
+    Desconectar(u64),
     ListarCamaras,
-    MostrarCamara(IdCamara),
-    ModificarUbicacion(IdCamara, f64, f64),
-    ModifciarRango(IdCamara, f64),
+    Camara(u64),
+    ModificarUbicacion(u64, f64, f64),
+    ModifciarRango(u64, f64),
     Ayuda,
 }

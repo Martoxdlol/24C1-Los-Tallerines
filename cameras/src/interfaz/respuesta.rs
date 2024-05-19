@@ -1,5 +1,6 @@
-use crate::camara::Camara;
+use lib::camara::Camara;
 
+/// Respuesta a un comando.
 pub enum Respuesta {
     Ok,
     Error(String),
@@ -9,14 +10,7 @@ pub enum Respuesta {
 }
 
 impl Respuesta {
-    pub fn ok() -> Self {
-        Respuesta::Ok
-    }
-
-    pub fn error<T: Into<String>>(error: T) -> Self {
-        Respuesta::Error(error.into())
-    }
-
+    /// Devuelve la respuesta como un string.
     pub fn como_string(&self) -> String {
         match self {
             Respuesta::Ok => "Ok".to_string(),
@@ -27,16 +21,22 @@ impl Respuesta {
         }
     }
 
+    /// Devuelve la representación en string de una cámara.
     fn camara_string(&self, camara: &Camara) -> String {
+        let mut estado = "Modo ahorro";
+
+        if camara.activa() {
+            estado = "Activa";
+        }
+
         format!(
             "ID: {}, Lat: {}, Lon: {}, Estado: {}",
-            camara.id,
-            camara.lat,
-            camara.lon,
-            camara.estado()
+            camara.id, camara.lat, camara.lon, estado
         )
     }
 
+    /// Devuelve la representacion en string de todas las camaras.
+    /// Llama en bucle a camara_string.
     fn camaras_string(&self, camaras: &[Camara]) -> String {
         let lineas = camaras
             .iter()

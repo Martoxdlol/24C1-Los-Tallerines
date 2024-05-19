@@ -32,8 +32,7 @@ impl Plugin for SombreadoCircular {
             let posicion_x_y = projector.project(*posicion).to_pos2();
 
             //let radio_como_f64 = *radio_metros as f64;
-            let radio = (metros_a_pixeles_en_mapa( posicion, projector) as f32)
-                * radio_metros;
+            let radio = (metros_a_pixeles_en_mapa(posicion, projector) as f32) * radio_metros;
 
             let flotar = response
                 .hover_pos()

@@ -8,9 +8,9 @@ pub struct Estado {
 }
 
 impl Default for Estado {
-     fn default() -> Self {
-      Self::new()
-   }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Estado {
