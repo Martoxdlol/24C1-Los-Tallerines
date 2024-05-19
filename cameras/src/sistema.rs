@@ -148,20 +148,22 @@ impl Sistema {
         rango: f64,
     ) -> io::Result<()> {
         if self.estado.camara(id).is_some() {
-            return self.enviar_respuesta(Respuesta::Error(
+            return self.responder(Respuesta::Error(
                 "Ya existe una cámara con ese ID".to_string(),
             ));
         }
         let camara = Camara::new(id, lat, lon, rango);
         self.estado.conectar_camara(camara);
-        self.publicar_estado_general(cliente)
+        self.publicar_estado_general(cliente)?;
+        self.responder_ok()
     }
 
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
         if self.estado.desconectar_camara(id).is_some() {
-            self.publicar_estado_general(cliente)
+            self.publicar_estado_general(cliente)?;
+            self.responder_ok()
         } else {
-            self.enviar_respuesta(Respuesta::Error(
+            self.responder(Respuesta::Error(
                 "No existe una cámara con ese ID".to_string(),
             ))
         }
@@ -170,9 +172,9 @@ impl Sistema {
     fn comando_listar_camaras(&mut self) -> io::Result<()> {
         let camaras: Vec<Camara> = self.estado.camaras().into_iter().cloned().collect();
         if camaras.is_empty() {
-            self.enviar_respuesta(Respuesta::Error("No hay cámaras conectadas".to_string()))
+            self.responder(Respuesta::Error("No hay cámaras conectadas".to_string()))
         } else {
-            self.enviar_respuesta(Respuesta::Camaras(camaras))
+            self.responder(Respuesta::Camaras(camaras))
         }
     }
 
@@ -183,13 +185,14 @@ impl Sistema {
         rango: f64,
     ) -> io::Result<()> {
         if self.estado.camara(id).is_none() {
-            return self.enviar_respuesta(Respuesta::Error(
+            return self.responder(Respuesta::Error(
                 "No existe una cámara con ese ID".to_string(),
             ));
         }
 
         self.estado.modificar_rango_camara(id, rango);
-        self.publicar_estado_general(cliente)
+        self.publicar_estado_general(cliente)?;
+        self.responder_ok()
     }
 
     fn comando_modificar_ubicacion(
@@ -200,30 +203,35 @@ impl Sistema {
         lon: f64,
     ) -> io::Result<()> {
         if self.estado.camara(id).is_none() {
-            return self.enviar_respuesta(Respuesta::Error(
+            return self.responder(Respuesta::Error(
                 "No existe una cámara con ese ID".to_string(),
             ));
         }
 
         self.estado.modificar_ubicacion_camara(id, lat, lon);
-        self.publicar_estado_general(cliente)
+        self.publicar_estado_general(cliente)?;
+        self.responder_ok()
     }
 
     fn comando_mostrar_camara(&mut self, id: u64) -> io::Result<()> {
         if let Some(camara) = self.estado.camara(id) {
-            self.enviar_respuesta(Respuesta::Camara(camara.clone()))
+            self.responder(Respuesta::Camara(camara.clone()))
         } else {
-            self.enviar_respuesta(Respuesta::Error(
+            self.responder(Respuesta::Error(
                 "No existe una cámara con ese ID".to_string(),
             ))
         }
     }
 
     fn comando_ayuda(&mut self) -> io::Result<()> {
-        self.enviar_respuesta(Respuesta::Ayuda)
+        self.responder(Respuesta::Ayuda)
     }
 
-    fn enviar_respuesta(&self, respuesta: Respuesta) -> io::Result<()> {
+    fn responder_ok(&self) -> io::Result<()> {
+        self.responder(Respuesta::Ok)
+    }
+
+    fn responder(&self, respuesta: Respuesta) -> io::Result<()> {
         self.enviar_respuesta
             .send(respuesta)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
