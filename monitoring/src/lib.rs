@@ -3,8 +3,6 @@ mod coordenadas;
 mod dron;
 mod iconos;
 pub mod logica;
-mod marcador_camara;
-mod marcador_incidente;
 mod plugins;
 mod proveer_carto;
 
@@ -18,7 +16,6 @@ use std::{
 use egui::{Context, Ui};
 use lib::incidente::Incidente;
 use logica::{comando::Comando, estado::Estado};
-use marcador_incidente::MarcadorIncidente;
 
 use crate::plugins::ClickWatcher;
 use proveer_carto::MapaCarto;

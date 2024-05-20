@@ -1,7 +1,6 @@
 use std::{
     io,
     sync::mpsc::{Receiver, Sender},
-    thread,
 };
 
 use lib::{
@@ -11,7 +10,7 @@ use lib::{
     serializables::{
         deserializar_vec,
         guardar::{cargar_serializable, guardar_serializable},
-        serializar_vec, Serializable,
+        serializar_vec, 
     },
 };
 use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
@@ -37,7 +36,7 @@ pub fn intentar_iniciar_sistema(
     let configuracion = ArchivoConfiguracion::desde_argv()?;
     let mut sistema = Sistema::new(estado, configuracion, recibir_comando, enviar_estado);
 
-    sistema.iniciar();
+    sistema.iniciar()?;
 
     Ok(())
 }
@@ -178,7 +177,7 @@ impl Sistema {
                     self.estado.agregar_incidente(incidente);
                     self.guardar_incidentes()?;
                     self.publicar_y_guardar_estado_general(cliente)?;
-                    self.actualizar_estado_ui()
+                    self.actualizar_estado_ui()?;
                 }
             }
         }
@@ -186,13 +185,13 @@ impl Sistema {
         Ok(())
     }
 
-    fn actualizar_estado_ui(&self) {
+    fn actualizar_estado_ui(&self) -> io::Result<()> {
         self.enviar_estado.send(self.estado.clone()).map_err(|e| {
             io::Error::new(
                 io::ErrorKind::Other,
                 format!("Error al enviar estado a la interfaz: {}", e),
             )
-        });
+        })
     }
 }
 
