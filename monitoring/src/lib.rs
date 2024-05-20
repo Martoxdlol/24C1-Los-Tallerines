@@ -170,9 +170,6 @@ impl eframe::App for Aplicacion {
 
         // Intentar recibir estado actualizado del sistema
         if let Ok(estado) = self.recibir_estado.try_recv() {
-
-            println!("Recibido estado actualizado: {:?}", estado);
-
             self.estado = estado;
         }
 

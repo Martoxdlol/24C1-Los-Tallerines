@@ -84,12 +84,14 @@ impl Sistema {
 
         let suscripcion_camaras = cliente.suscribirse("camaras", None)?;
 
+        let suscripcion_comandos = cliente.suscribirse("comandos.monitoreo", None)?;
+
         self.actualizar_estado_ui()?;
 
         self.solicitar_actualizacion_camaras(&cliente)?;
 
         loop {
-            self.ciclo(&cliente, &suscripcion_camaras)?;
+            self.ciclo(&cliente, &suscripcion_camaras, &suscripcion_comandos)?;
         }
     }
 
@@ -159,9 +161,15 @@ impl Sistema {
     }
 
     /// Ciclo de eventos del sistema
-    fn ciclo(&mut self, cliente: &Cliente, suscripcion_camaras: &Suscripcion) -> io::Result<()> {
+    fn ciclo(
+        &mut self,
+        cliente: &Cliente,
+        suscripcion_camaras: &Suscripcion,
+        suscripcion_comandos: &Suscripcion,
+    ) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
+        self.leer_comandos_remotos(cliente, suscripcion_comandos)?;
 
         std::thread::sleep(std::time::Duration::from_millis(5));
 
@@ -209,6 +217,24 @@ impl Sistema {
                         self.actualizar_estado_ui()?;
                     }
                 }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn leer_comandos_remotos(
+        &mut self,
+        cliente: &Cliente,
+        suscripcion_comandos: &Suscripcion,
+    ) -> io::Result<()> {
+        if let Some(mensaje) = suscripcion_comandos.intentar_leer()? {
+            let comando = String::from_utf8_lossy(&mensaje.payload);
+
+            if comando.eq("actualizar") {
+                self.publicar_y_guardar_estado_general(cliente)?;
+            } else {
+                println!("Comando desconocido: {}", comando);
             }
         }
 

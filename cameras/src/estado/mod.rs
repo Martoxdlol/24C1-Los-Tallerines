@@ -92,6 +92,13 @@ impl Estado {
         self.incidentes.insert(incidente.id, incidente);
     }
 
+    pub fn finalizar_todos_los_incidentes(&mut self) {
+        let incidentes: Vec<u64> = self.incidentes.keys().map(|&id| id).collect();
+        for id in incidentes {
+            self.finalizar_incidente(id);
+        }
+    }
+
     pub fn finalizar_incidente(&mut self, id: u64) -> Option<Incidente> {
         if let Some(incidente) = self.incidentes.remove(&id) {
             for id_camara in self.camaras_en_rango(&incidente) {
