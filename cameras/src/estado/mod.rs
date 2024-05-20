@@ -281,7 +281,7 @@ mod test {
 
         assert_eq!(
             estado
-                .camaras_en_rango(&estado.incidentes.get(&1).unwrap())
+                .camaras_en_rango(estado.incidentes.get(&1).unwrap())
                 .get(&1),
             Some(&1)
         );
