@@ -1,6 +1,7 @@
 use self::error::DeserializationError;
 
 pub mod error;
+pub mod guardar;
 
 pub trait Serializable {
     fn serializar(&self) -> Vec<u8>;
