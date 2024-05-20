@@ -1,6 +1,7 @@
 pub mod id;
 pub mod respuesta;
 pub mod tick_contexto;
+use lib::parseador::parametros_info::ParametrosInfo;
 use lib::parseador::Parseador;
 use lib::{parseador::mensaje::Mensaje, stream::Stream};
 use std::sync::Arc;
@@ -135,7 +136,10 @@ impl Conexion {
     }
 
     pub fn enviar_info(&mut self) {
-        self.escribir_respuesta(&Respuesta::Info());
+        let require_auth = self.cuentas.is_some();
+        self.escribir_respuesta(&Respuesta::Info(ParametrosInfo {
+            auth_required: Some(require_auth),
+        }));
     }
 
     pub fn leer_mensajes(&mut self, contexto: &mut TickContexto) {

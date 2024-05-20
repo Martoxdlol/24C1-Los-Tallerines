@@ -85,7 +85,15 @@ impl Sistema {
             .unwrap_or("127.0.0.1".to_string());
         let puerto = self.configuracion.obtener::<u16>("puerto").unwrap_or(4222);
         println!("Conectando al servidor de NATS en {}:{}", direccion, puerto);
-        Cliente::conectar(&format!("{}:{}", direccion, puerto))
+
+        let user = self.configuracion.obtener::<String>("user");
+        let pass = self.configuracion.obtener::<String>("pass");
+
+        if user.is_some() || pass.is_some() {
+            Cliente::conectar_user_pass(&format!("{}:{}", direccion, puerto), user, pass)
+        } else {
+            Cliente::conectar(&format!("{}:{}", direccion, puerto))
+        }
     }
 
     fn publicar_y_guardar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
