@@ -81,6 +81,13 @@ impl ArchivoConfiguracion {
 
         Ok(config)
     }
+
+    pub fn desde_argv() -> io::Result<Self> {
+        let args: Vec<String> = std::env::args().collect();
+        let parametros: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+
+        ArchivoConfiguracion::desde_parametros_y_leer(&parametros[1..])
+    }
 }
 
 #[cfg(test)]
