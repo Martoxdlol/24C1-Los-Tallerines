@@ -1,4 +1,4 @@
-mod botones;
+mod botones_mover_mapa;
 mod coordenadas;
 mod iconos;
 pub mod logica;
@@ -13,7 +13,7 @@ use std::{
 //use iconos::incidente;
 
 use egui::{Context, Ui};
-use lib::incidente::Incidente;
+use lib::{camara, incidente::Incidente};
 use logica::{comando::Comando, estado::Estado};
 
 use crate::plugins::ClickWatcher;
@@ -141,6 +141,27 @@ fn mostrado_incidentes_y_camaras<'a>(
         .with_plugin(clicks)
 }
 
+fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
+    if !camaras.is_empty() {
+        egui::Window::new("Lista de cámaras")
+            .collapsible(false)
+            .movable(true)
+            .resizable(true)
+            .collapsible(true)
+            .anchor(egui::Align2::RIGHT_BOTTOM, [-10., 10.])
+            .show(ui.ctx(), |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for camara in camaras {
+                        let nombre = format!("{}: {}", camara.id, camara.activa());
+
+                        ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
+                    }
+                });
+            });
+    }
+
+}
+
 fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
     if !incidentes.is_empty() {
         egui::Window::new("Lista de incidentes")
@@ -160,6 +181,8 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
             });
     }
 }
+
+
 
 impl eframe::App for Aplicacion {
     fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
@@ -195,7 +218,7 @@ impl eframe::App for Aplicacion {
 
                 // Draw utility windows.
                 {
-                    use botones::*;
+                    use botones_mover_mapa::*;
 
                     zoom(ui, &mut self.memoria_mapa);
                     self.clicks.mostrar_posicion(ui);
@@ -206,6 +229,9 @@ impl eframe::App for Aplicacion {
                 }
 
                 lista_de_incidentes_actuales(ui, &self.estado.incidentes());
+                lista_de_camaras(ui, &self.estado.camaras());
+
+                // TENEMOS ESTADO.CAMARAS
 
                 egui::Context::request_repaint(contexto)
             });
