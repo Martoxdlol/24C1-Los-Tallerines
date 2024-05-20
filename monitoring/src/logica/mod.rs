@@ -25,6 +25,7 @@ pub struct Sistema {
     pub configuracion: ArchivoConfiguracion,
     recibir_comando: Receiver<Comando>,
     enviar_estado: Sender<Estado>,
+    proximo_id_incidente: u64,
 }
 
 pub fn intentar_iniciar_sistema(
@@ -53,6 +54,7 @@ impl Sistema {
             configuracion,
             recibir_comando,
             enviar_estado,
+            proximo_id_incidente: 0,
         }
     }
 
@@ -81,6 +83,10 @@ impl Sistema {
         self.publicar_y_guardar_estado_general(&cliente)?;
 
         let suscripcion_camaras = cliente.suscribirse("camaras", None)?;
+
+        self.actualizar_estado_ui()?;
+
+        self.solicitar_actualizacion_camaras(&cliente)?;
 
         loop {
             self.ciclo(&cliente, &suscripcion_camaras)?;
@@ -137,9 +143,17 @@ impl Sistema {
 
         let mut incidentes: Vec<Incidente> = cargar_serializable(&ruta_archivo_incidentes)?;
 
+        let mut id_max = 1;
+
         for incidente in incidentes.drain(..) {
+            if incidente.id > id_max {
+                id_max = incidente.id;
+            }
+
             self.estado.cargar_incidente(incidente);
         }
+
+        self.proximo_id_incidente = id_max + 1;
 
         Ok(())
     }
@@ -148,6 +162,9 @@ impl Sistema {
     fn ciclo(&mut self, cliente: &Cliente, suscripcion_camaras: &Suscripcion) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
+
+        std::thread::sleep(std::time::Duration::from_millis(5));
+
         Ok(())
     }
 
@@ -164,6 +181,8 @@ impl Sistema {
             for camara in camaras {
                 self.estado.conectar_camara(camara);
             }
+
+            self.actualizar_estado_ui()?;
         }
 
         Ok(())
@@ -173,7 +192,11 @@ impl Sistema {
     fn leer_comandos(&mut self, cliente: &Cliente) -> io::Result<()> {
         while let Ok(comando) = self.recibir_comando.try_recv() {
             match comando {
-                Comando::NuevoIncidente(incidente) => {
+                Comando::NuevoIncidente(mut incidente) => {
+                    incidente.id = self.proximo_id_incidente;
+
+                    self.proximo_id_incidente += 1;
+
                     self.estado.cargar_incidente(incidente.clone());
                     self.guardar_incidentes()?;
                     self.publicar_nuevo_incidente(cliente, &incidente)?;
@@ -215,6 +238,10 @@ impl Sistema {
                 format!("Error al enviar estado a la interfaz: {}", e),
             )
         })
+    }
+
+    fn solicitar_actualizacion_camaras(&self, cliente: &Cliente) -> io::Result<()> {
+        cliente.publicar("comandos.camaras", b"actualizar", None)
     }
 }
 

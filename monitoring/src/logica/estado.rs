@@ -1,7 +1,7 @@
 use egui::ahash::HashMap;
 use lib::{camara::Camara, incidente::Incidente};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Estado {
     camaras: HashMap<u64, Camara>,
     incidentes: HashMap<u64, Incidente>,

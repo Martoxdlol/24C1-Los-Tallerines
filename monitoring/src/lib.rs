@@ -126,17 +126,18 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
         });
 }
 
-fn mostrado_de_incidentes<'a>(
+fn mostrado_incidentes_y_camaras<'a>(
     mapa_a_mostrar: Map<'a, 'a, 'a>,
-    incidentes: &[Incidente],
+    estado: &Estado,
     clicks: &'a mut ClickWatcher,
 ) -> Map<'a, 'a, 'a> {
 
     mapa_a_mostrar
-        .with_plugin(plugins::mostrar_incidentes(incidentes))
-        // .with_plugin(plugins::SombreadoCircular {
-        //     posiciones: incidentes.iter().map(|i| (i.posicion(), 50.)).collect(),
-        // })
+        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
+        .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
+        .with_plugin(plugins::SombreadoCircular {
+            posiciones: estado.camaras().iter().map(|i| (i.posicion(), i.rango)).collect(),
+        })
         .with_plugin(clicks)
 }
 
@@ -169,6 +170,9 @@ impl eframe::App for Aplicacion {
 
         // Intentar recibir estado actualizado del sistema
         if let Ok(estado) = self.recibir_estado.try_recv() {
+
+            println!("Recibido estado actualizado: {:?}", estado);
+
             self.estado = estado;
         }
 
@@ -186,9 +190,9 @@ impl eframe::App for Aplicacion {
 
                 let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
-                let mapa_final = mostrado_de_incidentes(
+                let mapa_final = mostrado_incidentes_y_camaras(
                     mapa_a_mostrar,
-                    &self.estado.incidentes(),
+                    &self.estado,
                     &mut self.clicks,
                 );
 

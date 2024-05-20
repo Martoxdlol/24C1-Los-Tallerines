@@ -1,6 +1,6 @@
 use crate::coordenadas::metros_a_pixeles_en_mapa;
 use egui::{Color32, Painter, Response, Ui};
-use lib::incidente::Incidente;
+use lib::{camara::Camara, coordenadas::Coordenadas, incidente::Incidente};
 use walkers::{
     extras::{Place, Places, Style},
     Plugin, Position, Projector,
@@ -21,19 +21,43 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     Places::new(lugares)
 }
 
+/// Los lugares. Los iconos
+pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
+    let mut lugares = Vec::new();
+
+    for camara in camaras.iter() {
+        let mut estado = "Ahorro";
+        let mut symbol = '📷';
+        if camara.activa() {
+            estado = "Activa";
+            symbol = '📸';
+        }
+
+        lugares.push(Place {
+            position: Position::from_lat_lon(camara.posicion().lat, camara.posicion().lon),
+            label: format!("Id: {}, Estado: {}", camara.id, estado),
+            symbol,
+            style: Style::default(),
+        });
+    }
+    Places::new(lugares)
+}
+
 /// Sample map plugin which draws custom stuff on the map.
 pub struct SombreadoCircular {
-    pub posiciones: Vec<(Position, f32)>,
+    pub posiciones: Vec<(Coordenadas, f64)>,
 }
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        for (posicion, radio_metros) in &self.posiciones {
+        for (coordenadas, radio_metros) in &self.posiciones {
+
+            let posicion = Position::from_lat_lon(coordenadas.lat, coordenadas.lon);
             // Project it into the position on the screen.
-            let posicion_x_y = projector.project(*posicion).to_pos2();
+            let posicion_x_y = projector.project(posicion).to_pos2();
 
             //let radio_como_f64 = *radio_metros as f64;
-            let radio = (metros_a_pixeles_en_mapa(posicion, projector) as f32) * radio_metros;
+            let radio = (metros_a_pixeles_en_mapa(&posicion, projector)  * radio_metros) as f32;
 
             let flotar = response
                 .hover_pos()

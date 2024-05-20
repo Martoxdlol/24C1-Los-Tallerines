@@ -67,12 +67,14 @@ impl Sistema {
 
         let sub_nuevos_incidentes = cliente.suscribirse("incidentes.*.creado", None)?;
         let sub_incidentes_finalizados = cliente.suscribirse("incidentes.*.finalizado", None)?;
+        let sub_comandos_remotos = cliente.suscribirse("comandos.camaras", None)?;
 
         loop {
             self.ciclo(
                 &cliente,
                 &sub_nuevos_incidentes,
                 &sub_incidentes_finalizados,
+                &sub_comandos_remotos,
             )?;
         }
     }
@@ -142,9 +144,12 @@ impl Sistema {
         cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
         sub_clientes_finalizados: &Suscripcion,
+        sub_comandos: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_incidentes(cliente, sub_nuevos_incidentes, sub_clientes_finalizados)?;
         self.leer_comandos(cliente)?;
+        self.leer_comandos_remotos(cliente, sub_comandos)?;
+
         Ok(())
     }
 
@@ -192,6 +197,22 @@ impl Sistema {
                 }
                 Comando::Camara(id) => self.comando_mostrar_camara(id)?,
                 Comando::Ayuda => self.comando_ayuda()?,
+            }
+        }
+
+        Ok(())
+    }
+
+    fn leer_comandos_remotos(
+        &mut self,
+        cliente: &Cliente,
+        sub_comandos_remotos: &Suscripcion,
+    ) -> io::Result<()> {
+        while let Some(mensaje) = sub_comandos_remotos.intentar_leer()? {
+            let mensaje_texto = String::from_utf8_lossy(&mensaje.payload);
+
+            if mensaje_texto.eq("actualizar") {
+                self.publicar_y_guardar_estado_general(cliente)?;
             }
         }
 
