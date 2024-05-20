@@ -1,7 +1,8 @@
-use crate::{coordenadas::metros_a_pixeles_en_mapa, incidente::Incidente};
+use crate::coordenadas::metros_a_pixeles_en_mapa;
 use egui::{Color32, Painter, Response, Ui};
+use lib::incidente::Incidente;
 use walkers::{
-    extras::{Place, Places},
+    extras::{Place, Places, Style},
     Plugin, Position, Projector,
 };
 
@@ -11,10 +12,10 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
 
     for incidente in incidentes.iter() {
         lugares.push(Place {
-            position: incidente.posicion,
-            label: incidente.nombre.clone(),
-            symbol: incidente.icono,
-            style: incidente.estilo.clone(),
+            position: Position::from_lat_lon(incidente.posicion().lat, incidente.posicion().lon),
+            label: incidente.detalle.clone(),
+            symbol: '🚨',
+            style: Style::default(),
         });
     }
     Places::new(lugares)

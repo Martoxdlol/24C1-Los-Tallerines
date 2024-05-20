@@ -1,4 +1,6 @@
-use crate::{camara::Camara, dron::Dron, incidente::Incidente};
+use lib::{camara::Camara, incidente::Incidente};
+
+use crate::dron::Dron;
 
 #[derive(Clone)]
 pub struct Estado {

@@ -1,10 +1,10 @@
 mod botones;
-mod camara;
 mod coordenadas;
 mod dron;
 mod iconos;
-mod incidente;
 pub mod logica;
+mod marcador_camara;
+mod marcador_incidente;
 mod plugins;
 mod proveer_carto;
 
@@ -16,10 +16,11 @@ use std::{
 //use iconos::incidente;
 
 use egui::{Context, Ui};
-use incidente::Incidente;
+use lib::incidente::Incidente;
+use logica::{comando::Comando, estado::Estado};
+use marcador_incidente::MarcadorIncidente;
 
 use crate::plugins::ClickWatcher;
-use logica::{comando::Comando, estado::Estado};
 use proveer_carto::MapaCarto;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 
@@ -108,10 +109,13 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
+                // TODO: ID Y TIMESTAMP
                 let incidente = Incidente::new(
+                    1,
+                    aplicacion.nombre_incidente.clone(),
                     clicked_at.lon(),
                     clicked_at.lat(),
-                    aplicacion.nombre_incidente.clone(),
+                    1,
                 );
 
                 aplicacion.nombre_incidente.clear();
@@ -130,9 +134,9 @@ fn mostrado_de_incidentes<'a>(
 ) -> Map<'a, 'a, 'a> {
     mapa_a_mostrar
         .with_plugin(plugins::mostrar_incidentes(incidentes))
-        .with_plugin(plugins::SombreadoCircular {
-            posiciones: incidentes.iter().map(|i| (i.posicion, 50.)).collect(),
-        })
+        // .with_plugin(plugins::SombreadoCircular {
+        //     posiciones: incidentes.iter().map(|i| (i.posicion(), 50.)).collect(),
+        // })
         .with_plugin(clicks)
 }
 
@@ -147,7 +151,7 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
             .show(ui.ctx(), |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for incidente in incidentes {
-                        let nombre = format!("{}: {}", incidente.icono, incidente.nombre);
+                        let nombre = format!("{}: {}", '🚨', incidente.detalle);
 
                         ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
                     }

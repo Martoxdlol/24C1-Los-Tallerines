@@ -1,16 +1,16 @@
 use walkers::{extras::Style, Position};
 
 #[derive(Clone)]
-pub struct Camara {
+pub struct MarcadorCamara {
     pub posicion: Position,
     pub id: u64,
     pub icono: char,
     pub estilo: Style,
     pub radio: f64,
 }
-impl Camara {
+impl MarcadorCamara {
     pub fn new(longitud: f64, latitud: f64, id: u64) -> Self {
-        Camara {
+        MarcadorCamara {
             posicion: Position::from_lon_lat(longitud, latitud),
             id,
             icono: '📹',

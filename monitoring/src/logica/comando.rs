@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use crate::incidente::Incidente;
+use lib::incidente::Incidente;
 
 pub enum Comando {
     NuevoIncidente(Incidente),
