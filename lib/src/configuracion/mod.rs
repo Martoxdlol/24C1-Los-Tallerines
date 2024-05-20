@@ -44,7 +44,7 @@ impl ArchivoConfiguracion {
         config
     }
 
-    fn parsear_valor(valor: &str) -> String {
+    pub fn parsear_valor(valor: &str) -> String {
         let valor_trim = valor.trim();
 
         if valor_trim.starts_with('"') && valor_trim.ends_with('"') {
@@ -52,6 +52,34 @@ impl ArchivoConfiguracion {
         } else {
             valor_trim.to_string()
         }
+    }
+
+    pub fn desde_parametros(parametros: &[&str]) -> Self {
+        let mut config = ArchivoConfiguracion::new();
+
+        for parametro in parametros {
+            let mut partes = parametro.split('=');
+            let clave = partes.next();
+            let valor = partes.next();
+
+            if let (Some(clave), Some(valor)) = (clave, valor) {
+                config.setear(clave, Self::parsear_valor(valor));
+            }
+        }
+
+        config
+    }
+
+    /// Tomar el párametro de argv config=archivo.txt y leer el archivo de configuración
+    pub fn desde_parametros_y_leer(parametros: &[&str]) -> io::Result<Self> {
+        let mut config = ArchivoConfiguracion::desde_parametros(parametros);
+
+        if let Some(archivo) = config.obtener::<String>("config") {
+            let archivo_config = ArchivoConfiguracion::leer(&archivo)?;
+            config.valores.extend(archivo_config.valores);
+        }
+
+        Ok(config)
     }
 }
 
@@ -68,8 +96,14 @@ mod tests {
         let texto = "clave1=valor1\nclave2=\"valor2\"";
         let config = super::ArchivoConfiguracion::parsear(texto);
 
-        assert_eq!(config.obtener::<String>("clave1"), Some("valor1".to_string()));
-        assert_eq!(config.obtener::<String>("clave2"), Some("valor2".to_string()));
+        assert_eq!(
+            config.obtener::<String>("clave1"),
+            Some("valor1".to_string())
+        );
+        assert_eq!(
+            config.obtener::<String>("clave2"),
+            Some("valor2".to_string())
+        );
     }
 
     #[test]
@@ -79,8 +113,14 @@ mod tests {
 
         let config = super::ArchivoConfiguracion::leer("config.txt").unwrap();
 
-        assert_eq!(config.obtener::<String>("clave1"), Some("valor1".to_string()));
-        assert_eq!(config.obtener::<String>("clave2"), Some("valor2".to_string()));
+        assert_eq!(
+            config.obtener::<String>("clave1"),
+            Some("valor1".to_string())
+        );
+        assert_eq!(
+            config.obtener::<String>("clave2"),
+            Some("valor2".to_string())
+        );
 
         std::fs::remove_file("config.txt").unwrap();
     }
@@ -90,7 +130,10 @@ mod tests {
         let mut config = super::ArchivoConfiguracion::new();
         config.setear("clave1", "valor1");
 
-        assert_eq!(config.obtener::<String>("clave1"), Some("valor1".to_string()));
+        assert_eq!(
+            config.obtener::<String>("clave1"),
+            Some("valor1".to_string())
+        );
     }
 
     #[test]
@@ -98,7 +141,10 @@ mod tests {
         let mut config = super::ArchivoConfiguracion::new();
         config.setear("clave1", "valor1");
 
-        assert_eq!(config.obtener::<String>("clave1"), Some("valor1".to_string()));
+        assert_eq!(
+            config.obtener::<String>("clave1"),
+            Some("valor1".to_string())
+        );
         assert_eq!(config.obtener::<i32>("clave1"), None);
     }
 
@@ -116,5 +162,43 @@ mod tests {
         config.setear("clave1", "3.14");
 
         assert_eq!(config.obtener::<f32>("clave1"), Some(3.14));
+    }
+
+    #[test]
+    fn desde_parametros() {
+        let args = &["clave1=valor1", "clave2=valor2"];
+        let config = super::ArchivoConfiguracion::desde_parametros(args);
+
+        assert_eq!(
+            config.obtener::<String>("clave1"),
+            Some("valor1".to_string())
+        );
+        assert_eq!(
+            config.obtener::<String>("clave2"),
+            Some("valor2".to_string())
+        );
+    }
+
+    #[test]
+    fn desde_parametros_y_leer() {
+        std::fs::write("config.txt", "clave1=valor1\nclave2=valor2").unwrap();
+
+        let args = &["config=config.txt", "clave3=valor3"];
+        let config = super::ArchivoConfiguracion::desde_parametros_y_leer(args).unwrap();
+
+        assert_eq!(
+            config.obtener::<String>("clave1"),
+            Some("valor1".to_string())
+        );
+        assert_eq!(
+            config.obtener::<String>("clave2"),
+            Some("valor2".to_string())
+        );
+        assert_eq!(
+            config.obtener::<String>("clave3"),
+            Some("valor3".to_string())
+        );
+
+        std::fs::remove_file("config.txt").unwrap();
     }
 }
