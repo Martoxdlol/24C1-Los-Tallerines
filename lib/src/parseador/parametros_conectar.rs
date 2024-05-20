@@ -24,7 +24,7 @@ impl ParametrosConectar {
             return txt;
         }
 
-        return "{}".to_string();
+        "{}".to_string()
     }
 
     pub fn user_str(&self) -> String {

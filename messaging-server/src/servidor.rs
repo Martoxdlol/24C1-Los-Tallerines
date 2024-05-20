@@ -123,7 +123,7 @@ impl Servidor {
 
         let puerto = self.configuracion.obtener::<u16>("puerto").unwrap_or(4222);
 
-        let listener = TcpListener::bind(&format!("{}:{}", direccion, puerto)).unwrap();
+        let listener = TcpListener::bind(format!("{}:{}", direccion, puerto)).unwrap();
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");

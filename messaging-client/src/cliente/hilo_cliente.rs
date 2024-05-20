@@ -102,7 +102,7 @@ impl HiloCliente {
                     };
 
                     self.stream.write_all(
-                        &format!(
+                        format!(
                             "CONNECT {}",
                             ParametrosConectar::user_pass(user, pass).to_json()
                         )
