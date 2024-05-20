@@ -1,6 +1,5 @@
 mod botones;
 mod coordenadas;
-mod dron;
 mod iconos;
 pub mod logica;
 mod plugins;
