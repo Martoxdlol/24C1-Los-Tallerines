@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone)]
 pub struct Registro {
     pub nivel: NivelRegistro,
@@ -35,35 +37,23 @@ impl Registro {
     }
 }
 
-impl ToString for Registro {
+impl Display for Registro {
     /// Formato: `{Nivel} [hilo: {}] [cliente: {}] {Mensaje}`
-    fn to_string(&self) -> String {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(hilo) = self.hilo {
             if let Some(conexion) = self.conexion {
-                format!(
+                write!(
+                    f,
                     "{} [hilo: {}] [cliente: {}] {}",
-                    self.nivel.to_string(),
-                    hilo,
-                    conexion,
-                    self.mensaje
+                    self.nivel, hilo, conexion, self.mensaje
                 )
             } else {
-                format!(
-                    "{} [hilo: {}] {}",
-                    self.nivel.to_string(),
-                    hilo,
-                    self.mensaje
-                )
+                write!(f, "{} [hilo: {}] {}", self.nivel, hilo, self.mensaje)
             }
         } else if let Some(conexion) = self.conexion {
-            format!(
-                "{} [cliente: {}] {}",
-                self.nivel.to_string(),
-                conexion,
-                self.mensaje
-            )
+            write!(f, "{} [cliente: {}] {}", self.nivel, conexion, self.mensaje)
         } else {
-            format!("{} {}", self.nivel.to_string(), self.mensaje)
+            write!(f, "{} {}", self.nivel, self.mensaje)
         }
     }
 }
@@ -75,12 +65,12 @@ pub enum NivelRegistro {
     Error,
 }
 
-impl ToString for NivelRegistro {
-    fn to_string(&self) -> String {
+impl Display for NivelRegistro {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NivelRegistro::Informacion => "Info".to_string(),
-            NivelRegistro::Advertencia => "Advertencia".to_string(),
-            NivelRegistro::Error => "Error".to_string(),
+            NivelRegistro::Informacion => write!(f, "Info"),
+            NivelRegistro::Advertencia => write!(f, "Advertencia"),
+            NivelRegistro::Error => write!(f, "Error"),
         }
     }
 }

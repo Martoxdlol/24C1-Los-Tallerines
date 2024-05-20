@@ -313,7 +313,7 @@ mod tests {
 
         assert_eq!(contexto.suscripciones.len(), 1);
         assert_eq!(contexto.suscripciones[0].id(), "1");
-        assert_eq!(contexto.suscripciones[0].topico().to_string(), "x");
+        assert_eq!(contexto.suscripciones[0].topico().a_texto(), "x");
     }
 
     #[test]

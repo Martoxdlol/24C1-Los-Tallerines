@@ -64,10 +64,8 @@ impl Topico {
 
         true
     }
-}
 
-impl ToString for Topico {
-    fn to_string(&self) -> String {
+    pub fn a_texto(&self) -> String {
         let mut s = String::new();
         for segmento in &self.patron {
             match segmento {
@@ -87,13 +85,13 @@ impl ToString for Topico {
 
 impl Hash for Topico {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.to_string().hash(state)
+        self.a_texto().hash(state)
     }
 }
 
 impl PartialEq for Topico {
     fn eq(&self, other: &Self) -> bool {
-        self.to_string().eq(&other.to_string())
+        self.a_texto().eq(&other.a_texto())
     }
 }
 
