@@ -5,6 +5,12 @@ pub struct ArchivoConfiguracion {
     valores: HashMap<String, String>,
 }
 
+impl Default for ArchivoConfiguracion {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ArchivoConfiguracion {
     pub fn new() -> Self {
         ArchivoConfiguracion {
@@ -38,7 +44,7 @@ impl ArchivoConfiguracion {
             let valor = partes.next();
 
             if let (Some(clave), Some(valor)) = (clave, valor) {
-                if clave.trim_start().starts_with("#") {
+                if clave.trim_start().starts_with('#') {
                     continue;
                 }
 
@@ -171,9 +177,9 @@ mod tests {
     #[test]
     fn obtener_float() {
         let mut config = super::ArchivoConfiguracion::new();
-        config.setear("clave1", "3.14");
+        config.setear("clave1", "13.14");
 
-        assert_eq!(config.obtener::<f32>("clave1"), Some(3.14));
+        assert_eq!(config.obtener::<f32>("clave1"), Some(13.14));
     }
 
     #[test]
