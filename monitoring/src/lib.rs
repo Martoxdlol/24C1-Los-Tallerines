@@ -211,10 +211,10 @@ fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion){
         .show(ui.ctx(), |ui| {
             egui::ScrollArea::horizontal().show(ui, |ui| {
                 if ui.button("Incidentes").clicked(){
-                    aplicacion.listar = (Listar::Incidentes);
+                    aplicacion.listar = Listar::Incidentes;
                 }
                 if ui.button("Camaras").clicked(){
-                    aplicacion.listar= (Listar::Camaras);
+                    aplicacion.listar= Listar::Camaras;
                 }
             });
         });
