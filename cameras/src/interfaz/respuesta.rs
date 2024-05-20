@@ -30,8 +30,9 @@ impl Respuesta {
         }
 
         format!(
-            "ID: {}, Lat: {}, Lon: {}, Estado: {}",
-            camara.id, camara.lat, camara.lon, estado
+            "ID: {}, Lat: {}, Lon: {}, Rango: {} Estado: {}. Incidentes primarios: {}, Incidentes secundarios: {}",
+            camara.id, camara.lat, camara.lon, camara.rango, estado, camara.incidentes_primarios.len(),
+            camara.incidentes_secundarios.len()
         )
     }
 

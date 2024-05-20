@@ -92,7 +92,7 @@ impl Estado {
         self.incidentes.insert(incidente.id, incidente);
     }
 
-    pub fn finalizar_incidente(&mut self, id: u64) {
+    pub fn finalizar_incidente(&mut self, id: u64) -> Option<Incidente> {
         if let Some(incidente) = self.incidentes.remove(&id) {
             for id_camara in self.camaras_en_rango(&incidente) {
                 if let Some(camara) = self.camaras.get_mut(&id_camara) {
@@ -109,6 +109,10 @@ impl Estado {
                     }
                 }
             }
+
+            Some(incidente)
+        } else {
+            None
         }
     }
 
@@ -193,101 +197,118 @@ impl Estado {
     }
 }
 
-// /// Agrega una camara al estado.
-// pub fn conectar_camara(&mut self, camara: Camara) {
-//     if self.camara(camara.id).is_some() {
-//         return;
-//     }
+#[cfg(test)]
+mod test {
+    use lib::coordenadas::Coordenadas;
 
-//     // Establece las camaras lindantes
-//     self.establecer_camaras_lindantes(&camara);
-//     // Establece el estado de la camara
-//     self.camaras.insert(camara.id, camara);
-// }
+    use super::*;
 
-// pub fn desconectar_camara(&mut self, id: u64) {}
+    #[test]
+    fn test_conectar_camara() {
+        let mut estado = Estado::new();
+        let camara = Camara::new(1, 0.0, 0.0, 1.0);
+        estado.conectar_camara(camara.clone());
+        assert_eq!(estado.camaras.get(&1), Some(&camara));
+    }
 
-// /// Establece el estado de una camara
-// pub fn establecer_estado_camara(&mut self, camara: &mut Camara) {
-//     let incidentes = self.incidentes_en_rango_de_camara(camara);
-//     camara.activa = !incidentes.is_empty();
-// }
+    #[test]
+    fn test_desconectar_camara() {
+        let mut estado = Estado::new();
+        let camara = Camara::new(1, 0.0, 0.0, 1.0);
+        estado.conectar_camara(camara.clone());
+        assert_eq!(estado.desconectar_camara(1), Some(camara));
+        assert_eq!(estado.camaras.get(&1), None);
+    }
 
-// /// Calcula y almacena las camaras lindantes a una camara dada.
-// ///
-// /// Una camara es lindante a otra si la distancia entre sus ubicaciones es menor a la suma de sus rangos.
-// /// Es decir, sus rangos estan superpuestos en al menos un punto.
-// fn establecer_camaras_lindantes(&self, camara: &Camara) {
-//     // Calcula las camaras lindantes a la camara dada
-//     let camaras_lindantes = self
-//         .camaras
-//         .values()
-//         .filter(|c| camara.posicion().distancia(&c.posicion()) < camara.rango + c.rango)
-//         .map(|c| c.id)
-//         .collect();
+    #[test]
+    fn test_cargar_incidente() {
+        let mut estado = Estado::new();
+        let incidente = Incidente::new(1, "Incidente".to_string(), 0.0, 0.0, 0);
+        estado.cargar_incidente(incidente.clone());
+        assert_eq!(estado.incidentes.get(&1), Some(&incidente));
+    }
 
-//     // Almacena las camaras lindantes para la camara dada
-//     self.camaras_lindantes.insert(camara.id, camaras_lindantes);
+    #[test]
+    fn test_finalizar_incidente() {
+        let mut estado = Estado::new();
+        let incidente = Incidente::new(1, "Incidente".to_string(), 0.0, 0.0, 0);
+        estado.cargar_incidente(incidente.clone());
+        assert_eq!(estado.finalizar_incidente(1), Some(incidente));
+        assert_eq!(estado.incidentes.get(&1), None);
+    }
 
-//     // Almacena la camara dada como lindante para las camaras lindantes
-//     for id in camaras_lindantes {
-//         self.camaras_lindantes
-//             .entry(id)
-//             .or_insert_with(HashSet::new)
-//             .insert(camara.id);
-//     }
-// }
+    #[test]
+    fn test_modificar_ubicacion_camara() {
+        let mut estado = Estado::new();
+        let mut camara = Camara::new(1, 0.0, 0.0, 1.0);
+        estado.conectar_camara(camara.clone());
+        estado.modificar_ubicacion_camara(1, 1.0, 1.0);
+        camara.lat = 1.0;
+        camara.lon = 1.0;
+        assert_eq!(estado.camaras.get(&1), Some(&camara));
+    }
 
-// /// Camaras que por su posicion atienden al incidente dado
-// pub fn camaras_en_rango_de_incidente(&self, incidente: &Incidente) -> HashSet<u64> {
-//     // Calcula las camaras que atienden al incidente dado
-//     let mut camaras: HashSet<u64> = self
-//         .camaras
-//         .values()
-//         .filter(|c| incidente.posicion().distancia(&c.posicion()) < c.rango)
-//         .map(|c| c.id)
-//         .collect();
+    #[test]
+    fn test_modificar_rango_camara() {
+        let mut estado = Estado::new();
+        let mut camara = Camara::new(1, 0.0, 0.0, 1.0);
+        estado.conectar_camara(camara.clone());
+        estado.modificar_rango_camara(1, 2.0);
+        camara.rango = 2.0;
+        assert_eq!(estado.camaras.get(&1), Some(&camara));
+    }
 
-//     // Calcula las camaras lindantes a las camaras que atienden al incidente dado, que tambien lo atienden
-//     let mut camaras_lindantes: HashSet<u64> = HashSet::new();
-//     for id in camaras {
-//         camaras_lindantes.extend(self.camaras_lindantes.get(&id).unwrap_or(&HashSet::new()));
-//     }
+    #[test]
+    fn cagar_incidente_en_rango_de_camara() {
+        let mut estado = Estado::new();
+        let camara = Camara::new(1, 0.0, 0.0, 1.0);
+        estado.conectar_camara(camara.clone());
+        let incidente = Incidente::new(1, "Incidente".to_string(), 0.0, 0.0, 0);
+        estado.cargar_incidente(incidente.clone());
+        assert_eq!(
+            estado.camaras.get(&1).unwrap().incidentes_primarios.get(&1),
+            Some(&1)
+        );
+    }
 
-//     camaras.extend(camaras_lindantes);
-//     camaras
-// }
+    #[test]
+    fn cargar_camara_en_rango_incidente() {
+        let mut estado = Estado::new();
+        let incidente = Incidente::new(1, "Incidente".to_string(), 0.0, 0.0, 0);
+        estado.cargar_incidente(incidente.clone());
+        let camara = Camara::new(1, 0.0, 0.0, 1.0);
+        estado.conectar_camara(camara.clone());
 
-// /// Incidentes que por su posicion son atendidos por la camara dada
-// pub fn incidentes_en_rango_de_camara(&self, camara: &Camara) -> HashSet<u64> {
-//     // La cámara dada y sus camaras lindantes, si cualquiera de estas tiene un incidente en su rango,
-//     // la cámara dada debe estar activa
-//     let mut camaras = HashSet::new();
-//     camaras.insert(camara.id);
-//     camaras.extend(
-//         self.camaras_lindantes
-//             .get(&camara.id)
-//             .unwrap_or(&HashSet::new()),
-//     );
+        assert_eq!(
+            estado
+                .camaras_en_rango(&estado.incidentes.get(&1).unwrap())
+                .get(&1),
+            Some(&1)
+        );
+    }
 
-//     let mut incidentes = HashSet::new();
+    #[test]
+    fn cargar_incidente_activar_camara_lindante() {
+        let mut estado = Estado::new();
+        let rango = Coordenadas::from_lat_lon(0.0, 0.0)
+            .distancia(&Coordenadas::from_lat_lon(0.0, 1.0))
+            * 0.55;
+        let camara = Camara::new(1, 0.0, 0.0, rango);
+        estado.conectar_camara(camara.clone());
 
-//     for incidente in self.incidentes.values() {
-//         for id_camara in camaras.iter() {
-//             if incidente
-//                 .posicion()
-//                 .distancia(&self.camaras[id_camara].posicion())
-//                 < self.camaras[id_camara].rango
-//             {
-//                 incidentes.insert(incidente.id);
-//             }
-//         }
-//     }
+        let camara_lindante = Camara::new(2, 0.0, 1.0, rango);
+        estado.conectar_camara(camara_lindante.clone());
 
-//     incidentes
-// }
-
-// /// Devuelve una referencia a la camara con el id dado.
-// pub fn camara(&self, id: u64) -> Option<&Camara> {
-//     self.camaras.get(&id)
-// }
+        let incidente = Incidente::new(1, "Incidente".to_string(), 0.0, 0.0, 0);
+        estado.cargar_incidente(incidente.clone());
+        assert_eq!(
+            estado
+                .camaras
+                .get(&2)
+                .unwrap()
+                .incidentes_secundarios
+                .get(&1),
+            Some(&1)
+        );
+    }
+}
