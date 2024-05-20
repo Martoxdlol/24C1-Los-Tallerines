@@ -1,6 +1,6 @@
 use crate::{coordenadas::Coordenadas, csv::csv_encodear_linea, serializables::Serializable};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Incidente {
     pub id: u64,
     pub detalle: String,

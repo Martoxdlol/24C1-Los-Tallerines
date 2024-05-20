@@ -1,9 +1,11 @@
+use lib::parseador::parametros_info::ParametrosInfo;
+
 #[derive(Debug)]
 pub enum Respuesta {
     Err(Option<String>),
     Ok(Option<String>),
     Pong(),
-    Info(),
+    Info(ParametrosInfo),
 }
 
 impl Respuesta {
@@ -34,9 +36,11 @@ impl Respuesta {
                 bytes.extend_from_slice(b"\r\n");
                 bytes
             }
-            Respuesta::Info() => {
+            Respuesta::Info(info) => {
+                let json = info.to_json().unwrap_or("{}".to_string());
+
                 let mut bytes = Vec::new();
-                bytes.extend_from_slice(b"INFO {}");
+                bytes.extend_from_slice(format!("INFO {}\r\n", json).as_bytes());
                 bytes.extend_from_slice(b"\r\n");
                 bytes
             }

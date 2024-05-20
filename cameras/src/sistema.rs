@@ -5,8 +5,12 @@ use std::{
 
 use lib::{
     camara::Camara,
+    configuracion::ArchivoConfiguracion,
     incidente::Incidente,
-    serializables::{serializar_vec, Serializable},
+    serializables::{
+        guardar::{cargar_serializable, guardar_serializable},
+        serializar_vec, Serializable,
+    },
 };
 use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
 
@@ -17,6 +21,7 @@ use crate::{
 
 pub struct Sistema {
     pub estado: Estado,
+    pub configuracion: ArchivoConfiguracion,
     enviar_respuesta: Sender<Respuesta>,
     recibir_comandos: Receiver<Comando>,
 }
@@ -24,11 +29,13 @@ pub struct Sistema {
 impl Sistema {
     pub fn new(
         estado: Estado,
+        configuracion: ArchivoConfiguracion,
         enviar_respuesta: Sender<Respuesta>,
         recibir_comandos: Receiver<Comando>,
     ) -> Self {
         Self {
             estado,
+            configuracion,
             enviar_respuesta,
             recibir_comandos,
         }
@@ -37,7 +44,9 @@ impl Sistema {
     /// Inicia el bucle infinito del sistema
     ///
     /// Está función se encarga de reintentar la ejecución del sistema en caso de error.
-    pub fn iniciar(&mut self) {
+    pub fn iniciar(&mut self) -> io::Result<()> {
+        self.cargar_camaras()?;
+
         loop {
             if let Err(e) = self.inicio() {
                 eprintln!("Error en hilo principal: {}", e);
@@ -54,7 +63,7 @@ impl Sistema {
         let mut cliente = self.conectar()?;
 
         // Publicar al servidor de NATS el estado de todas las cámaras
-        self.publicar_estado_general(&cliente)?;
+        self.publicar_y_guardar_estado_general(&cliente)?;
 
         let sub_nuevos_incidentes = cliente.suscribirse("incidentes.*.creado", None)?;
         let sub_incidentes_finalizados = cliente.suscribirse("incidentes.*.finalizado", None)?;
@@ -70,13 +79,61 @@ impl Sistema {
 
     /// Conectar el cliente
     fn conectar(&self) -> io::Result<Cliente> {
-        Cliente::conectar("127.0.0.1:4222")
+        let direccion = self
+            .configuracion
+            .obtener::<String>("direccion")
+            .unwrap_or("127.0.0.1".to_string());
+        let puerto = self.configuracion.obtener::<u16>("puerto").unwrap_or(4222);
+        println!("Conectando al servidor de NATS en {}:{}", direccion, puerto);
+
+        let user = self.configuracion.obtener::<String>("user");
+        let pass = self.configuracion.obtener::<String>("pass");
+
+        if user.is_some() || pass.is_some() {
+            Cliente::conectar_user_pass(&format!("{}:{}", direccion, puerto), user, pass)
+        } else {
+            Cliente::conectar(&format!("{}:{}", direccion, puerto))
+        }
     }
 
-    fn publicar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
+    fn publicar_y_guardar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
         let camaras = self.estado.camaras().into_iter().cloned().collect();
         let bytes = serializar_vec(&camaras);
+        self.guardar_camaras()?;
         cliente.publicar("camaras", &bytes, None)
+    }
+
+    fn guardar_camaras(&self) -> io::Result<()> {
+        let ruta_archivo_camaras = self
+            .configuracion
+            .obtener::<String>("camaras")
+            .unwrap_or("camaras.csv".to_string());
+
+        let camaras: Vec<Camara> = self.estado.camaras().into_iter().cloned().collect();
+        guardar_serializable(&camaras, &ruta_archivo_camaras)
+    }
+
+    fn cargar_camaras(&mut self) -> io::Result<()> {
+        let ruta_archivo_camaras = self
+            .configuracion
+            .obtener::<String>("camaras")
+            .unwrap_or("camaras.csv".to_string());
+
+        let existe = std::path::Path::new(&ruta_archivo_camaras).exists();
+
+        if !existe {
+            std::fs::File::create(&ruta_archivo_camaras)?;
+        }
+
+        let mut camaras: Vec<Camara> = cargar_serializable(&ruta_archivo_camaras)?;
+
+        for mut camara in camaras.drain(..) {
+            camara.incidentes_primarios.clear();
+            camara.incidentes_secundarios.clear();
+            self.estado.conectar_camara(camara);
+        }
+
+        Ok(())
     }
 
     /// Ciclo de eventos del sistema
@@ -108,9 +165,11 @@ impl Sistema {
 
         if let Some(mensaje) = sub_clientes_finalizados.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
-                Ok(incidente) => self.estado.finalizar_incidente(incidente.id),
+                Ok(incidente) => {
+                    self.estado.finalizar_incidente(incidente.id);
+                }
                 Err(_) => eprintln!("Error al deserializar incidente"),
-            }
+            };
         }
 
         Ok(())
@@ -154,13 +213,13 @@ impl Sistema {
         }
         let camara = Camara::new(id, lat, lon, rango);
         self.estado.conectar_camara(camara);
-        self.publicar_estado_general(cliente)?;
+        self.publicar_y_guardar_estado_general(cliente)?;
         self.responder_ok()
     }
 
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
         if self.estado.desconectar_camara(id).is_some() {
-            self.publicar_estado_general(cliente)?;
+            self.publicar_y_guardar_estado_general(cliente)?;
             self.responder_ok()
         } else {
             self.responder(Respuesta::Error(
@@ -191,7 +250,7 @@ impl Sistema {
         }
 
         self.estado.modificar_rango_camara(id, rango);
-        self.publicar_estado_general(cliente)?;
+        self.publicar_y_guardar_estado_general(cliente)?;
         self.responder_ok()
     }
 
@@ -209,7 +268,7 @@ impl Sistema {
         }
 
         self.estado.modificar_ubicacion_camara(id, lat, lon);
-        self.publicar_estado_general(cliente)?;
+        self.publicar_y_guardar_estado_general(cliente)?;
         self.responder_ok()
     }
 
