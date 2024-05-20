@@ -27,10 +27,9 @@ pub enum Provider {
     CartoMaps,
 }
 
-pub enum Listar{
+pub enum Listar {
     Incidentes,
     Camaras,
-
 }
 
 fn http_options() -> HttpOptions {
@@ -160,8 +159,6 @@ fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
             .show(ui.ctx(), |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for camara in camaras {
-                        
-
                         let nombre = format!("{}: {}", camara.id, estado_camara_a_string(camara));
 
                         ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
@@ -169,7 +166,6 @@ fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
                 });
             });
     }
-
 }
 
 fn estado_camara_a_string(camara: &camara::Camara) -> String {
@@ -180,7 +176,11 @@ fn estado_camara_a_string(camara: &camara::Camara) -> String {
     }
 }
 
-fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente], aplicacion: &mut Aplicacion) {
+fn lista_de_incidentes_actuales(
+    ui: &mut Ui,
+    incidentes: &[Incidente],
+    aplicacion: &mut Aplicacion,
+) {
     if !incidentes.is_empty() {
         egui::Window::new("Lista de incidentes")
             .collapsible(false)
@@ -193,15 +193,19 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente], aplicacio
                     for incidente in incidentes {
                         let nombre = format!("{}: {}", '🚨', incidente.detalle);
 
-                        if ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre)).clicked(){
-                            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);}
+                        if ui
+                            .add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre))
+                            .clicked()
+                        {
+                            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                        }
                     }
                 });
             });
     }
 }
 
-fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion){
+fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
     egui::Window::new("📝")
         .collapsible(false)
         .movable(true)
@@ -210,17 +214,15 @@ fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion){
         .anchor(egui::Align2::RIGHT_BOTTOM, [-10., -10.])
         .show(ui.ctx(), |ui| {
             egui::ScrollArea::horizontal().show(ui, |ui| {
-                if ui.button("Incidentes").clicked(){
+                if ui.button("Incidentes").clicked() {
                     aplicacion.listar = Listar::Incidentes;
                 }
-                if ui.button("Camaras").clicked(){
-                    aplicacion.listar= Listar::Camaras;
+                if ui.button("Camaras").clicked() {
+                    aplicacion.listar = Listar::Camaras;
                 }
             });
         });
 }
-
-
 
 impl eframe::App for Aplicacion {
     fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
@@ -267,11 +269,12 @@ impl eframe::App for Aplicacion {
                 }
                 listar(ui, self);
 
-                match self.listar{
-                    Listar::Incidentes => lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self),
+                match self.listar {
+                    Listar::Incidentes => {
+                        lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self)
+                    }
                     Listar::Camaras => lista_de_camaras(ui, &self.estado.camaras()),
                 }
-
 
                 egui::Context::request_repaint(contexto)
             });

@@ -42,5 +42,3 @@ fn click_boton_ir_a_inicio(ui: &mut Ui, map_memory: &mut MapMemory) {
         map_memory.follow_my_position();
     }
 }
-
-
