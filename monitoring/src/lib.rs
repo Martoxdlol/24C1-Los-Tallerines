@@ -27,6 +27,12 @@ pub enum Provider {
     CartoMaps,
 }
 
+pub enum Listar{
+    Incidentes,
+    Camaras,
+
+}
+
 fn http_options() -> HttpOptions {
     HttpOptions {
         // Not sure where to put cache on Android, so it will be disabled for now.
@@ -63,6 +69,7 @@ pub struct Aplicacion {
     estado: Estado,
     recibir_estado: Receiver<Estado>,
     enviar_comando: Sender<Comando>,
+    listar: Listar,
 }
 
 impl Aplicacion {
@@ -82,6 +89,7 @@ impl Aplicacion {
             estado: Estado::new(),
             recibir_estado,
             enviar_comando,
+            listar: Listar::Incidentes,
         }
     }
 }
@@ -148,11 +156,13 @@ fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
             .movable(true)
             .resizable(true)
             .collapsible(true)
-            .anchor(egui::Align2::RIGHT_BOTTOM, [-10., 10.])
+            .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
             .show(ui.ctx(), |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for camara in camaras {
-                        let nombre = format!("{}: {}", camara.id, camara.activa());
+                        
+
+                        let nombre = format!("{}: {}", camara.id, estado_camara_a_string(camara));
 
                         ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
                     }
@@ -160,6 +170,14 @@ fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
             });
     }
 
+}
+
+fn estado_camara_a_string(camara: &camara::Camara) -> String {
+    if camara.activa() {
+        "Activa".to_string()
+    } else {
+        "Ahorro".to_string()
+    }
 }
 
 fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente], aplicacion: &mut Aplicacion) {
@@ -181,6 +199,25 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente], aplicacio
                 });
             });
     }
+}
+
+fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion){
+    egui::Window::new("📝")
+        .collapsible(false)
+        .movable(true)
+        .resizable(true)
+        .collapsible(true)
+        .anchor(egui::Align2::RIGHT_BOTTOM, [-10., -10.])
+        .show(ui.ctx(), |ui| {
+            egui::ScrollArea::horizontal().show(ui, |ui| {
+                if ui.button("Incidentes").clicked(){
+                    aplicacion.listar = (Listar::Incidentes);
+                }
+                if ui.button("Camaras").clicked(){
+                    aplicacion.listar= (Listar::Camaras);
+                }
+            });
+        });
 }
 
 
@@ -228,9 +265,12 @@ impl eframe::App for Aplicacion {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     agregar_incidente(ui, clicked_at, self);
                 }
+                listar(ui, self);
 
-                lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self);
-                lista_de_camaras(ui, &self.estado.camaras());
+                match self.listar{
+                    Listar::Incidentes => lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self),
+                    Listar::Camaras => lista_de_camaras(ui, &self.estado.camaras()),
+                }
 
 
                 egui::Context::request_repaint(contexto)
