@@ -105,6 +105,7 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
+
                 // TODO: ID Y TIMESTAMP
                 let incidente = Incidente::new(
                     0,

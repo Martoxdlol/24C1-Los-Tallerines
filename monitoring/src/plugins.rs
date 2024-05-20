@@ -79,7 +79,7 @@ pub struct ClickWatcher {
 }
 
 fn posicion_click(ui: &mut Ui, clicked_at: Position) {
-    ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
+    ui.label(format!("lat, lon: {:.04} {:.04}", clicked_at.lat(), clicked_at.lon()))
         .on_hover_text("Posición donde hiciste click");
 }
 
