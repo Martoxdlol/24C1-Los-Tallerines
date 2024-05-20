@@ -186,6 +186,7 @@ impl Sistema {
         if let Some(mensaje) = suscripcion_camaras.intentar_leer()? {
             let camaras: Vec<Camara> = deserializar_vec(&mensaje.payload).unwrap_or_default();
 
+            self.estado.limpiar_camaras();
             for camara in camaras {
                 self.estado.conectar_camara(camara);
             }
