@@ -177,9 +177,9 @@ mod tests {
     #[test]
     fn obtener_float() {
         let mut config = super::ArchivoConfiguracion::new();
-        config.setear("clave1", "13.14");
+        config.setear("clave1", "5.12");
 
-        assert_eq!(config.obtener::<f32>("clave1"), Some(13.14));
+        assert_eq!(config.obtener::<f32>("clave1"), Some(5.12));
     }
 
     #[test]
@@ -199,9 +199,9 @@ mod tests {
 
     #[test]
     fn desde_parametros_y_leer() {
-        std::fs::write("config.txt", "clave1=valor1\nclave2=valor2").unwrap();
+        std::fs::write("/tmp/rust.config.test.txt", "clave1=valor1\nclave2=valor2").unwrap();
 
-        let args = &["config=config.txt", "clave3=valor3"];
+        let args = &["config=/tmp/rust.config.test.txt", "clave3=valor3"];
         let config = super::ArchivoConfiguracion::desde_parametros_y_leer(args).unwrap();
 
         assert_eq!(
@@ -217,6 +217,6 @@ mod tests {
             Some("valor3".to_string())
         );
 
-        std::fs::remove_file("config.txt").unwrap();
+        std::fs::remove_file("/tmp/rust.config.test.txt").unwrap();
     }
 }
