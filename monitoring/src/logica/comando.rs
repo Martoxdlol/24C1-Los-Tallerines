@@ -15,4 +15,8 @@ impl Comando {
     pub fn nuevo_incidente(canal: &Sender<Comando>, incidente: Incidente) {
         Self::enviar(canal, Comando::NuevoIncidente(incidente));
     }
+
+    pub fn incidente_finalizado(canal: &Sender<Comando>, id: u64) {
+        Self::enviar(canal, Comando::IncidenteFinalizado(id));
+    }
 }

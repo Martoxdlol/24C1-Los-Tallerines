@@ -162,7 +162,7 @@ fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
 
 }
 
-fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
+fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente], aplicacion: &mut Aplicacion) {
     if !incidentes.is_empty() {
         egui::Window::new("Lista de incidentes")
             .collapsible(false)
@@ -175,7 +175,8 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
                     for incidente in incidentes {
                         let nombre = format!("{}: {}", '🚨', incidente.detalle);
 
-                        ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
+                        if ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre)).clicked(){
+                            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);}
                     }
                 });
             });
@@ -228,10 +229,9 @@ impl eframe::App for Aplicacion {
                     agregar_incidente(ui, clicked_at, self);
                 }
 
-                lista_de_incidentes_actuales(ui, &self.estado.incidentes());
+                lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self);
                 lista_de_camaras(ui, &self.estado.camaras());
 
-                // TENEMOS ESTADO.CAMARAS
 
                 egui::Context::request_repaint(contexto)
             });
