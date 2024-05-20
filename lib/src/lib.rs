@@ -6,7 +6,3 @@ pub mod parseador;
 pub mod serializables;
 pub mod stream;
 pub mod configuracion;
-
-pub fn main() {
-    println!("Hello, world!");
-}
