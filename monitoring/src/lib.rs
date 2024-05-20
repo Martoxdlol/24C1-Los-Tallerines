@@ -186,7 +186,7 @@ impl eframe::App for Aplicacion {
 
                 let mapa_final = mostrado_de_incidentes(
                     mapa_a_mostrar,
-                    self.estado.incidentes(),
+                    &self.estado.incidentes(),
                     &mut self.clicks,
                 );
 
@@ -205,7 +205,7 @@ impl eframe::App for Aplicacion {
                     agregar_incidente(ui, clicked_at, self);
                 }
 
-                lista_de_incidentes_actuales(ui, self.estado.incidentes());
+                lista_de_incidentes_actuales(ui, &self.estado.incidentes());
 
                 egui::Context::request_repaint(contexto)
             });

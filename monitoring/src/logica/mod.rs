@@ -10,7 +10,7 @@ use lib::{
     serializables::{
         deserializar_vec,
         guardar::{cargar_serializable, guardar_serializable},
-        serializar_vec, 
+        serializar_vec, Serializable,
     },
 };
 use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
@@ -107,7 +107,7 @@ impl Sistema {
     }
 
     fn publicar_y_guardar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
-        let incidentes = self.estado.incidentes().into_iter().cloned().collect();
+        let incidentes = self.estado.incidentes();
         let bytes = serializar_vec(&incidentes);
         self.guardar_incidentes()?;
         cliente.publicar("incidentes", &bytes, None)
@@ -119,7 +119,7 @@ impl Sistema {
             .obtener::<String>("incidentes")
             .unwrap_or("incidentes.csv".to_string());
 
-        let incidentes: Vec<Incidente> = self.estado.incidentes().into_iter().cloned().collect();
+        let incidentes: Vec<Incidente> = self.estado.incidentes();
         guardar_serializable(&incidentes, &ruta_archivo_incidentes)
     }
 
@@ -138,7 +138,7 @@ impl Sistema {
         let mut incidentes: Vec<Incidente> = cargar_serializable(&ruta_archivo_incidentes)?;
 
         for incidente in incidentes.drain(..) {
-            self.estado.agregar_incidente(incidente);
+            self.estado.cargar_incidente(incidente);
         }
 
         Ok(())
@@ -162,7 +162,7 @@ impl Sistema {
             let camaras: Vec<Camara> = deserializar_vec(&mensaje.payload).unwrap_or_default();
 
             for camara in camaras {
-                self.estado.agregar_camara(camara);
+                self.estado.conectar_camara(camara);
             }
         }
 
@@ -174,16 +174,38 @@ impl Sistema {
         while let Ok(comando) = self.recibir_comando.try_recv() {
             match comando {
                 Comando::NuevoIncidente(incidente) => {
-                    self.estado.agregar_incidente(incidente);
+                    self.estado.cargar_incidente(incidente.clone());
                     self.guardar_incidentes()?;
-                    // self.publicar_y_guardar_estado_general(cliente)?;
-                    // TODO: Publicar camara actualizada
+                    self.publicar_nuevo_incidente(cliente, &incidente)?;
                     self.actualizar_estado_ui()?;
+                }
+                Comando::IncidenteFinalizado(id) => {
+                    if let Some(incidente) = self.estado.finalizar_incidente(&id) {
+                        self.guardar_incidentes()?;
+                        self.publicar_incidente_finalizado(cliente, &incidente)?;
+                        self.actualizar_estado_ui()?;
+                    }
                 }
             }
         }
 
         Ok(())
+    }
+
+    fn publicar_nuevo_incidente(&self, cliente: &Cliente, incidente: &Incidente) -> io::Result<()> {
+        let bytes = incidente.serializar();
+        let topico = format!("incidentes.{}.creado", incidente.id);
+        cliente.publicar(&topico, &bytes, None)
+    }
+
+    fn publicar_incidente_finalizado(
+        &self,
+        cliente: &Cliente,
+        incidente: &Incidente,
+    ) -> io::Result<()> {
+        let bytes = incidente.serializar();
+        let topico = format!("incidentes.{}.finalizado", incidente.id);
+        cliente.publicar(&topico, &bytes, None)
     }
 
     fn actualizar_estado_ui(&self) -> io::Result<()> {

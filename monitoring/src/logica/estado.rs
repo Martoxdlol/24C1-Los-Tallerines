@@ -1,12 +1,10 @@
+use egui::ahash::HashMap;
 use lib::{camara::Camara, incidente::Incidente};
-
-use crate::dron::Dron;
 
 #[derive(Clone)]
 pub struct Estado {
-    drones: Vec<Dron>,
-    camaras: Vec<Camara>,
-    incidentes: Vec<Incidente>,
+    camaras: HashMap<u64, Camara>,
+    incidentes: HashMap<u64, Incidente>,
 }
 
 impl Default for Estado {
@@ -18,36 +16,40 @@ impl Default for Estado {
 impl Estado {
     pub fn new() -> Self {
         Estado {
-            drones: vec![],
-            camaras: vec![],
-            incidentes: vec![],
+            camaras: HashMap::default(),
+            incidentes: HashMap::default(),
         }
     }
-    pub fn agregar_dron(&mut self, dron: Dron) {
-        self.drones.push(dron);
+
+    pub fn cargar_incidente(&mut self, incidente: Incidente) {
+        self.incidentes.insert(incidente.id, incidente);
     }
-    pub fn agregar_camara(&mut self, camara: Camara) {
-        self.camaras.push(camara);
+
+    pub fn finalizar_incidente(&mut self, id: &u64) -> Option<Incidente> {
+        self.incidentes.remove(id)
     }
-    pub fn agregar_incidente(&mut self, incidente: Incidente) {
-        self.incidentes.push(incidente);
+
+    pub fn conectar_camara(&mut self, camara: Camara) {
+        self.camaras.insert(camara.id, camara);
     }
-    pub fn drones(&self) -> &Vec<Dron> {
-        &self.drones
+
+    pub fn desconectar_camara(&mut self, id: &u64) -> Option<Camara> {
+        self.camaras.remove(id)
     }
-    pub fn camaras(&self) -> &Vec<Camara> {
-        &self.camaras
+
+    pub fn incidentes(&self) -> Vec<Incidente> {
+        self.incidentes.values().cloned().collect()
     }
-    pub fn incidentes(&self) -> &Vec<Incidente> {
-        &self.incidentes
+
+    pub fn camaras(&self) -> Vec<Camara> {
+        self.camaras.values().cloned().collect()
     }
-    pub fn drones_mut(&mut self) -> &mut Vec<Dron> {
-        &mut self.drones
+
+    pub fn incidente(&self, id: u64) -> Option<Incidente> {
+        self.incidentes.get(&id).cloned()
     }
-    pub fn camaras_mut(&mut self) -> &mut Vec<Camara> {
-        &mut self.camaras
-    }
-    pub fn incidentes_mut(&mut self) -> &mut Vec<Incidente> {
-        &mut self.incidentes
+
+    pub fn camara(&self, id: u64) -> Option<Camara> {
+        self.camaras.get(&id).cloned()
     }
 }

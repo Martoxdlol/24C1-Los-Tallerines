@@ -4,6 +4,7 @@ use lib::incidente::Incidente;
 
 pub enum Comando {
     NuevoIncidente(Incidente),
+    IncidenteFinalizado(u64),
 }
 
 impl Comando {
