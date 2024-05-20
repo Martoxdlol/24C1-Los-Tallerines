@@ -8,6 +8,7 @@ use lib::{
     configuracion::ArchivoConfiguracion,
     incidente::Incidente,
     serializables::{
+        deserializar_vec,
         guardar::{cargar_serializable, guardar_serializable},
         serializar_vec, Serializable,
     },
@@ -67,12 +68,19 @@ impl Sistema {
 
         let sub_nuevos_incidentes = cliente.suscribirse("incidentes.*.creado", None)?;
         let sub_incidentes_finalizados = cliente.suscribirse("incidentes.*.finalizado", None)?;
+        let sub_comandos_remotos = cliente.suscribirse("comandos.camaras", None)?;
+
+        let sub_incidentes = cliente.suscribirse("incidentes", None)?;
+
+        self.solicitar_actualizacion_incidentes(&cliente)?;
 
         loop {
             self.ciclo(
                 &cliente,
                 &sub_nuevos_incidentes,
                 &sub_incidentes_finalizados,
+                &sub_comandos_remotos,
+                &sub_incidentes,
             )?;
         }
     }
@@ -101,6 +109,10 @@ impl Sistema {
         let bytes = serializar_vec(&camaras);
         self.guardar_camaras()?;
         cliente.publicar("camaras", &bytes, None)
+    }
+
+    fn solicitar_actualizacion_incidentes(&self, cliente: &Cliente) -> io::Result<()> {
+        cliente.publicar("comandos.monitoreo", b"actualizar", None)
     }
 
     fn guardar_camaras(&self) -> io::Result<()> {
@@ -142,9 +154,20 @@ impl Sistema {
         cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
         sub_clientes_finalizados: &Suscripcion,
+        sub_comandos: &Suscripcion,
+        sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
-        self.leer_incidentes(cliente, sub_nuevos_incidentes, sub_clientes_finalizados)?;
+        self.leer_incidentes(
+            cliente,
+            sub_nuevos_incidentes,
+            sub_clientes_finalizados,
+            sub_incidentes,
+        )?;
         self.leer_comandos(cliente)?;
+        self.leer_comandos_remotos(cliente, sub_comandos)?;
+
+        std::thread::sleep(std::time::Duration::from_millis(5));
+
         Ok(())
     }
 
@@ -152,24 +175,49 @@ impl Sistema {
     /// y los procesa. Cambia el estado del sistema
     fn leer_incidentes(
         &mut self,
-        _cliente: &Cliente,
+        cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
         sub_clientes_finalizados: &Suscripcion,
+        sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
-        if let Some(mensaje) = sub_nuevos_incidentes.intentar_leer()? {
+        let mut enviar_actualizacion = false;
+
+        while let Some(mensaje) = sub_nuevos_incidentes.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
-                Ok(incidente) => self.estado.cargar_incidente(incidente),
+                Ok(incidente) => {
+                    self.estado.cargar_incidente(incidente);
+                    enviar_actualizacion = true;
+                }
                 Err(_) => eprintln!("Error al deserializar incidente"),
             }
         }
 
-        if let Some(mensaje) = sub_clientes_finalizados.intentar_leer()? {
+        while let Some(mensaje) = sub_clientes_finalizados.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
                 Ok(incidente) => {
                     self.estado.finalizar_incidente(incidente.id);
+                    enviar_actualizacion = true;
                 }
                 Err(_) => eprintln!("Error al deserializar incidente"),
             };
+        }
+
+        while let Some(mensaje) = sub_incidentes.intentar_leer()? {
+            let incidentes: Vec<Incidente> = deserializar_vec(&mensaje.payload).unwrap_or_default();
+
+            self.estado.finalizar_todos_los_incidentes();
+
+            println!("Actualizados {} incidentes", incidentes.len());
+
+            for incidente in incidentes {
+                self.estado.cargar_incidente(incidente);
+            }
+
+            enviar_actualizacion = true;
+        }
+
+        if enviar_actualizacion {
+            self.publicar_y_guardar_estado_general(cliente)?;
         }
 
         Ok(())
@@ -192,6 +240,24 @@ impl Sistema {
                 }
                 Comando::Camara(id) => self.comando_mostrar_camara(id)?,
                 Comando::Ayuda => self.comando_ayuda()?,
+            }
+        }
+
+        Ok(())
+    }
+
+    fn leer_comandos_remotos(
+        &mut self,
+        cliente: &Cliente,
+        sub_comandos_remotos: &Suscripcion,
+    ) -> io::Result<()> {
+        while let Some(mensaje) = sub_comandos_remotos.intentar_leer()? {
+            let mensaje_texto = String::from_utf8_lossy(&mensaje.payload);
+
+            if mensaje_texto.eq("actualizar") {
+                self.publicar_y_guardar_estado_general(cliente)?;
+            } else {
+                println!("Comando desconocido: {}", mensaje_texto);
             }
         }
 

@@ -1,13 +1,16 @@
-use monitoring::Aplicacion;
-use std::sync::mpsc::channel;
-
-use monitoring::logica::iniciar_hilo_logica;
+use monitoring::{logica::intentar_iniciar_sistema, Aplicacion};
+use std::{sync::mpsc::channel, thread};
 
 fn main() -> Result<(), eframe::Error> {
     let (enviar_comando, recibir_comando) = channel();
     let (enviar_estado, recibir_estado) = channel();
 
-    iniciar_hilo_logica(recibir_comando, enviar_estado);
+    thread::spawn(move || {
+        if let Err(e) = intentar_iniciar_sistema(recibir_comando, enviar_estado) {
+            eprintln!("Error al iniciar el sistema: {}", e);
+            std::process::exit(1);
+        }
+    });
 
     eframe::run_native(
         "APLICACION DE MONITOREO", // Nombre de la ventana

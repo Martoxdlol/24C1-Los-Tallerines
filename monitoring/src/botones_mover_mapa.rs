@@ -1,7 +1,7 @@
 use egui::{Align2, RichText, Ui, Window};
 use walkers::MapMemory;
 
-fn chequear_acercar(ui: &mut Ui, map_memory: &mut MapMemory) {
+fn acercar(ui: &mut Ui, map_memory: &mut MapMemory) {
     if ui
         .add_sized([40., 40.], egui::Button::new(RichText::new("➕").heading()))
         .clicked()
@@ -10,7 +10,7 @@ fn chequear_acercar(ui: &mut Ui, map_memory: &mut MapMemory) {
     }
 }
 
-fn chequear_alejar(ui: &mut Ui, map_memory: &mut MapMemory) {
+fn alejar(ui: &mut Ui, map_memory: &mut MapMemory) {
     if ui
         .add_sized([40., 40.], egui::Button::new(RichText::new("➖").heading()))
         .clicked()
@@ -27,9 +27,9 @@ pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {
         .anchor(Align2::LEFT_BOTTOM, [10., -10.])
         .show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
-                chequear_acercar(ui, map_memory);
-                chequear_alejar(ui, map_memory);
-                click_boton_ir_a_inicio(ui, map_memory)
+                acercar(ui, map_memory);
+                alejar(ui, map_memory);
+                click_boton_ir_a_inicio(ui, map_memory);
             });
         });
 }

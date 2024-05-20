@@ -1,7 +1,8 @@
-use crate::{coordenadas::metros_a_pixeles_en_mapa, incidente::Incidente};
+use crate::coordenadas::metros_a_pixeles_en_mapa;
 use egui::{Color32, Painter, Response, Ui};
+use lib::{camara::Camara, coordenadas::Coordenadas, incidente::Incidente};
 use walkers::{
-    extras::{Place, Places},
+    extras::{Place, Places, Style},
     Plugin, Position, Projector,
 };
 
@@ -11,10 +12,32 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
 
     for incidente in incidentes.iter() {
         lugares.push(Place {
-            position: incidente.posicion,
-            label: incidente.nombre.clone(),
-            symbol: incidente.icono,
-            style: incidente.estilo.clone(),
+            position: Position::from_lat_lon(incidente.posicion().lat, incidente.posicion().lon),
+            label: incidente.detalle.clone(),
+            symbol: '🚨',
+            style: Style::default(),
+        });
+    }
+    Places::new(lugares)
+}
+
+/// Los lugares. Los iconos
+pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
+    let mut lugares = Vec::new();
+
+    for camara in camaras.iter() {
+        let mut estado = "Ahorro";
+        let mut symbol = '📷';
+        if camara.activa() {
+            estado = "Activa";
+            symbol = '📸';
+        }
+
+        lugares.push(Place {
+            position: Position::from_lat_lon(camara.posicion().lat, camara.posicion().lon),
+            label: format!("Id: {}, Estado: {}", camara.id, estado),
+            symbol,
+            style: Style::default(),
         });
     }
     Places::new(lugares)
@@ -22,29 +45,34 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
 
 /// Sample map plugin which draws custom stuff on the map.
 pub struct SombreadoCircular {
-    pub posiciones: Vec<(Position, f32)>,
+    pub posiciones: Vec<(Coordenadas, f64, bool)>,
 }
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        for (posicion, radio_metros) in &self.posiciones {
+        for (coordenadas, radio_metros, activa) in &self.posiciones {
+            let posicion = Position::from_lat_lon(coordenadas.lat, coordenadas.lon);
             // Project it into the position on the screen.
-            let posicion_x_y = projector.project(*posicion).to_pos2();
+            let posicion_x_y = projector.project(posicion).to_pos2();
 
             //let radio_como_f64 = *radio_metros as f64;
-            let radio = (metros_a_pixeles_en_mapa(posicion, projector) as f32) * radio_metros;
+            let radio = (metros_a_pixeles_en_mapa(&posicion, projector) * radio_metros) as f32;
 
-            let flotar = response
+            let mouse_encima = response
                 .hover_pos()
                 .map(|hover_pos| hover_pos.distance(posicion_x_y) < radio)
                 .unwrap_or(false);
 
-            painter.circle_filled(
-                posicion_x_y,
-                radio,
-                Color32::BLACK.gamma_multiply(if flotar { 0.5 } else { 0.2 }),
-            );
+            painter.circle_filled(posicion_x_y, radio, color_circulo(*activa, mouse_encima));
         }
+    }
+}
+
+fn color_circulo(activa: bool, mouse_encima: bool) -> Color32 {
+    if activa {
+        Color32::LIGHT_GREEN.gamma_multiply(if mouse_encima { 0.4 } else { 0.3 })
+    } else {
+        Color32::BLACK.gamma_multiply(if mouse_encima { 0.4 } else { 0.3 })
     }
 }
 
@@ -54,8 +82,12 @@ pub struct ClickWatcher {
 }
 
 fn posicion_click(ui: &mut Ui, clicked_at: Position) {
-    ui.label(format!("{:.04} {:.04}", clicked_at.lon(), clicked_at.lat()))
-        .on_hover_text("Posición donde hiciste click");
+    ui.label(format!(
+        "lat, lon: {:.04} {:.04}",
+        clicked_at.lat(),
+        clicked_at.lon()
+    ))
+    .on_hover_text("Posición donde hiciste click");
 }
 
 fn click_cerrar(ui: &mut Ui, clickwatcher: &mut ClickWatcher) {

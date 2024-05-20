@@ -1,9 +1,10 @@
 use std::sync::mpsc::Sender;
 
-use crate::incidente::Incidente;
+use lib::incidente::Incidente;
 
 pub enum Comando {
     NuevoIncidente(Incidente),
+    IncidenteFinalizado(u64),
 }
 
 impl Comando {
@@ -13,5 +14,9 @@ impl Comando {
 
     pub fn nuevo_incidente(canal: &Sender<Comando>, incidente: Incidente) {
         Self::enviar(canal, Comando::NuevoIncidente(incidente));
+    }
+
+    pub fn incidente_finalizado(canal: &Sender<Comando>, id: u64) {
+        Self::enviar(canal, Comando::IncidenteFinalizado(id));
     }
 }

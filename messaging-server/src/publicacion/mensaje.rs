@@ -2,6 +2,7 @@
 #[derive(Debug, Clone)]
 pub struct PublicacionMensaje {
     pub sid: String,
+    pub topico: String,
     pub payload: Vec<u8>,          // El mensaje que se va a enviar
     pub header: Option<Vec<u8>>,   // EL header del mensaje que se va a enviar
     pub replay_to: Option<String>, // Campo que tiene nats
@@ -10,12 +11,14 @@ pub struct PublicacionMensaje {
 impl PublicacionMensaje {
     pub fn new(
         sid: String,
+        topico: String,
         payload: Vec<u8>,
         header: Option<Vec<u8>>,
         replay_to: Option<String>,
     ) -> Self {
         Self {
             sid,
+            topico,
             payload,
             replay_to,
             header,
@@ -33,6 +36,9 @@ impl PublicacionMensaje {
         } else {
             bytes.extend_from_slice(b"MSG ");
         }
+
+        bytes.extend_from_slice(self.topico.as_bytes());
+        bytes.extend_from_slice(b" ");
 
         bytes.extend_from_slice(self.sid.as_bytes());
         bytes.extend_from_slice(b" ");

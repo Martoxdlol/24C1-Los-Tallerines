@@ -1,9 +1,6 @@
-mod botones;
-mod camara;
+mod botones_mover_mapa;
 mod coordenadas;
-mod dron;
 mod iconos;
-mod incidente;
 pub mod logica;
 mod plugins;
 mod proveer_carto;
@@ -16,10 +13,10 @@ use std::{
 //use iconos::incidente;
 
 use egui::{Context, Ui};
-use incidente::Incidente;
+use lib::{camara, incidente::Incidente};
+use logica::{comando::Comando, estado::Estado};
 
 use crate::plugins::ClickWatcher;
-use logica::{comando::Comando, estado::Estado};
 use proveer_carto::MapaCarto;
 use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 
@@ -28,6 +25,11 @@ pub enum Provider {
     OpenStreetMap,
     Geoportal,
     CartoMaps,
+}
+
+pub enum Listar {
+    Incidentes,
+    Camaras,
 }
 
 fn http_options() -> HttpOptions {
@@ -66,6 +68,7 @@ pub struct Aplicacion {
     estado: Estado,
     recibir_estado: Receiver<Estado>,
     enviar_comando: Sender<Comando>,
+    listar: Listar,
 }
 
 impl Aplicacion {
@@ -85,6 +88,7 @@ impl Aplicacion {
             estado: Estado::new(),
             recibir_estado,
             enviar_comando,
+            listar: Listar::Incidentes,
         }
     }
 }
@@ -108,10 +112,13 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
+                // TODO: ID Y TIMESTAMP
                 let incidente = Incidente::new(
-                    clicked_at.lon(),
-                    clicked_at.lat(),
+                    0,
                     aplicacion.nombre_incidente.clone(),
+                    clicked_at.lat(),
+                    clicked_at.lon(),
+                    1,
                 );
 
                 aplicacion.nombre_incidente.clear();
@@ -123,20 +130,57 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
         });
 }
 
-fn mostrado_de_incidentes<'a>(
+fn mostrado_incidentes_y_camaras<'a>(
     mapa_a_mostrar: Map<'a, 'a, 'a>,
-    incidentes: &[Incidente],
+    estado: &Estado,
     clicks: &'a mut ClickWatcher,
 ) -> Map<'a, 'a, 'a> {
     mapa_a_mostrar
-        .with_plugin(plugins::mostrar_incidentes(incidentes))
+        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
+        .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
         .with_plugin(plugins::SombreadoCircular {
-            posiciones: incidentes.iter().map(|i| (i.posicion, 50.)).collect(),
+            posiciones: estado
+                .camaras()
+                .iter()
+                .map(|i| (i.posicion(), i.rango, i.activa()))
+                .collect(),
         })
         .with_plugin(clicks)
 }
 
-fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
+fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
+    if !camaras.is_empty() {
+        egui::Window::new("Lista de cámaras")
+            .collapsible(false)
+            .movable(true)
+            .resizable(true)
+            .collapsible(true)
+            .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
+            .show(ui.ctx(), |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for camara in camaras {
+                        let nombre = format!("{}: {}", camara.id, estado_camara_a_string(camara));
+
+                        ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
+                    }
+                });
+            });
+    }
+}
+
+fn estado_camara_a_string(camara: &camara::Camara) -> String {
+    if camara.activa() {
+        "Activa".to_string()
+    } else {
+        "Ahorro".to_string()
+    }
+}
+
+fn lista_de_incidentes_actuales(
+    ui: &mut Ui,
+    incidentes: &[Incidente],
+    aplicacion: &mut Aplicacion,
+) {
     if !incidentes.is_empty() {
         egui::Window::new("Lista de incidentes")
             .collapsible(false)
@@ -147,13 +191,37 @@ fn lista_de_incidentes_actuales(ui: &mut Ui, incidentes: &[Incidente]) {
             .show(ui.ctx(), |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for incidente in incidentes {
-                        let nombre = format!("{}: {}", incidente.icono, incidente.nombre);
+                        let nombre = format!("{}: {}", '🚨', incidente.detalle);
 
-                        ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
+                        if ui
+                            .add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre))
+                            .clicked()
+                        {
+                            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                        }
                     }
                 });
             });
     }
+}
+
+fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
+    egui::Window::new("📝")
+        .collapsible(false)
+        .movable(true)
+        .resizable(true)
+        .collapsible(true)
+        .anchor(egui::Align2::RIGHT_BOTTOM, [-10., -10.])
+        .show(ui.ctx(), |ui| {
+            egui::ScrollArea::horizontal().show(ui, |ui| {
+                if ui.button("Incidentes").clicked() {
+                    aplicacion.listar = Listar::Incidentes;
+                }
+                if ui.button("Camaras").clicked() {
+                    aplicacion.listar = Listar::Camaras;
+                }
+            });
+        });
 }
 
 impl eframe::App for Aplicacion {
@@ -163,6 +231,7 @@ impl eframe::App for Aplicacion {
             ..Default::default()
         };
 
+        // Intentar recibir estado actualizado del sistema
         if let Ok(estado) = self.recibir_estado.try_recv() {
             self.estado = estado;
         }
@@ -181,18 +250,15 @@ impl eframe::App for Aplicacion {
 
                 let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
-                let mapa_final = mostrado_de_incidentes(
-                    mapa_a_mostrar,
-                    self.estado.incidentes(),
-                    &mut self.clicks,
-                );
+                let mapa_final =
+                    mostrado_incidentes_y_camaras(mapa_a_mostrar, &self.estado, &mut self.clicks);
 
                 // Draw the map widget.
                 ui.add(mapa_final);
 
                 // Draw utility windows.
                 {
-                    use botones::*;
+                    use botones_mover_mapa::*;
 
                     zoom(ui, &mut self.memoria_mapa);
                     self.clicks.mostrar_posicion(ui);
@@ -201,8 +267,14 @@ impl eframe::App for Aplicacion {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     agregar_incidente(ui, clicked_at, self);
                 }
+                listar(ui, self);
 
-                lista_de_incidentes_actuales(ui, self.estado.incidentes());
+                match self.listar {
+                    Listar::Incidentes => {
+                        lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self)
+                    }
+                    Listar::Camaras => lista_de_camaras(ui, &self.estado.camaras()),
+                }
 
                 egui::Context::request_repaint(contexto)
             });

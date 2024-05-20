@@ -73,6 +73,8 @@ impl Estado {
     pub fn cargar_incidente(&mut self, incidente: Incidente) {
         self.finalizar_incidente(incidente.id);
 
+        self.incidentes.insert(incidente.id, incidente.clone());
+
         for id_camara in self.camaras_en_rango(&incidente) {
             if let Some(camara) = self.camaras.get_mut(&id_camara) {
                 camara.incidentes_primarios.insert(incidente.id);
@@ -88,8 +90,13 @@ impl Estado {
                 }
             }
         }
+    }
 
-        self.incidentes.insert(incidente.id, incidente);
+    pub fn finalizar_todos_los_incidentes(&mut self) {
+        let incidentes: Vec<u64> = self.incidentes.keys().copied().collect();
+        for id in incidentes {
+            self.finalizar_incidente(id);
+        }
     }
 
     pub fn finalizar_incidente(&mut self, id: u64) -> Option<Incidente> {
@@ -137,7 +144,10 @@ impl Estado {
         let camaras_lindantes: HashSet<u64> = self
             .camaras
             .values()
-            .filter(|c| camara.posicion().distancia(&c.posicion()) < camara.rango + c.rango)
+            .filter(|c| {
+                camara.posicion().distancia(&c.posicion()) < camara.rango + c.rango
+                    && c.id != camara.id
+            })
             .map(|c| c.id)
             .collect();
 

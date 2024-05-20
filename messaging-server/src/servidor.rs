@@ -40,7 +40,7 @@ impl Servidor {
         // `logger`
         let registrador = Registrador::new();
 
-        let cantidad = configuracion.obtener::<usize>("hilos").unwrap_or(8);
+        let cantidad = configuracion.obtener::<usize>("hilos").unwrap_or(4);
 
         // Creamos los canales para enviar y recibir instrucciones entre los hilos
         for _ in 0..cantidad {
@@ -159,6 +159,8 @@ impl Servidor {
                             panic!("Error: {}", e);
                         }
                     }
+
+                    thread::sleep(std::time::Duration::from_micros(500));
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     // No hay conexiones nuevas
