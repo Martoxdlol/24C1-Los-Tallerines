@@ -1,5 +1,6 @@
 use std::{collections::HashMap, io};
 
+#[derive(Debug)]
 pub struct ArchivoConfiguracion {
     valores: HashMap<String, String>,
 }
@@ -37,7 +38,11 @@ impl ArchivoConfiguracion {
             let valor = partes.next();
 
             if let (Some(clave), Some(valor)) = (clave, valor) {
-                config.setear(clave, Self::parsear_valor(valor));
+                if clave.trim_start().starts_with("#") {
+                    continue;
+                }
+
+                config.setear(clave.trim(), Self::parsear_valor(valor));
             }
         }
 
