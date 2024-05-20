@@ -3,7 +3,7 @@ use serde_json::Result;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ParametrosInfo {
-    pub auth_required: bool,
+    pub auth_required: Option<bool>,
 }
 
 impl ParametrosInfo {

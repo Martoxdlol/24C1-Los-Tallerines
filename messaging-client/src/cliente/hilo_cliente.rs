@@ -86,7 +86,9 @@ impl HiloCliente {
             }
             // Ejemplo: INFO {"server_id":"a","version":"2.1.0","go":"go1.15.6","host":"...
             Mensaje::Info(parametros) => {
-                if !parametros.auth_required {
+                let requiere_auth = parametros.auth_required.unwrap_or(false);
+
+                if !requiere_auth {
                     self.stream.write_all(b"CONNECT {}\r\n")?;
                 } else {
                     let user = match &self.user {

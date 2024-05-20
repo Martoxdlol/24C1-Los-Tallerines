@@ -259,7 +259,9 @@ impl Debug for Conexion {
 
 #[cfg(test)]
 mod tests {
-    use lib::stream::mock_handler::MockHandler;
+    use std::sync::Arc;
+
+    use lib::{serializables::deserializar_vec, stream::mock_handler::MockHandler};
 
     use crate::registrador::Registrador;
 
@@ -282,13 +284,30 @@ mod tests {
     }
 
     #[test]
-    fn probar_autenticacion() {
+    fn probar_autenticacion_sin_cuenta() {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
         let mut con = Conexion::new(1, Box::new(stream), registrador, None);
 
-        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+        mock.escribir_bytes(b"CONNECT {}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        assert!(con.autenticado);
+    }
+
+    #[test]
+    fn probar_autenticacion_con_cuenta() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let cuentas = deserializar_vec("1,admin,1234".as_bytes()).unwrap();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador, Some(Arc::new(cuentas)));
+
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"1234\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
         con.tick(&mut contexto);
@@ -338,5 +357,25 @@ mod tests {
         assert_eq!(contexto.publicaciones.len(), 1);
         assert_eq!(contexto.publicaciones[0].topico, "x");
         assert_eq!(contexto.publicaciones[0].payload, b"hola");
+    }
+
+    #[test]
+    fn probar_desuscripcion() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        mock.escribir_bytes(b"UNSUB 1\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        assert_eq!(contexto.desuscripciones.len(), 1);
+        assert_eq!(contexto.desuscripciones[0], "1");
     }
 }
