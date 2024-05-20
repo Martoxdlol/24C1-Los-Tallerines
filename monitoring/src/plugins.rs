@@ -63,11 +63,7 @@ impl Plugin for SombreadoCircular {
                 .map(|hover_pos| hover_pos.distance(posicion_x_y) < radio)
                 .unwrap_or(false);
 
-            painter.circle_filled(
-                posicion_x_y,
-                radio,
-                color_circulo(*activa, mouse_encima),
-            );
+            painter.circle_filled(posicion_x_y, radio, color_circulo(*activa, mouse_encima));
         }
     }
 }
