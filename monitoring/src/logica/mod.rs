@@ -110,14 +110,14 @@ impl Sistema {
         let incidentes = self.estado.incidentes().into_iter().cloned().collect();
         let bytes = serializar_vec(&incidentes);
         self.guardar_incidentes()?;
-        cliente.publicar("camaras", &bytes, None)
+        cliente.publicar("incidentes", &bytes, None)
     }
 
     fn guardar_incidentes(&self) -> io::Result<()> {
         let ruta_archivo_incidentes = self
             .configuracion
-            .obtener::<String>("camaras")
-            .unwrap_or("camaras.csv".to_string());
+            .obtener::<String>("incidentes")
+            .unwrap_or("incidentes.csv".to_string());
 
         let incidentes: Vec<Incidente> = self.estado.incidentes().into_iter().cloned().collect();
         guardar_serializable(&incidentes, &ruta_archivo_incidentes)
@@ -176,7 +176,8 @@ impl Sistema {
                 Comando::NuevoIncidente(incidente) => {
                     self.estado.agregar_incidente(incidente);
                     self.guardar_incidentes()?;
-                    self.publicar_y_guardar_estado_general(cliente)?;
+                    // self.publicar_y_guardar_estado_general(cliente)?;
+                    // TODO: Publicar camara actualizada
                     self.actualizar_estado_ui()?;
                 }
             }
