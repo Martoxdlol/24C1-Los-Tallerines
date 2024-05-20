@@ -25,7 +25,8 @@ impl<T: Serializable> Serializable for Vec<T> {
     where
         Self: Sized,
     {
-        let texto = String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
+        let texto =
+            String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
         let lineas = texto.lines();
 
         let mut result = Vec::new();
