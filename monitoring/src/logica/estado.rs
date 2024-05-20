@@ -52,4 +52,8 @@ impl Estado {
     pub fn camara(&self, id: u64) -> Option<Camara> {
         self.camaras.get(&id).cloned()
     }
+
+    pub fn limpiar_camaras(&mut self) {
+        self.camaras.clear();
+    }
 }
