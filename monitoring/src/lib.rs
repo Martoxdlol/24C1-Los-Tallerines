@@ -110,8 +110,8 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                 let incidente = Incidente::new(
                     1,
                     aplicacion.nombre_incidente.clone(),
-                    clicked_at.lon(),
                     clicked_at.lat(),
+                    clicked_at.lon(),
                     1,
                 );
 
@@ -129,6 +129,7 @@ fn mostrado_de_incidentes<'a>(
     incidentes: &[Incidente],
     clicks: &'a mut ClickWatcher,
 ) -> Map<'a, 'a, 'a> {
+
     mapa_a_mostrar
         .with_plugin(plugins::mostrar_incidentes(incidentes))
         // .with_plugin(plugins::SombreadoCircular {
@@ -164,6 +165,7 @@ impl eframe::App for Aplicacion {
             ..Default::default()
         };
 
+        // Intentar recibir estado actualizado del sistema
         if let Ok(estado) = self.recibir_estado.try_recv() {
             self.estado = estado;
         }
