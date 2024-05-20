@@ -164,6 +164,7 @@ impl Conexion {
 
                             self.escribir_err(Some("Usuario o contraseña incorrectos".to_string()));
                             self.desconectado = true;
+                            return;
                         }
 
                         self.autenticado = true;
