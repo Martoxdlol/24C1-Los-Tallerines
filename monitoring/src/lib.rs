@@ -63,6 +63,7 @@ pub struct Aplicacion {
     estado: Estado,
     recibir_estado: Receiver<Estado>,
     enviar_comando: Sender<Comando>,
+    id_proximo_incidente: u64,
 }
 
 impl Aplicacion {
@@ -82,6 +83,7 @@ impl Aplicacion {
             estado: Estado::new(),
             recibir_estado,
             enviar_comando,
+            id_proximo_incidente: 1,
         }
     }
 }
@@ -107,12 +109,13 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
             {
                 // TODO: ID Y TIMESTAMP
                 let incidente = Incidente::new(
-                    1,
+                    aplicacion.id_proximo_incidente,
                     aplicacion.nombre_incidente.clone(),
                     clicked_at.lat(),
                     clicked_at.lon(),
                     1,
                 );
+                aplicacion.id_proximo_incidente += 1;
 
                 aplicacion.nombre_incidente.clear();
 
