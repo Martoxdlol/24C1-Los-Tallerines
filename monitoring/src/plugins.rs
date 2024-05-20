@@ -45,12 +45,12 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
 
 /// Sample map plugin which draws custom stuff on the map.
 pub struct SombreadoCircular {
-    pub posiciones: Vec<(Coordenadas, f64)>,
+    pub posiciones: Vec<(Coordenadas, f64, bool)>,
 }
 
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
-        for (coordenadas, radio_metros) in &self.posiciones {
+        for (coordenadas, radio_metros, activa) in &self.posiciones {
 
             let posicion = Position::from_lat_lon(coordenadas.lat, coordenadas.lon);
             // Project it into the position on the screen.
@@ -59,7 +59,7 @@ impl Plugin for SombreadoCircular {
             //let radio_como_f64 = *radio_metros as f64;
             let radio = (metros_a_pixeles_en_mapa(&posicion, projector)  * radio_metros) as f32;
 
-            let flotar = response
+            let mouse_encima = response
                 .hover_pos()
                 .map(|hover_pos| hover_pos.distance(posicion_x_y) < radio)
                 .unwrap_or(false);
@@ -67,9 +67,17 @@ impl Plugin for SombreadoCircular {
             painter.circle_filled(
                 posicion_x_y,
                 radio,
-                Color32::BLACK.gamma_multiply(if flotar { 0.5 } else { 0.2 }),
+                color_circulo(activa.clone(), mouse_encima),
             );
         }
+    }
+}
+
+fn color_circulo(activa: bool, mouse_encima: bool) -> Color32 {
+    if activa {
+        Color32::LIGHT_GREEN.gamma_multiply(if mouse_encima { 0.5 } else { 0.2 })
+    } else {
+        Color32::BLACK.gamma_multiply(if mouse_encima { 0.5 } else { 0.2 })
     }
 }
 

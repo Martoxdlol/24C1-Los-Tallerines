@@ -133,7 +133,7 @@ fn mostrado_incidentes_y_camaras<'a>(
         .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
         .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
         .with_plugin(plugins::SombreadoCircular {
-            posiciones: estado.camaras().iter().map(|i| (i.posicion(), i.rango)).collect(),
+            posiciones: estado.camaras().iter().map(|i| (i.posicion(), i.rango, i.activa())).collect(),
         })
         .with_plugin(clicks)
 }
