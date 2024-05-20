@@ -29,6 +29,7 @@ impl Publicacion {
     pub fn mensaje(&self, sid: String) -> PublicacionMensaje {
         PublicacionMensaje::new(
             sid,
+            self.topico.clone(),
             self.payload.clone(),
             self.header.clone(),
             self.replay_to.clone(),
