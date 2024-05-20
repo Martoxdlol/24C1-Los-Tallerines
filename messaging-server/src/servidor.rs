@@ -10,29 +10,17 @@ use std::{
 };
 
 use crate::{
-    conexion::id::IdConexion, configuracion::Configuracion, cuenta::Cuenta, hilo::id::IdHilo,
+    conexion::id::IdConexion, cuenta::Cuenta, hilo::id::IdHilo,
     registrador::Registrador,
 };
 
 use super::{conexion::Conexion, hilo::Hilo};
 
-use serde::Deserialize;
-use std::env;
-use std::fs;
-use std::process;
-
-#[derive(Deserialize)]
-struct Config {
-    direccion: String,
-    puerto: u16,
-}
-
-
 type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 
 pub struct Servidor {
     hilos: Vec<InfoHilo>,
-    _configuracion: Configuracion,
+    configuracion: bool,
     proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
     registrador: Registrador,
@@ -87,9 +75,9 @@ impl Servidor {
             // Creamos el hilo
             let hilo = Hilo::new(
                 id_hilo,
-                rx_conexiones, // punta receptora para recibir conexiones
+                rx_conexiones,             // punta receptora para recibir conexiones
                 canales_a_enviar_mensajes, // punta emisora para enviar instrucciones
-                rx, // punta receptora para recibir instrucciones
+                rx,                        // punta receptora para recibir instrucciones
                 registrador,
             );
 
@@ -101,7 +89,7 @@ impl Servidor {
 
         Servidor {
             hilos,
-            _configuracion: Configuracion::new(),
+            configuracion: true,
             proximo_id_hilo: 0,
             ultimo_id_conexion: 0,
             registrador,

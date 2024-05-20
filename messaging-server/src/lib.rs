@@ -1,5 +1,4 @@
 pub mod conexion;
-pub mod configuracion;
 pub mod cuenta;
 pub mod hilo;
 pub mod publicacion;
