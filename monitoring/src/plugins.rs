@@ -51,13 +51,12 @@ pub struct SombreadoCircular {
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
         for (coordenadas, radio_metros, activa) in &self.posiciones {
-
             let posicion = Position::from_lat_lon(coordenadas.lat, coordenadas.lon);
             // Project it into the position on the screen.
             let posicion_x_y = projector.project(posicion).to_pos2();
 
             //let radio_como_f64 = *radio_metros as f64;
-            let radio = (metros_a_pixeles_en_mapa(&posicion, projector)  * radio_metros) as f32;
+            let radio = (metros_a_pixeles_en_mapa(&posicion, projector) * radio_metros) as f32;
 
             let mouse_encima = response
                 .hover_pos()
@@ -75,9 +74,9 @@ impl Plugin for SombreadoCircular {
 
 fn color_circulo(activa: bool, mouse_encima: bool) -> Color32 {
     if activa {
-        Color32::LIGHT_GREEN.gamma_multiply(if mouse_encima { 0.5 } else { 0.2 })
+        Color32::LIGHT_GREEN.gamma_multiply(if mouse_encima { 0.4 } else { 0.3 })
     } else {
-        Color32::BLACK.gamma_multiply(if mouse_encima { 0.5 } else { 0.2 })
+        Color32::BLACK.gamma_multiply(if mouse_encima { 0.4 } else { 0.3 })
     }
 }
 
@@ -87,8 +86,12 @@ pub struct ClickWatcher {
 }
 
 fn posicion_click(ui: &mut Ui, clicked_at: Position) {
-    ui.label(format!("lat, lon: {:.04} {:.04}", clicked_at.lat(), clicked_at.lon()))
-        .on_hover_text("Posición donde hiciste click");
+    ui.label(format!(
+        "lat, lon: {:.04} {:.04}",
+        clicked_at.lat(),
+        clicked_at.lon()
+    ))
+    .on_hover_text("Posición donde hiciste click");
 }
 
 fn click_cerrar(ui: &mut Ui, clickwatcher: &mut ClickWatcher) {

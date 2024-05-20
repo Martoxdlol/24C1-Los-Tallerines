@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy)]
 pub struct Coordenadas {
     pub lat: f64,
     pub lon: f64,

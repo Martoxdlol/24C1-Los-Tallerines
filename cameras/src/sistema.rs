@@ -8,7 +8,9 @@ use lib::{
     configuracion::ArchivoConfiguracion,
     incidente::Incidente,
     serializables::{
-        deserializar_vec, guardar::{cargar_serializable, guardar_serializable}, serializar_vec, Serializable
+        deserializar_vec,
+        guardar::{cargar_serializable, guardar_serializable},
+        serializar_vec, Serializable,
     },
 };
 use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
@@ -69,7 +71,6 @@ impl Sistema {
         let sub_comandos_remotos = cliente.suscribirse("comandos.camaras", None)?;
 
         let sub_incidentes = cliente.suscribirse("incidentes", None)?;
-
 
         self.solicitar_actualizacion_incidentes(&cliente)?;
 
@@ -156,7 +157,12 @@ impl Sistema {
         sub_comandos: &Suscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
-        self.leer_incidentes(cliente, sub_nuevos_incidentes, sub_clientes_finalizados, sub_incidentes)?;
+        self.leer_incidentes(
+            cliente,
+            sub_nuevos_incidentes,
+            sub_clientes_finalizados,
+            sub_incidentes,
+        )?;
         self.leer_comandos(cliente)?;
         self.leer_comandos_remotos(cliente, sub_comandos)?;
 
@@ -169,14 +175,19 @@ impl Sistema {
     /// y los procesa. Cambia el estado del sistema
     fn leer_incidentes(
         &mut self,
-        _cliente: &Cliente,
+        cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
         sub_clientes_finalizados: &Suscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
+        let mut enviar_actualizacion = false;
+
         while let Some(mensaje) = sub_nuevos_incidentes.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
-                Ok(incidente) => self.estado.cargar_incidente(incidente),
+                Ok(incidente) => {
+                    self.estado.cargar_incidente(incidente);
+                    enviar_actualizacion = true;
+                }
                 Err(_) => eprintln!("Error al deserializar incidente"),
             }
         }
@@ -185,6 +196,7 @@ impl Sistema {
             match Incidente::deserializar(&mensaje.payload) {
                 Ok(incidente) => {
                     self.estado.finalizar_incidente(incidente.id);
+                    enviar_actualizacion = true;
                 }
                 Err(_) => eprintln!("Error al deserializar incidente"),
             };
@@ -200,6 +212,12 @@ impl Sistema {
             for incidente in incidentes {
                 self.estado.cargar_incidente(incidente);
             }
+
+            enviar_actualizacion = true;
+        }
+
+        if enviar_actualizacion {
+            self.publicar_y_guardar_estado_general(cliente)?;
         }
 
         Ok(())

@@ -105,7 +105,6 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
-
                 // TODO: ID Y TIMESTAMP
                 let incidente = Incidente::new(
                     0,
@@ -129,12 +128,15 @@ fn mostrado_incidentes_y_camaras<'a>(
     estado: &Estado,
     clicks: &'a mut ClickWatcher,
 ) -> Map<'a, 'a, 'a> {
-
     mapa_a_mostrar
         .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
         .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
         .with_plugin(plugins::SombreadoCircular {
-            posiciones: estado.camaras().iter().map(|i| (i.posicion(), i.rango, i.activa())).collect(),
+            posiciones: estado
+                .camaras()
+                .iter()
+                .map(|i| (i.posicion(), i.rango, i.activa()))
+                .collect(),
         })
         .with_plugin(clicks)
 }
@@ -185,11 +187,8 @@ impl eframe::App for Aplicacion {
 
                 let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
-                let mapa_final = mostrado_incidentes_y_camaras(
-                    mapa_a_mostrar,
-                    &self.estado,
-                    &mut self.clicks,
-                );
+                let mapa_final =
+                    mostrado_incidentes_y_camaras(mapa_a_mostrar, &self.estado, &mut self.clicks);
 
                 // Draw the map widget.
                 ui.add(mapa_final);

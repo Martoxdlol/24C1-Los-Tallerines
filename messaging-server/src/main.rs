@@ -14,7 +14,13 @@ fn main() {
             println!("Cuentas cargadas correctamente");
         }
 
-        println!("Iniciando servidor con {} hilos", servidor.configuracion.obtener::<usize>("hilos").unwrap_or(4));
+        println!(
+            "Iniciando servidor con {} hilos",
+            servidor
+                .configuracion
+                .obtener::<usize>("hilos")
+                .unwrap_or(4)
+        );
 
         servidor.inicio();
     } else {
