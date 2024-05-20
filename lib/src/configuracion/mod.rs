@@ -1,6 +1,6 @@
 use std::{collections::HashMap, io};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArchivoConfiguracion {
     valores: HashMap<String, String>,
 }
