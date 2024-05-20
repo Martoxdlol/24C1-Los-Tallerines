@@ -1,3 +1,5 @@
+use super::{parametros_conectar::ParametrosConectar, parametros_info::ParametrosInfo};
+
 #[derive(Debug, PartialEq)]
 pub enum ResultadoLinea {
     StringVacio,
@@ -10,8 +12,8 @@ pub enum ResultadoLinea {
     Unsub(String, Option<u64>),
     Ping,
     Pong,
-    Info,
-    Connect,
+    Info(ParametrosInfo),
+    Connect(ParametrosConectar),
     Ok,
     Err,
 }

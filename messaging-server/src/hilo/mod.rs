@@ -77,6 +77,11 @@ impl Hilo {
         self.eliminar_conexiones_terminadas();
     }
 
+    // Mientras se reciban conexiones,
+    // con su id y la conexion correspondiente, el registrador informa
+    // un evento de informacion con un registro con mensaje, hilo, y
+    // nivel de tipo "Informacion". Ademas, se insertan en las
+    // conexiones del hilo el id de la conexion y la conexion
     pub fn recibir_conexiones(&mut self) {
         while let Ok((id_conexion, conexion)) = self.canal_recibir_conexiones.try_recv() {
             self.registrador
@@ -85,6 +90,8 @@ impl Hilo {
         }
     }
 
+    // Mientras se reciban instrucciones, el registrador informa un evento de informacio
+    // con un registro con mensaje, hilo y nivel de tipo "Información".
     pub fn recibir_instrucciones(&mut self) {
         while let Ok(instruccion) = self.canal_recibir_instrucciones.try_recv() {
             self.registrador

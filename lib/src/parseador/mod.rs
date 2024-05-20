@@ -1,7 +1,11 @@
 pub mod mensaje;
+pub mod parametros_conectar;
+pub mod parametros_info;
 mod resultado_linea;
 
 use self::mensaje::Mensaje;
+use self::parametros_conectar::ParametrosConectar;
+use self::parametros_info::ParametrosInfo;
 use self::resultado_linea::ResultadoLinea;
 
 pub struct Parseador {
@@ -234,11 +238,11 @@ impl Parseador {
                 ResultadoLinea::Ping => {
                     return Some(Mensaje::Ping());
                 }
-                ResultadoLinea::Connect => {
-                    return Some(Mensaje::Conectar("".to_string()));
+                ResultadoLinea::Connect(parametros_conectar) => {
+                    return Some(Mensaje::Conectar(parametros_conectar));
                 }
-                ResultadoLinea::Info => {
-                    return Some(Mensaje::Info());
+                ResultadoLinea::Info(parametros) => {
+                    return Some(Mensaje::Info(parametros));
                 }
                 ResultadoLinea::Pong => {
                     return Some(Mensaje::Pong());
@@ -319,11 +323,16 @@ impl Parseador {
         }
 
         if primera_palabra.eq("connect") {
-            return ResultadoLinea::Connect;
+            if let Ok(parametros_conectar) = ParametrosConectar::from_json(&palabras[1..].join(" "))
+            {
+                return ResultadoLinea::Connect(parametros_conectar);
+            }
         }
 
         if primera_palabra.eq("info") {
-            return ResultadoLinea::Info;
+            if let Ok(parametros_info) = ParametrosInfo::from_json(&palabras[1..].join(" ")) {
+                return ResultadoLinea::Info(parametros_info);
+            }
         }
 
         if primera_palabra.eq("msg") {

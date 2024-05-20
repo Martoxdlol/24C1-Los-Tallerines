@@ -1,7 +1,21 @@
+use lib::configuracion::ArchivoConfiguracion;
 use messaging_server::servidor::Servidor;
 
 fn main() {
-    let mut servidor = Servidor::procesos(4);
+    if let Ok(config) = ArchivoConfiguracion::desde_argv() {
+        let mut servidor = Servidor::desde_configuracion(config);
 
-    servidor.inicio();
+        if let Some(ruta_archivo_cuentas) = servidor.configuracion.obtener::<String>("cuentas") {
+            if let Err(e) = servidor.cargar_cuentas(ruta_archivo_cuentas) {
+                eprintln!("Error al cargar las cuentas: {}", e);
+                return;
+            }
+
+            println!("Cuentas cargadas correctamente");
+        }
+
+        servidor.inicio();
+    } else {
+        eprintln!("Error al cargar la configuración")
+    }
 }

@@ -25,15 +25,22 @@ impl<T: Serializable> Serializable for Vec<T> {
     where
         Self: Sized,
     {
+        let texto =
+            String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
+        let lineas = texto.lines();
+
         let mut result = Vec::new();
-        let mut start = 0;
-        for (i, &byte) in data.iter().enumerate() {
-            if byte == b'\n' {
-                let element = T::deserializar(&data[start..i])?;
-                result.push(element);
-                start = i + 1;
+
+        for linea in lineas {
+            if linea.trim().is_empty() {
+                continue;
             }
+
+            let bytes = linea.as_bytes();
+            let element = T::deserializar(bytes)?;
+            result.push(element);
         }
+
         Ok(result)
     }
 }

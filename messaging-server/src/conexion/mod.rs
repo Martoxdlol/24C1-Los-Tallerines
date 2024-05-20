@@ -3,8 +3,10 @@ pub mod respuesta;
 pub mod tick_contexto;
 use lib::parseador::Parseador;
 use lib::{parseador::mensaje::Mensaje, stream::Stream};
+use std::sync::Arc;
 use std::{fmt::Debug, io};
 
+use crate::cuenta::Cuenta;
 use crate::{
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
     registrador::Registrador,
@@ -13,7 +15,7 @@ use crate::{
 
 use self::{id::IdConexion, respuesta::Respuesta, tick_contexto::TickContexto};
 pub struct Conexion {
-    /// El identificador de la conexión. Global y único
+    /// El identificador de la conexión. Global y único0
     id: IdConexion,
     /// El stream de la conexión
     stream: Box<dyn Stream>,
@@ -27,10 +29,18 @@ pub struct Conexion {
     /// Indica si la conexión está autenticada.
     /// Es decir, si ya se envió un mensaje de conexión (`CONNECT {...}`)
     pub autenticado: bool,
+
+    /// Cuentas de usuario
+    pub cuentas: Option<Arc<Vec<Cuenta>>>,
 }
 
 impl Conexion {
-    pub fn new(id: IdConexion, stream: Box<dyn Stream>, registrador: Registrador) -> Self {
+    pub fn new(
+        id: IdConexion,
+        stream: Box<dyn Stream>,
+        registrador: Registrador,
+        cuentas: Option<Arc<Vec<Cuenta>>>,
+    ) -> Self {
         let mut con = Self {
             id,
             stream,
@@ -38,6 +48,7 @@ impl Conexion {
             registrador,
             desconectado: false,
             autenticado: false,
+            cuentas,
         };
 
         con.enviar_info();
@@ -134,7 +145,28 @@ impl Conexion {
 
             if !self.autenticado {
                 match mensaje {
-                    Mensaje::Conectar(_) => {
+                    Mensaje::Conectar(parametros) => {
+                        if let Some(cuentas) = &self.cuentas {
+                            for cuenta in cuentas.iter() {
+                                if cuenta.matches(&parametros.user_str(), &parametros.pass_str()) {
+                                    self.registrador.info(
+                                        &format!("Usuario autenticado: {}", cuenta.user),
+                                        Some(self.id),
+                                    );
+
+                                    self.autenticado = true;
+                                    self.escribir_respuesta(&Respuesta::Ok(Some(
+                                        "connect".to_string(),
+                                    )));
+                                    return;
+                                }
+                            }
+
+                            self.escribir_err(Some("Usuario o contraseña incorrectos".to_string()));
+                            self.desconectado = true;
+                            return;
+                        }
+
                         self.autenticado = true;
                         self.escribir_respuesta(&Respuesta::Ok(Some("connect".to_string())));
                     }
@@ -227,7 +259,9 @@ impl Debug for Conexion {
 
 #[cfg(test)]
 mod tests {
-    use lib::stream::mock_handler::MockHandler;
+    use std::sync::Arc;
+
+    use lib::{serializables::deserializar_vec, stream::mock_handler::MockHandler};
 
     use crate::registrador::Registrador;
 
@@ -240,7 +274,7 @@ mod tests {
         let registrador = Registrador::new();
 
         // Conexion representa el cliente del lado del servidor
-        Conexion::new(1, Box::new(stream), registrador);
+        Conexion::new(1, Box::new(stream), registrador, None);
 
         assert!(control
             .intentar_recibir_string()
@@ -250,13 +284,30 @@ mod tests {
     }
 
     #[test]
-    fn probar_autenticacion() {
+    fn probar_autenticacion_sin_cuenta() {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
 
-        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+        mock.escribir_bytes(b"CONNECT {}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        assert!(con.autenticado);
+    }
+
+    #[test]
+    fn probar_autenticacion_con_cuenta() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let cuentas = deserializar_vec("1,admin,1234".as_bytes()).unwrap();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador, Some(Arc::new(cuentas)));
+
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"1234\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
         con.tick(&mut contexto);
@@ -269,7 +320,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
@@ -290,7 +341,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador);
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
@@ -306,5 +357,25 @@ mod tests {
         assert_eq!(contexto.publicaciones.len(), 1);
         assert_eq!(contexto.publicaciones[0].topico, "x");
         assert_eq!(contexto.publicaciones[0].payload, b"hola");
+    }
+
+    #[test]
+    fn probar_desuscripcion() {
+        let (mut mock, stream) = MockHandler::new();
+        let registrador = Registrador::new();
+
+        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
+        mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        mock.escribir_bytes(b"UNSUB 1\r\n");
+
+        let mut contexto = TickContexto::new(0, 1);
+        con.tick(&mut contexto);
+
+        assert_eq!(contexto.desuscripciones.len(), 1);
+        assert_eq!(contexto.desuscripciones[0], "1");
     }
 }

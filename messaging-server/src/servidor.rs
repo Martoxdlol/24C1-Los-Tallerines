@@ -2,29 +2,32 @@ use std::{
     collections::HashMap,
     io,
     net::TcpListener,
-    sync::mpsc::{self, Sender},
+    sync::{
+        mpsc::{self, Sender},
+        Arc,
+    },
     thread::{self, JoinHandle},
 };
 
-use crate::{
-    conexion::id::IdConexion, configuracion::Configuracion, hilo::id::IdHilo,
-    registrador::Registrador,
-};
+use lib::configuracion::ArchivoConfiguracion;
+
+use crate::{conexion::id::IdConexion, cuenta::Cuenta, hilo::id::IdHilo, registrador::Registrador};
 
 use super::{conexion::Conexion, hilo::Hilo};
 
 type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 
 pub struct Servidor {
+    pub configuracion: ArchivoConfiguracion,
     hilos: Vec<InfoHilo>,
-    _configuracion: Configuracion,
     proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
     registrador: Registrador,
+    pub cuentas: Option<Arc<Vec<Cuenta>>>,
 }
 
 impl Servidor {
-    pub fn procesos(cantidad: usize) -> Servidor {
+    pub fn desde_configuracion(configuracion: ArchivoConfiguracion) -> Servidor {
         // La cantidad es la cantidad de hilos que se van a crear
         // Vector con los canales para enviar nuevas conexiones y handle de los threads
         let mut hilos = Vec::new();
@@ -37,6 +40,8 @@ impl Servidor {
         // `logger`
         let registrador = Registrador::new();
 
+        let cantidad = configuracion.obtener::<usize>("hilos").unwrap_or(8);
+
         // Creamos los canales para enviar y recibir instrucciones entre los hilos
         for _ in 0..cantidad {
             let (tx, rx) = mpsc::channel();
@@ -44,6 +49,10 @@ impl Servidor {
             canales_recibir.push(rx);
         }
 
+        // Para cada punta receptora en canales_recibir, se insertan las
+        // puntas emisoras de los canales en canales_a_enviar_mensajes que
+        // tiene las puntas emisoras a cada hilo para enviar instrucciones
+        // a ellos
         for (indice_hilo, rx) in canales_recibir.drain(..).enumerate() {
             // HashMap con las puntas emisoras a cada hilo para enviar instrucciones a los mismos
             let mut canales_a_enviar_mensajes = HashMap::new();
@@ -81,14 +90,21 @@ impl Servidor {
 
         Servidor {
             hilos,
-            _configuracion: Configuracion::new(),
+            configuracion,
             proximo_id_hilo: 0,
             ultimo_id_conexion: 0,
             registrador,
+            cuentas: None,
         }
     }
 
-    pub fn nuevo_id_conexion(&mut self) -> IdConexion {
+    pub fn cargar_cuentas(&mut self, ruta_archivo_cuentas: String) -> io::Result<()> {
+        let cuentas = Cuenta::cargar(&ruta_archivo_cuentas)?;
+        self.cuentas = Some(Arc::new(cuentas));
+        Ok(())
+    }
+
+    fn nuevo_id_conexion(&mut self) -> IdConexion {
         self.ultimo_id_conexion += 1;
         self.ultimo_id_conexion
     }
@@ -100,7 +116,14 @@ impl Servidor {
     }
 
     pub fn inicio(&mut self) {
-        let listener = TcpListener::bind("0.0.0.0:4222").unwrap();
+        let direccion = self
+            .configuracion
+            .obtener::<String>("direccion")
+            .unwrap_or("127.0.0.1".to_string());
+
+        let puerto = self.configuracion.obtener::<u16>("puerto").unwrap_or(4222);
+
+        let listener = TcpListener::bind(format!("{}:{}", direccion, puerto)).unwrap();
         listener
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
@@ -123,6 +146,7 @@ impl Servidor {
                         id_conexion,
                         Box::new(stream),
                         registrador_para_nueva_conexion,
+                        self.cuentas.clone(),
                     );
 
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];

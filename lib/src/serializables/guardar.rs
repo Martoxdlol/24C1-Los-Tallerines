@@ -25,7 +25,7 @@ pub fn cargar_serializable<T: Serializable>(path: &str) -> Result<T, std::io::Er
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::serializables::error::DeserializationError;
+    use crate::{csv::csv_parsear_linea, serializables::error::DeserializationError};
 
     #[derive(Debug, PartialEq)]
     struct TestStruct {
@@ -35,20 +35,24 @@ mod tests {
 
     impl Serializable for TestStruct {
         fn serializar(&self) -> Vec<u8> {
-            let mut data = Vec::new();
-            data.extend(self.a.to_be_bytes().iter());
-            data.extend(self.b.as_bytes());
-            data
+            format!("{},{}", self.a, self.b).as_bytes().to_vec()
         }
 
         fn deserializar(data: &[u8]) -> Result<Self, DeserializationError> {
-            if data.len() < 4 {
-                return Err(DeserializationError::InvalidData);
-            }
+            let linea =
+                String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
+            let mut parametros = csv_parsear_linea(linea.as_str()).into_iter();
 
-            let a = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
-            let b = String::from_utf8(data[4..].to_vec())
+            let a = parametros
+                .next()
+                .ok_or(DeserializationError::MissingField)?
+                .parse()
                 .map_err(|_| DeserializationError::InvalidData)?;
+
+            let b = parametros
+                .next()
+                .ok_or(DeserializationError::MissingField)?
+                .to_string();
 
             Ok(TestStruct { a, b })
         }
@@ -58,13 +62,13 @@ mod tests {
     fn test_guardar_cargar_serializable() {
         let test_struct = TestStruct {
             a: 42,
-            b: "Hello, world!".to_string(),
+            b: "Hello world!".to_string(),
         };
 
-        guardar_serializable(&test_struct, "/tmp/serializable.test.dat").unwrap();
+        guardar_serializable(&test_struct, "/tmp/serializable_a.test.dat").unwrap();
 
         let loaded_struct =
-            cargar_serializable::<TestStruct>("/tmp/serializable.test.dat").unwrap();
+            cargar_serializable::<TestStruct>("/tmp/serializable_a.test.dat").unwrap();
 
         assert_eq!(test_struct, loaded_struct);
     }
@@ -74,11 +78,11 @@ mod tests {
         let test_structs = vec![
             TestStruct {
                 a: 42,
-                b: "Hello, world!".to_string(),
+                b: "Hello world!".to_string(),
             },
             TestStruct {
                 a: 1337,
-                b: "Goodbye, world!".to_string(),
+                b: "Goodbye world!".to_string(),
             },
         ];
 

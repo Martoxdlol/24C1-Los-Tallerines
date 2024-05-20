@@ -5,7 +5,7 @@ use std::{
 };
 
 use lib::{
-    parseador::{mensaje::Mensaje, Parseador},
+    parseador::{mensaje::Mensaje, parametros_conectar::ParametrosConectar, Parseador},
     stream::Stream,
 };
 
@@ -20,6 +20,8 @@ pub struct HiloCliente {
     // Cada canal de cada subscripción está asociado a un id de subscripción
     pub canales_subscripciones: HashMap<String, Sender<Publicacion>>,
     pub autenticado: bool,
+    pub user: Option<String>,
+    pub pass: Option<String>,
     parseador: Parseador,
 }
 
@@ -31,6 +33,8 @@ impl HiloCliente {
             canales_subscripciones: HashMap::new(),
             parseador: Parseador::new(),
             autenticado: false,
+            user: None,
+            pass: None,
         }
     }
 
@@ -81,8 +85,31 @@ impl HiloCliente {
                 }
             }
             // Ejemplo: INFO {"server_id":"a","version":"2.1.0","go":"go1.15.6","host":"...
-            Mensaje::Info() => {
-                self.stream.write_all(b"CONNECT {}\r\n")?;
+            Mensaje::Info(parametros) => {
+                let requiere_auth = parametros.auth_required.unwrap_or(false);
+
+                if !requiere_auth {
+                    self.stream.write_all(b"CONNECT {}\r\n")?;
+                } else {
+                    let user = match &self.user {
+                        Some(user) => user,
+                        None => "",
+                    };
+
+                    let pass = match &self.pass {
+                        Some(pass) => pass,
+                        None => "",
+                    };
+
+                    self.stream.write_all(
+                        format!(
+                            "CONNECT {}",
+                            ParametrosConectar::user_pass(user, pass).to_json()
+                        )
+                        .as_bytes(),
+                    )?;
+                }
+
                 self.autenticado = true;
             }
             // Ejemplo: PING\r\n
