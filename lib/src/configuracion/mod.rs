@@ -65,6 +65,7 @@ impl ArchivoConfiguracion {
         }
     }
 
+    /// Tomar los parámetros de argv y convertirlos en un archivo de configuración
     pub fn desde_parametros(parametros: &[&str]) -> Self {
         let mut config = ArchivoConfiguracion::new();
 
@@ -93,6 +94,7 @@ impl ArchivoConfiguracion {
         Ok(config)
     }
 
+    /// Tomar los argumentos de la línea de comandos y convertirlos en un archivo de configuración
     pub fn desde_argv() -> io::Result<Self> {
         let args: Vec<String> = std::env::args().collect();
         let parametros: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
