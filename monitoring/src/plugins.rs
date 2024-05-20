@@ -66,7 +66,7 @@ impl Plugin for SombreadoCircular {
             painter.circle_filled(
                 posicion_x_y,
                 radio,
-                color_circulo(activa.clone(), mouse_encima),
+                color_circulo(*activa, mouse_encima),
             );
         }
     }

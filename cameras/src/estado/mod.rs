@@ -93,7 +93,7 @@ impl Estado {
     }
 
     pub fn finalizar_todos_los_incidentes(&mut self) {
-        let incidentes: Vec<u64> = self.incidentes.keys().map(|&id| id).collect();
+        let incidentes: Vec<u64> = self.incidentes.keys().copied().collect();
         for id in incidentes {
             self.finalizar_incidente(id);
         }
