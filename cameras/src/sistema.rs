@@ -5,7 +5,7 @@ use std::{
 
 use lib::{
     camara::Camara,
-    configuracion::ArchivoConfiguracion,
+    configuracion::Configuracion,
     incidente::Incidente,
     serializables::{
         deserializar_vec,
@@ -22,7 +22,7 @@ use crate::{
 
 pub struct Sistema {
     pub estado: Estado,
-    pub configuracion: ArchivoConfiguracion,
+    pub configuracion: Configuracion,
     enviar_respuesta: Sender<Respuesta>,
     recibir_comandos: Receiver<Comando>,
 }
@@ -30,7 +30,7 @@ pub struct Sistema {
 impl Sistema {
     pub fn new(
         estado: Estado,
-        configuracion: ArchivoConfiguracion,
+        configuracion: Configuracion,
         enviar_respuesta: Sender<Respuesta>,
         recibir_comandos: Receiver<Comando>,
     ) -> Self {

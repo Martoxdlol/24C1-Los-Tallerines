@@ -1,7 +1,7 @@
 // use messaging::client::NATSClient;
 
 use cameras::{estado::Estado, interfaz::interfaz, sistema::Sistema};
-use lib::configuracion::ArchivoConfiguracion;
+use lib::configuracion::Configuracion;
 
 fn main() {
     if let Err(e) = intentar_iniciar_sistema() {
@@ -14,7 +14,7 @@ fn intentar_iniciar_sistema() -> Result<(), Box<dyn std::error::Error>> {
     let estado = Estado::new();
     let (enviar_respuesta, recibir_comandos) = interfaz();
 
-    let configuracion = ArchivoConfiguracion::desde_argv()?;
+    let configuracion = Configuracion::desde_argv()?;
     let mut sistema = Sistema::new(estado, configuracion, enviar_respuesta, recibir_comandos);
 
     Ok(sistema.iniciar()?)
