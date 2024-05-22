@@ -121,7 +121,7 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
-                // TODO: ID Y TIMESTAMP
+                // TODO: TIMESTAMP
                 let incidente = Incidente::new(
                     0,
                     aplicacion.nombre_incidente.clone(),
@@ -241,7 +241,7 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
         });
 }
 
-fn cambiar_nombre_incidente(ui: &mut Ui, nombre: &mut String, incidente: &mut Incidente){
+fn cambiar_nombre_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente: &mut Incidente){
     egui::Window::new("Modificar Incidente")
         .collapsible(false)
         .movable(true)
@@ -250,16 +250,23 @@ fn cambiar_nombre_incidente(ui: &mut Ui, nombre: &mut String, incidente: &mut In
         .anchor(egui::Align2::LEFT_TOP, [10., 10.])
         .show(ui.ctx(), |ui| {
             ui.add_sized([350., 40.], |ui: &mut Ui| {
-                ui.text_edit_multiline(nombre)
+                ui.text_edit_multiline(&mut aplicacion.nombre_incidente)
             });
 
-            if !nombre.trim().is_empty()
+            if !aplicacion.nombre_incidente.trim().is_empty()
                 && ui
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
-                incidente.detalle = nombre.clone();
-                nombre.clear();
+                let mut incidente_nuevo = incidente.clone();
+                incidente_nuevo.detalle = aplicacion.nombre_incidente.clone();
+                aplicacion.nombre_incidente.clear();
+                aplicacion.accion_incidente = AccionIncidente::Crear;
+
+
+                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+
             }
         });
 }
@@ -338,7 +345,7 @@ impl eframe::App for Aplicacion {
                     }
                     AccionIncidente::CambiarNombre(id) => {
                         if let Some(mut incidente) = self.estado.incidente(id) {
-                            cambiar_nombre_incidente(ui, &mut self.nombre_incidente, &mut incidente);
+                            cambiar_nombre_incidente(ui, self, &mut incidente);
                         }
                     }
                     AccionIncidente::CambiarUbicacion(id) => {
