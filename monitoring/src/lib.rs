@@ -13,7 +13,7 @@ use std::{
 //use iconos::incidente;
 
 use egui::{Context, Ui};
-use lib::{camara, incidente::Incidente};
+use lib::{camara, incidente::{self, Incidente}};
 use logica::{comando::Comando, estado::Estado};
 
 use crate::plugins::ClickWatcher;
@@ -30,6 +30,13 @@ pub enum Provider {
 pub enum Listar {
     Incidentes,
     Camaras,
+}
+
+pub enum AccionIncidente {
+    Crear,
+    Modificar(u64),
+    CambiarNombre(u64),
+    CambiarUbicacion(u64),
 }
 
 fn http_options() -> HttpOptions {
@@ -69,6 +76,7 @@ pub struct Aplicacion {
     recibir_estado: Receiver<Estado>,
     enviar_comando: Sender<Comando>,
     listar: Listar,
+    accion_incidente: AccionIncidente,
 }
 
 impl Aplicacion {
@@ -89,6 +97,7 @@ impl Aplicacion {
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
+            accion_incidente: AccionIncidente::Crear,
         }
     }
 }
@@ -197,13 +206,64 @@ fn lista_de_incidentes_actuales(
                             .add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre))
                             .clicked()
                         {
-                            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                            aplicacion.accion_incidente = AccionIncidente::Modificar(incidente.id);
+                            //Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
                         }
                     }
                 });
             });
     }
 }
+
+fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
+    egui::Window::new("Modificar Incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(false)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.label(format!("Incidente: {}", incidente.detalle));
+            ui.label(format!("En: {}, {}", incidente.lat, incidente.lon));
+            ui.label("Estado: activo");
+            ui.horizontal(|ui |{
+                if ui.button("Finalizar incidente").clicked() {
+                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                aplicacion.accion_incidente = AccionIncidente::Crear;
+            }
+                if ui.button("Modificar nombre").clicked() {
+                aplicacion.accion_incidente = AccionIncidente::CambiarNombre(incidente.id);
+
+                }
+                if ui.button("Cancelar").clicked() {
+                aplicacion.accion_incidente = AccionIncidente::Crear;
+            }})
+        });
+}
+
+fn cambiar_nombre_incidente(ui: &mut Ui, nombre: &mut String, incidente: &mut Incidente){
+    egui::Window::new("Modificar Incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(false)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.add_sized([350., 40.], |ui: &mut Ui| {
+                ui.text_edit_multiline(nombre)
+            });
+
+            if !nombre.trim().is_empty()
+                && ui
+                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                    .clicked()
+            {
+                incidente.detalle = nombre.clone();
+                nombre.clear();
+            }
+        });
+}
+
 
 fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
     egui::Window::new("📝")
@@ -214,10 +274,10 @@ fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
         .anchor(egui::Align2::RIGHT_BOTTOM, [-10., -10.])
         .show(ui.ctx(), |ui| {
             egui::ScrollArea::horizontal().show(ui, |ui| {
-                if ui.button("Incidentes").clicked() {
+                if ui.add_sized([100., 20.], egui::Button::new("Incidentes")).clicked() {
                     aplicacion.listar = Listar::Incidentes;
                 }
-                if ui.button("Camaras").clicked() {
+                if ui.add_sized([100., 20.], egui::Button::new("Camaras")).clicked() {
                     aplicacion.listar = Listar::Camaras;
                 }
             });
@@ -264,8 +324,28 @@ impl eframe::App for Aplicacion {
                     self.clicks.mostrar_posicion(ui);
                 }
 
-                if let Some(clicked_at) = self.clicks.clicked_at {
-                    agregar_incidente(ui, clicked_at, self);
+                match self.accion_incidente {
+                    AccionIncidente::Crear => {
+                        if let Some(clicked_at) = self.clicks.clicked_at {
+                        
+                        agregar_incidente(ui, clicked_at, self);
+                        }
+                    }
+                    AccionIncidente::Modificar(id) => {
+                        if let Some(incidente) = self.estado.incidente(id) {
+                            modificar_incidente(ui, &incidente, self);
+                        }
+                    }
+                    AccionIncidente::CambiarNombre(id) => {
+                        if let Some(mut incidente) = self.estado.incidente(id) {
+                            cambiar_nombre_incidente(ui, &mut self.nombre_incidente, &mut incidente);
+                        }
+                    }
+                    AccionIncidente::CambiarUbicacion(id) => {
+                        if let Some(incidente) = self.estado.incidente(id) {
+                            //cambiar_ubicacion(ui, &incidente, self);
+                        }
+                    }
                 }
                 listar(ui, self);
 
