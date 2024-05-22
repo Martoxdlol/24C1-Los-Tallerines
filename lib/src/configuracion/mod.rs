@@ -12,16 +12,16 @@ impl Default for Configuracion {
 }
 
 /// Representa un conjunto de valores de configuración que se pueden leer de un archivo y/o de la linea de comandos.
-/// 
+///
 /// La configuración se lee de un archivo de texto con el siguiente formato:
 /// ```text
 /// clave1=valor1
 /// clave2=valor2
 /// ```
-/// 
+///
 /// La configuración se puede leer de la linea de comandos con el siguiente formato:
 /// ```text
-/// programa clave1=valor1 clave2=valor2 
+/// programa clave1=valor1 clave2=valor2
 /// ```
 impl Configuracion {
     pub fn new() -> Self {
@@ -83,12 +83,14 @@ impl Configuracion {
     }
 
     /// Toma un vector de parámetros en formato `clave=valor` y los convierte un struct Configuracion
-    /// 
+    ///
     /// Ejemplo:
     /// ```
+    /// use lib::configuracion::Configuracion;
+    /// 
     /// let args = &["clave1=valor1", "clave2=valor2"];
     /// let config = Configuracion::desde_parametros(args);
-    /// 
+    ///
     /// assert_eq!(config.obtener::<String>("clave1"), Some("valor1".to_string()));
     /// assert_eq!(config.obtener::<String>("clave2"), Some("valor2".to_string()));
     /// ```
@@ -122,7 +124,7 @@ impl Configuracion {
     }
 
     /// Lee los argumentos de la linea de comandos y los convierte en un struct Configuracion.
-    /// 
+    ///
     /// Funciona igual que `desde_parametros_y_leer` pero toma los argumentos de la linea de comandos
     /// automáticamente.
     pub fn desde_argv() -> io::Result<Self> {
