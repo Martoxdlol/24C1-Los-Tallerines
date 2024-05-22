@@ -9,7 +9,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use lib::configuracion::ArchivoConfiguracion;
+use lib::configuracion::Configuracion;
 
 use crate::{conexion::id::IdConexion, cuenta::Cuenta, hilo::id::IdHilo, registrador::Registrador};
 
@@ -18,7 +18,7 @@ use super::{conexion::Conexion, hilo::Hilo};
 type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
 
 pub struct Servidor {
-    pub configuracion: ArchivoConfiguracion,
+    pub configuracion: Configuracion,
     hilos: Vec<InfoHilo>,
     proximo_id_hilo: usize, // Cada conexión que se genera hay que asignarla a un hilo. Con esto determino a que hilo se lo doy. Si ponemos IdHilo no sirve como indice para Vec, pero si se puede convertir usize a IdHilo
     ultimo_id_conexion: IdConexion, // Cada id tiene que ser único por cada conexion. Se incrementa cada vez que se crea una nueva conexion
@@ -27,7 +27,7 @@ pub struct Servidor {
 }
 
 impl Servidor {
-    pub fn desde_configuracion(configuracion: ArchivoConfiguracion) -> Servidor {
+    pub fn desde_configuracion(configuracion: Configuracion) -> Servidor {
         // La cantidad es la cantidad de hilos que se van a crear
         // Vector con los canales para enviar nuevas conexiones y handle de los threads
         let mut hilos = Vec::new();

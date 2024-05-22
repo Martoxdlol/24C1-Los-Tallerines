@@ -5,7 +5,7 @@ use std::{
 
 use lib::{
     camara::Camara,
-    configuracion::ArchivoConfiguracion,
+    configuracion::Configuracion,
     incidente::Incidente,
     serializables::{
         deserializar_vec,
@@ -22,7 +22,7 @@ pub mod estado;
 
 pub struct Sistema {
     pub estado: Estado,
-    pub configuracion: ArchivoConfiguracion,
+    pub configuracion: Configuracion,
     recibir_comando: Receiver<Comando>,
     enviar_estado: Sender<Estado>,
     proximo_id_incidente: u64,
@@ -34,7 +34,7 @@ pub fn intentar_iniciar_sistema(
 ) -> io::Result<()> {
     let estado = Estado::new();
 
-    let configuracion = ArchivoConfiguracion::desde_argv()?;
+    let configuracion = Configuracion::desde_argv()?;
     let mut sistema = Sistema::new(estado, configuracion, recibir_comando, enviar_estado);
 
     sistema.iniciar()?;
@@ -45,7 +45,7 @@ pub fn intentar_iniciar_sistema(
 impl Sistema {
     pub fn new(
         estado: Estado,
-        configuracion: ArchivoConfiguracion,
+        configuracion: Configuracion,
         recibir_comando: Receiver<Comando>,
         enviar_estado: Sender<Estado>,
     ) -> Self {

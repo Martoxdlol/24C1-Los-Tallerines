@@ -1,8 +1,8 @@
-use lib::configuracion::ArchivoConfiguracion;
+use lib::configuracion::Configuracion;
 use messaging_server::servidor::Servidor;
 
 fn main() {
-    if let Ok(config) = ArchivoConfiguracion::desde_argv() {
+    if let Ok(config) = Configuracion::desde_argv() {
         let mut servidor = Servidor::desde_configuracion(config);
 
         if let Some(ruta_archivo_cuentas) = servidor.configuracion.obtener::<String>("cuentas") {
