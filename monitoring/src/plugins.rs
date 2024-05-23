@@ -21,7 +21,7 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     Places::new(lugares)
 }
 
-fn estilo_incidente() -> Style{
+fn estilo_incidente() -> Style {
     Style {
         label_font: FontId::proportional(15.),
         label_color: Color32::WHITE,
