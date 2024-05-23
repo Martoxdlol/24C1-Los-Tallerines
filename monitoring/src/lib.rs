@@ -15,7 +15,7 @@ use std::{
 use egui::{Context, Ui};
 use lib::{
     camara,
-    incidente::{self, Incidente},
+    incidente::{Incidente},
 };
 use logica::{comando::Comando, estado::Estado};
 

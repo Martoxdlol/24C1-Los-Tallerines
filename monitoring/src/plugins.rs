@@ -1,5 +1,5 @@
 use crate::coordenadas::metros_a_pixeles_en_mapa;
-use egui::{Color32, FontId, Painter, Response, Stroke, Ui};
+use egui::{Color32, FontId, Painter, Response, Ui};
 use lib::{camara::Camara, coordenadas::Coordenadas, incidente::Incidente};
 use walkers::{
     extras::{Place, Places, Style},
