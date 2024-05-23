@@ -98,6 +98,7 @@ impl Aplicacion {
             enviar_comando,
             listar: Listar::Incidentes,
             accion_incidente: AccionIncidente::Crear,
+
         }
     }
 }
@@ -235,6 +236,9 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
                 aplicacion.accion_incidente = AccionIncidente::CambiarNombre(incidente.id);
 
                 }
+                if ui.button("Cambiar ubicacion").clicked() {
+                aplicacion.accion_incidente = AccionIncidente::CambiarUbicacion(incidente.id);
+                }
                 if ui.button("Cancelar").clicked() {
                 aplicacion.accion_incidente = AccionIncidente::Crear;
             }})
@@ -270,6 +274,28 @@ fn cambiar_nombre_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente:
             }
         });
 }
+
+fn cambiar_ubicacion(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente: &mut Incidente, clicked_at: walkers::Position){ 
+    egui::Window::new("Cambiar ubicación del incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(true)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.label(format!("Mover incidente a: {}, {}", clicked_at.lat(), clicked_at.lon()));
+            if ui.add_sized([350., 40.], egui::Button::new("Confirmar")).clicked() {
+                let mut incidente_nuevo = incidente.clone();
+                incidente_nuevo.lat = clicked_at.lat();
+                incidente_nuevo.lon = clicked_at.lon();
+                aplicacion.accion_incidente = AccionIncidente::Crear;
+
+                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+            }
+        });
+}
+
 
 
 fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
@@ -349,8 +375,10 @@ impl eframe::App for Aplicacion {
                         }
                     }
                     AccionIncidente::CambiarUbicacion(id) => {
-                        if let Some(incidente) = self.estado.incidente(id) {
-                            //cambiar_ubicacion(ui, &incidente, self);
+                        if let Some(mut incidente) = self.estado.incidente(id) {
+                            if let Some(clicked_at) = self.clicks.clicked_at {
+                            cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
+                            }
                         }
                     }
                 }
