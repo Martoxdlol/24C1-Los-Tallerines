@@ -14,10 +14,9 @@ impl TileSource for MapaCarto {
     }
 
     fn attribution(&self) -> Attribution {
-        // Se debe llamar attribution
         Attribution {
-            text: "Repo github",
-            url: "https://github.com/taller-1-fiuba-rust/24C1-Los-Tallerines/tree/interfaz_grafica",
+            text: "CARTO Attribution",
+            url: "https://carto.com/attribution",
             logo_light: None,
             logo_dark: None,
         }
