@@ -38,9 +38,9 @@ impl Estado {
     }
 
     pub fn incidentes(&self) -> Vec<Incidente> {
-       let mut v: Vec<Incidente>= self.incidentes.values().cloned().collect();
-       v.sort_by(|a,b| b.inicio.cmp(&a.inicio));
-       v
+        let mut v: Vec<Incidente> = self.incidentes.values().cloned().collect();
+        v.sort_by(|a, b| b.inicio.cmp(&a.inicio));
+        v
     }
 
     pub fn camaras(&self) -> Vec<Camara> {
