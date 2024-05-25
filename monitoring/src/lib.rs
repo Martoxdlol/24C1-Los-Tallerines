@@ -201,7 +201,7 @@ fn lista_de_incidentes_actuales(
             .show(ui.ctx(), |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for incidente in incidentes {
-                        let nombre = format!("{}", incidente.detalle,);
+                        let nombre = incidente.detalle.to_string();
 
                         ui.scope(|ui| {
                             ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
@@ -251,7 +251,7 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
                     aplicacion.accion_incidente = AccionIncidente::Crear;
                 }
                 if ui.button("Modificar detalle").clicked() {
-                    aplicacion.detalle_incidente = incidente.detalle.clone();
+                    aplicacion.detalle_incidente.clone_from(&incidente.detalle);
                     aplicacion.accion_incidente = AccionIncidente::CambiarDetalle(incidente.id);
                 }
                 ui.end_row();
@@ -286,7 +286,7 @@ fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente
                     .clicked()
             {
                 let mut incidente_nuevo = incidente.clone();
-                incidente_nuevo.detalle = aplicacion.detalle_incidente.clone();
+                incidente_nuevo.detalle.clone_from(&aplicacion.detalle_incidente);
                 aplicacion.detalle_incidente.clear();
                 aplicacion.accion_incidente = AccionIncidente::Crear;
 
