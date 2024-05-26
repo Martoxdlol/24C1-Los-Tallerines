@@ -1,5 +1,5 @@
 use crate::coordenadas::metros_a_pixeles_en_mapa;
-use egui::{Color32, Painter, Response, Ui};
+use egui::{Color32, FontId, Painter, Response, Ui};
 use lib::{camara::Camara, coordenadas::Coordenadas, incidente::Incidente};
 use walkers::{
     extras::{Place, Places, Style},
@@ -15,10 +15,19 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
             position: Position::from_lat_lon(incidente.posicion().lat, incidente.posicion().lon),
             label: incidente.detalle.clone(),
             symbol: '🚨',
-            style: Style::default(),
+            style: estilo_incidente(),
         });
     }
     Places::new(lugares)
+}
+
+fn estilo_incidente() -> Style {
+    Style {
+        label_font: FontId::proportional(15.),
+        label_color: Color32::WHITE,
+        symbol_background: Color32::RED,
+        ..Default::default()
+    }
 }
 
 /// Los lugares. Los iconos

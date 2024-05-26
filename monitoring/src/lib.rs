@@ -12,13 +12,14 @@ use std::{
 
 //use iconos::incidente;
 
-use egui::{Context, Ui};
+use chrono::DateTime;
+use egui::{Color32, Context, Ui};
 use lib::{camara, incidente::Incidente};
 use logica::{comando::Comando, estado::Estado};
 
 use crate::plugins::ClickWatcher;
 use proveer_carto::MapaCarto;
-use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
+use walkers::{HttpOptions, Map, MapMemory, Position, Tiles, TilesManager};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Provider {
@@ -30,6 +31,13 @@ pub enum Provider {
 pub enum Listar {
     Incidentes,
     Camaras,
+}
+
+pub enum AccionIncidente {
+    Crear,
+    Modificar(u64),
+    CambiarDetalle(u64),
+    CambiarUbicacion(u64),
 }
 
 fn http_options() -> HttpOptions {
@@ -63,12 +71,13 @@ pub struct Aplicacion {
     opciones_mapa: HashMap<Provider, Box<dyn TilesManager + Send>>,
     estilo_mapa_elegido: Provider,
     memoria_mapa: MapMemory, // guarda el zoom, la posicion, el centro del mapa
-    nombre_incidente: String, // El input de cuando lo creas.
+    detalle_incidente: String, // El input de cuando lo creas.
     clicks: plugins::ClickWatcher,
     estado: Estado,
     recibir_estado: Receiver<Estado>,
     enviar_comando: Sender<Comando>,
     listar: Listar,
+    accion_incidente: AccionIncidente,
 }
 
 impl Aplicacion {
@@ -84,11 +93,12 @@ impl Aplicacion {
             estilo_mapa_elegido: Provider::CartoMaps,
             memoria_mapa: MapMemory::default(),
             clicks: Default::default(),
-            nombre_incidente: String::new(),
+            detalle_incidente: String::new(),
             estado: Estado::new(),
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
+            accion_incidente: AccionIncidente::Crear,
         }
     }
 }
@@ -104,24 +114,24 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
             ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
 
             ui.add_sized([350., 40.], |ui: &mut Ui| {
-                ui.text_edit_multiline(&mut aplicacion.nombre_incidente)
+                ui.text_edit_multiline(&mut aplicacion.detalle_incidente)
             });
 
-            if !aplicacion.nombre_incidente.trim().is_empty()
+            if !aplicacion.detalle_incidente.trim().is_empty()
                 && ui
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
-                // TODO: ID Y TIMESTAMP
+                // TODO: TIMESTAMP
                 let incidente = Incidente::new(
                     0,
-                    aplicacion.nombre_incidente.clone(),
+                    aplicacion.detalle_incidente.clone(),
                     clicked_at.lat(),
                     clicked_at.lon(),
-                    1,
+                    chrono::offset::Local::now().timestamp_millis() as u64,
                 );
 
-                aplicacion.nombre_incidente.clear();
+                aplicacion.detalle_incidente.clear();
 
                 aplicacion.clicks.clear();
 
@@ -191,18 +201,133 @@ fn lista_de_incidentes_actuales(
             .show(ui.ctx(), |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for incidente in incidentes {
-                        let nombre = format!("{}: {}", '🚨', incidente.detalle);
+                        let nombre = incidente.detalle.to_string();
 
-                        if ui
-                            .add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre))
-                            .clicked()
-                        {
-                            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                        }
+                        ui.scope(|ui| {
+                            ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                                Color32::TRANSPARENT;
+                            if ui
+                                .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
+                                .clicked()
+                            {
+                                aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
+                                    incidente.lat,
+                                    incidente.lon,
+                                ));
+                                aplicacion.accion_incidente =
+                                    AccionIncidente::Modificar(incidente.id);
+                            }
+                        });
                     }
                 });
             });
     }
+}
+
+fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
+    egui::Window::new("Modificar Incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(false)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.label(format!("Incidente: {}", incidente.detalle));
+            ui.label(format!("En: {}, {}", incidente.lat, incidente.lon));
+            let dt = DateTime::from_timestamp_millis(incidente.inicio as i64);
+
+            let fecha = match dt {
+                Some(fecha) => fecha.format("%d/%m/%Y %H:%M:%S").to_string(),
+                None => "".to_string(),
+            };
+
+            ui.label(fecha);
+            ui.label("Estado: activo");
+
+            egui::Grid::new("some_unique_id").show(ui, |ui| {
+                if ui.button("Finalizar incidente").clicked() {
+                    Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                    aplicacion.detalle_incidente.clear();
+                    aplicacion.accion_incidente = AccionIncidente::Crear;
+                }
+                if ui.button("Modificar detalle").clicked() {
+                    aplicacion.detalle_incidente.clone_from(&incidente.detalle);
+                    aplicacion.accion_incidente = AccionIncidente::CambiarDetalle(incidente.id);
+                }
+                ui.end_row();
+
+                if ui.button("Cambiar ubicacion").clicked() {
+                    aplicacion.accion_incidente = AccionIncidente::CambiarUbicacion(incidente.id);
+                }
+                if ui.button("Cancelar").clicked() {
+                    aplicacion.detalle_incidente.clear();
+                    aplicacion.accion_incidente = AccionIncidente::Crear;
+                }
+                ui.end_row();
+            });
+        });
+}
+
+fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente: &mut Incidente) {
+    egui::Window::new("Modificar Incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(false)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.add_sized([350., 40.], |ui: &mut Ui| {
+                ui.text_edit_multiline(&mut aplicacion.detalle_incidente)
+            });
+
+            if !aplicacion.detalle_incidente.trim().is_empty()
+                && ui
+                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                    .clicked()
+            {
+                let mut incidente_nuevo = incidente.clone();
+                incidente_nuevo.detalle.clone_from(&aplicacion.detalle_incidente);
+                aplicacion.detalle_incidente.clear();
+                aplicacion.accion_incidente = AccionIncidente::Crear;
+
+                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+            }
+        });
+}
+
+fn cambiar_ubicacion(
+    ui: &mut Ui,
+    aplicacion: &mut Aplicacion,
+    incidente: &mut Incidente,
+    clicked_at: walkers::Position,
+) {
+    egui::Window::new("Cambiar ubicación del incidente")
+        .collapsible(false)
+        .movable(true)
+        .resizable(true)
+        .collapsible(true)
+        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+        .show(ui.ctx(), |ui| {
+            ui.label(format!(
+                "Mover incidente a: {}, {}",
+                clicked_at.lat(),
+                clicked_at.lon()
+            ));
+            if ui
+                .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                .clicked()
+            {
+                let mut incidente_nuevo = incidente.clone();
+                incidente_nuevo.lat = clicked_at.lat();
+                incidente_nuevo.lon = clicked_at.lon();
+                aplicacion.detalle_incidente.clear();
+                aplicacion.accion_incidente = AccionIncidente::Crear;
+
+                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+            }
+        });
 }
 
 fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
@@ -214,10 +339,16 @@ fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
         .anchor(egui::Align2::RIGHT_BOTTOM, [-10., -10.])
         .show(ui.ctx(), |ui| {
             egui::ScrollArea::horizontal().show(ui, |ui| {
-                if ui.button("Incidentes").clicked() {
+                if ui
+                    .add_sized([100., 20.], egui::Button::new("Incidentes"))
+                    .clicked()
+                {
                     aplicacion.listar = Listar::Incidentes;
                 }
-                if ui.button("Camaras").clicked() {
+                if ui
+                    .add_sized([100., 20.], egui::Button::new("Camaras"))
+                    .clicked()
+                {
                     aplicacion.listar = Listar::Camaras;
                 }
             });
@@ -264,8 +395,29 @@ impl eframe::App for Aplicacion {
                     self.clicks.mostrar_posicion(ui);
                 }
 
-                if let Some(clicked_at) = self.clicks.clicked_at {
-                    agregar_incidente(ui, clicked_at, self);
+                match self.accion_incidente {
+                    AccionIncidente::Crear => {
+                        if let Some(clicked_at) = self.clicks.clicked_at {
+                            agregar_incidente(ui, clicked_at, self);
+                        }
+                    }
+                    AccionIncidente::Modificar(id) => {
+                        if let Some(incidente) = self.estado.incidente(id) {
+                            modificar_incidente(ui, &incidente, self);
+                        }
+                    }
+                    AccionIncidente::CambiarDetalle(id) => {
+                        if let Some(mut incidente) = self.estado.incidente(id) {
+                            cambiar_detalle_incidente(ui, self, &mut incidente);
+                        }
+                    }
+                    AccionIncidente::CambiarUbicacion(id) => {
+                        if let Some(mut incidente) = self.estado.incidente(id) {
+                            if let Some(clicked_at) = self.clicks.clicked_at {
+                                cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
+                            }
+                        }
+                    }
                 }
                 listar(ui, self);
 
