@@ -20,6 +20,7 @@ use self::{comando::Comando, estado::Estado};
 pub mod comando;
 pub mod estado;
 
+/// Sistema de monitoreo.
 pub struct Sistema {
     pub estado: Estado,
     pub configuracion: Configuracion,
@@ -28,6 +29,7 @@ pub struct Sistema {
     proximo_id_incidente: u64,
 }
 
+/// Crea un nuevo sistema e intenta iniciarlo.
 pub fn intentar_iniciar_sistema(
     recibir_comando: Receiver<Comando>,
     enviar_estado: Sender<Estado>,
@@ -95,7 +97,7 @@ impl Sistema {
         }
     }
 
-    /// Conectar el cliente
+    /// Conectar el cliente con usuario y contraeña.
     fn conectar(&self) -> io::Result<Cliente> {
         let direccion = self
             .configuracion
@@ -114,6 +116,7 @@ impl Sistema {
         }
     }
 
+    /// Publica el estado general del sistema y lo guarda en un archivo
     fn publicar_y_guardar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
         let incidentes = self.estado.incidentes();
         let bytes = serializar_vec(&incidentes);
@@ -121,6 +124,7 @@ impl Sistema {
         cliente.publicar("incidentes", &bytes, None)
     }
 
+    /// Guarda los incidente serializados en un csv.
     fn guardar_incidentes(&self) -> io::Result<()> {
         let ruta_archivo_incidentes = self
             .configuracion
@@ -131,6 +135,9 @@ impl Sistema {
         guardar_serializable(&incidentes, &ruta_archivo_incidentes)
     }
 
+    /// Carga los incidentes al inicializarse desde un csv.
+    /// 
+    /// Si no existe, lo crea y no se vera ningún incidente al iniciar.
     fn cargar_incidentes(&mut self) -> io::Result<()> {
         let ruta_archivo_incidentes = self
             .configuracion
@@ -176,7 +183,7 @@ impl Sistema {
         Ok(())
     }
 
-    /// Lee incidentes desde el servidor de NATS
+    /// Lee cámaras desde el servidor de NATS
     /// y los procesa. Cambia el estado del sistema
     fn leer_camaras(
         &mut self,
@@ -224,6 +231,7 @@ impl Sistema {
         Ok(())
     }
 
+    /// Lee comandos remotos desde el servidor de NATS y los procesa.
     fn leer_comandos_remotos(
         &mut self,
         cliente: &Cliente,
@@ -242,12 +250,14 @@ impl Sistema {
         Ok(())
     }
 
+    /// Publica un nuevo incidente en el servidor de NATS.
     fn publicar_nuevo_incidente(&self, cliente: &Cliente, incidente: &Incidente) -> io::Result<()> {
         let bytes = incidente.serializar();
         let topico = format!("incidentes.{}.creado", incidente.id);
         cliente.publicar(&topico, &bytes, None)
     }
 
+    /// Publica un incidente finalizado en el servidor de NATS.
     fn publicar_incidente_finalizado(
         &self,
         cliente: &Cliente,
@@ -258,6 +268,7 @@ impl Sistema {
         cliente.publicar(&topico, &bytes, None)
     }
 
+    /// Actualiza el estado de la interfaz de usuario
     fn actualizar_estado_ui(&self) -> io::Result<()> {
         self.enviar_estado.send(self.estado.clone()).map_err(|e| {
             io::Error::new(
@@ -267,38 +278,9 @@ impl Sistema {
         })
     }
 
+    /// Solicita la actualización de las cámaras al servidor de NATS. 
     fn solicitar_actualizacion_camaras(&self, cliente: &Cliente) -> io::Result<()> {
         cliente.publicar("comandos.camaras", b"actualizar", None)
     }
 }
 
-// pub fn iniciar_hilo_logica(recibir_comando: Receiver<Comando>, enviar_estado: Sender<Estado>) {
-//     thread::spawn(move || inicio(recibir_comando, enviar_estado));
-// }
-
-// pub fn inicio(recibir_comando: Receiver<Comando>, enviar_estado: Sender<Estado>) {
-//     let mut estado = Estado::new();
-
-//     loop {
-//         if let Err(e) = inicio_conexion(&mut estado, &recibir_comando, &enviar_estado) {
-//             println!("Error: {}", e);
-//         }
-//     }
-// }
-
-// pub fn inicio_conexion(
-//     estado: &mut Estado,
-//     recibir_comando: &Receiver<Comando>,
-//     enviar_estado: &Sender<Estado>,
-// ) -> Result<(), String> {
-//     loop {
-//         if let Ok(comando) = recibir_comando.try_recv() {
-//             match comando {
-//                 Comando::NuevoIncidente(incidente) => {
-//                     estado.agregar_incidente(incidente);
-//                     let _ = enviar_estado.send(estado.clone());
-//                 }
-//             }
-//         }
-//     }
-// }
