@@ -286,7 +286,9 @@ fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente
                     .clicked()
             {
                 let mut incidente_nuevo = incidente.clone();
-                incidente_nuevo.detalle.clone_from(&aplicacion.detalle_incidente);
+                incidente_nuevo
+                    .detalle
+                    .clone_from(&aplicacion.detalle_incidente);
                 aplicacion.detalle_incidente.clear();
                 aplicacion.accion_incidente = AccionIncidente::Crear;
 

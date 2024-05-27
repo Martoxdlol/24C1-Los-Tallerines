@@ -87,7 +87,7 @@ impl Configuracion {
     /// Ejemplo:
     /// ```
     /// use lib::configuracion::Configuracion;
-    /// 
+    ///
     /// let args = &["clave1=valor1", "clave2=valor2"];
     /// let config = Configuracion::desde_parametros(args);
     ///

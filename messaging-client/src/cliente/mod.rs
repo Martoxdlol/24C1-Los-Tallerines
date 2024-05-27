@@ -104,10 +104,15 @@ impl Cliente {
     }
 
     pub fn peticion(&mut self, subject: &str, body: &[u8]) -> io::Result<Publicacion> {
-        if let Some(publicacion) = self.peticion_tiempo_limite_o_header(subject, body, None, None)? {
+        if let Some(publicacion) =
+            self.peticion_tiempo_limite_o_header(subject, body, None, None)?
+        {
             Ok(publicacion)
         } else {
-            Err(io::Error::new(io::ErrorKind::Other, "No se recibió respuesta".to_string()))
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "No se recibió respuesta".to_string(),
+            ))
         }
     }
 
@@ -126,10 +131,15 @@ impl Cliente {
         header: &[u8],
         body: &[u8],
     ) -> io::Result<Publicacion> {
-        if let Some(publicacion) = self.peticion_tiempo_limite_o_header(subject, body, Some(header), None)? {
+        if let Some(publicacion) =
+            self.peticion_tiempo_limite_o_header(subject, body, Some(header), None)?
+        {
             Ok(publicacion)
         } else {
-            Err(io::Error::new(io::ErrorKind::Other, "No se recibió respuesta".to_string()))
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "No se recibió respuesta".to_string(),
+            ))
         }
     }
 
@@ -161,10 +171,10 @@ impl Cliente {
 
         if let Some(tiempo_limite) = tiempo_limite {
             let publicacion = suscripcion.leer_con_limite_de_tiempo(tiempo_limite)?;
-            return Ok(publicacion);
+            Ok(publicacion)
         } else {
             let publicacion = suscripcion.leer()?;
-            return Ok(Some(publicacion));
+            Ok(Some(publicacion))
         }
     }
 
