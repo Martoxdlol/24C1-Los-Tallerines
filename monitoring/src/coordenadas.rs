@@ -1,5 +1,7 @@
 use walkers::{Position, Projector};
 
+
+/// Convierte grados a pixeles
 pub fn grados_a_pixeles(position: &Position, projector: &Projector) -> f32 {
     let p2 = Position::from_lat_lon(position.lat(), position.lon() + 1.);
 
@@ -9,6 +11,7 @@ pub fn grados_a_pixeles(position: &Position, projector: &Projector) -> f32 {
     p2_en_pantalla.x - p1_en_pantalla.x
 }
 
+/// Calcula la distancia entre dos coordenadas
 pub fn distancia_coordenadas(p1: &Position, p2: &Position) -> f64 {
     let lat1 = p1.lat();
     let lon1 = p1.lon();
@@ -30,6 +33,7 @@ pub fn distancia_coordenadas(p1: &Position, p2: &Position) -> f64 {
     6_371_000.0 * c
 }
 
+/// Convierte metros a pixeles en el mapa
 pub fn metros_a_pixeles_en_mapa(position: &Position, projector: &Projector) -> f64 {
     let p2 = Position::from_lat_lon(position.lat(), position.lon() + 1.);
     let metros_un_grado = distancia_coordenadas(position, &p2);
