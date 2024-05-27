@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 lib = { path = "../lib" }
+nuid = "0.5.0"

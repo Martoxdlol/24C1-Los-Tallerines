@@ -8,6 +8,7 @@ use std::{
     net::TcpStream,
     sync::mpsc::{channel, Sender},
     thread::{self, JoinHandle},
+    time::Duration,
 };
 
 use self::{
@@ -96,6 +97,85 @@ impl Cliente {
         }
 
         Ok(())
+    }
+
+    pub fn nuevo_inbox(&self) -> String {
+        format!("_INBOX.{}", nuid::next())
+    }
+
+    pub fn peticion(&mut self, subject: &str, body: &[u8]) -> io::Result<Publicacion> {
+        if let Some(publicacion) =
+            self.peticion_tiempo_limite_o_header(subject, body, None, None)?
+        {
+            Ok(publicacion)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "No se recibió respuesta".to_string(),
+            ))
+        }
+    }
+
+    pub fn peticion_tiempo_limite(
+        &mut self,
+        subject: &str,
+        body: &[u8],
+        tiempo_limite: Duration,
+    ) -> io::Result<Option<Publicacion>> {
+        self.peticion_tiempo_limite_o_header(subject, body, None, Some(tiempo_limite))
+    }
+
+    pub fn peticion_con_header(
+        &mut self,
+        subject: &str,
+        header: &[u8],
+        body: &[u8],
+    ) -> io::Result<Publicacion> {
+        if let Some(publicacion) =
+            self.peticion_tiempo_limite_o_header(subject, body, Some(header), None)?
+        {
+            Ok(publicacion)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "No se recibió respuesta".to_string(),
+            ))
+        }
+    }
+
+    pub fn peticion_tiempo_limite_con_header(
+        &mut self,
+        subject: &str,
+        body: &[u8],
+        header: &[u8],
+        tiempo_limite: Duration,
+    ) -> io::Result<Option<Publicacion>> {
+        self.peticion_tiempo_limite_o_header(subject, body, Some(header), Some(tiempo_limite))
+    }
+
+    fn peticion_tiempo_limite_o_header(
+        &mut self,
+        subject: &str,
+        body: &[u8],
+        header: Option<&[u8]>,
+        tiempo_limite: Option<Duration>,
+    ) -> io::Result<Option<Publicacion>> {
+        let inbox = self.nuevo_inbox();
+        let suscripcion = self.suscribirse(&inbox, None)?;
+
+        if let Some(header) = header {
+            self.publicar_con_header(subject, body, header, Some(&inbox))?;
+        } else {
+            self.publicar(subject, body, Some(&inbox))?;
+        }
+
+        if let Some(tiempo_limite) = tiempo_limite {
+            let publicacion = suscripcion.leer_con_limite_de_tiempo(tiempo_limite)?;
+            Ok(publicacion)
+        } else {
+            let publicacion = suscripcion.leer()?;
+            Ok(Some(publicacion))
+        }
     }
 
     pub fn suscribirse(
