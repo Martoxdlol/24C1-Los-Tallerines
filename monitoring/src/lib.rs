@@ -10,8 +10,6 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-//use iconos::incidente;
-
 use chrono::DateTime;
 use egui::{Color32, Context, Ui};
 use lib::{camara, incidente::Incidente};
@@ -27,12 +25,13 @@ pub enum Provider {
     Geoportal,
     CartoMaps,
 }
-
+/// Enum para saber si se listan incidentes o cámaras.
 pub enum Listar {
     Incidentes,
     Camaras,
 }
 
+/// Enum para la ventana de la esquina superior izquierda.
 pub enum AccionIncidente {
     Crear,
     Modificar(u64),
@@ -40,6 +39,7 @@ pub enum AccionIncidente {
     CambiarUbicacion(u64),
 }
 
+/// Opciones de HTTP para el proveedor de mapas.
 fn http_options() -> HttpOptions {
     HttpOptions {
         // Not sure where to put cache on Android, so it will be disabled for now.
@@ -52,6 +52,7 @@ fn http_options() -> HttpOptions {
     }
 }
 
+/// Estilos de mapa disponibles.
 fn estilo_mapa(contexto: Context) -> HashMap<Provider, Box<dyn TilesManager + Send>> {
     let mut providers: HashMap<Provider, Box<dyn TilesManager + Send>> = HashMap::default();
 
@@ -67,6 +68,7 @@ fn estilo_mapa(contexto: Context) -> HashMap<Provider, Box<dyn TilesManager + Se
     providers
 }
 
+/// Aplicación de monitoreo. UI.
 pub struct Aplicacion {
     opciones_mapa: HashMap<Provider, Box<dyn TilesManager + Send>>,
     estilo_mapa_elegido: Provider,
@@ -103,6 +105,9 @@ impl Aplicacion {
     }
 }
 
+/// Ventana para agregar un incidente.
+///
+/// Accion_incidente debe ser Crear.
 fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mut Aplicacion) {
     egui::Window::new("Agregar Incidente")
         .collapsible(false)
@@ -122,7 +127,7 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
-                // TODO: TIMESTAMP
+                // Creo el incidente
                 let incidente = Incidente::new(
                     0,
                     aplicacion.detalle_incidente.clone(),
@@ -135,11 +140,13 @@ fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mu
 
                 aplicacion.clicks.clear();
 
+                // Envio el comando.
                 Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente);
             }
         });
 }
 
+/// Muestra los incidentes y las cámaras en el mapa.
 fn mostrado_incidentes_y_camaras<'a>(
     mapa_a_mostrar: Map<'a, 'a, 'a>,
     estado: &Estado,
@@ -158,6 +165,10 @@ fn mostrado_incidentes_y_camaras<'a>(
         .with_plugin(clicks)
 }
 
+/// Lista de cámaras en la esquina superior derecha.
+///
+/// Muestra el id de la cámara y si está activa o en ahorro.
+/// Listar tiene que estar en Cámaras.
 fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
     if !camaras.is_empty() {
         egui::Window::new("Lista de cámaras")
@@ -178,6 +189,7 @@ fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
     }
 }
 
+/// Convierte el estado de la cámara a un string.
 fn estado_camara_a_string(camara: &camara::Camara) -> String {
     if camara.activa() {
         "Activa".to_string()
@@ -186,6 +198,10 @@ fn estado_camara_a_string(camara: &camara::Camara) -> String {
     }
 }
 
+/// Lista de incidentes en la esquina superior derecha.
+///
+/// Muestra el detalle del incidente.
+/// Listar tiene que estar en Incidentes.
 fn lista_de_incidentes_actuales(
     ui: &mut Ui,
     incidentes: &[Incidente],
@@ -210,10 +226,12 @@ fn lista_de_incidentes_actuales(
                                 .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
                                 .clicked()
                             {
+                                // Si clickeas el incidente te lleva a esa posición.
                                 aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
                                     incidente.lat,
                                     incidente.lon,
                                 ));
+                                // Cambia la AccionIncidente a Modificar.
                                 aplicacion.accion_incidente =
                                     AccionIncidente::Modificar(incidente.id);
                             }
@@ -224,6 +242,10 @@ fn lista_de_incidentes_actuales(
     }
 }
 
+/// Ventana para modificar un incidente.
+///
+/// Accion_incidente debe ser Modificar.
+/// Te da todas las opciones para modificar un incidente.
 fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
     egui::Window::new("Modificar Incidente")
         .collapsible(false)
@@ -236,6 +258,7 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
             ui.label(format!("En: {}, {}", incidente.lat, incidente.lon));
             let dt = DateTime::from_timestamp_millis(incidente.inicio as i64);
 
+            // muestra la fecha del incidente.
             let fecha = match dt {
                 Some(fecha) => fecha.format("%d/%m/%Y %H:%M:%S").to_string(),
                 None => "".to_string(),
@@ -244,6 +267,7 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
             ui.label(fecha);
             ui.label("Estado: activo");
 
+            // Botones para finalizar, modificar detalle, cambiar ubicación y cancelar.
             egui::Grid::new("some_unique_id").show(ui, |ui| {
                 if ui.button("Finalizar incidente").clicked() {
                     Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
@@ -256,7 +280,7 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
                 }
                 ui.end_row();
 
-                if ui.button("Cambiar ubicacion").clicked() {
+                if ui.button("Modificar ubicacion").clicked() {
                     aplicacion.accion_incidente = AccionIncidente::CambiarUbicacion(incidente.id);
                 }
                 if ui.button("Cancelar").clicked() {
@@ -268,6 +292,8 @@ fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Apli
         });
 }
 
+/// Ventana para cambiar el detalle de un incidente.
+/// Aparece en la esquina superior izquierda si accion_incidente es CambiarDetalle.
 fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente: &mut Incidente) {
     egui::Window::new("Modificar Incidente")
         .collapsible(false)
@@ -285,6 +311,7 @@ fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
             {
+                // Creo un incidente nuevo con el detalle cambiado.
                 let mut incidente_nuevo = incidente.clone();
                 incidente_nuevo
                     .detalle
@@ -298,6 +325,9 @@ fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente
         });
 }
 
+/// Ventana para cambiar la ubicación de un incidente.
+///
+/// Aparece en la esquina superior izquierda si accion_incidente es CambiarUbicacion.
 fn cambiar_ubicacion(
     ui: &mut Ui,
     aplicacion: &mut Aplicacion,
@@ -320,6 +350,7 @@ fn cambiar_ubicacion(
                 .add_sized([350., 40.], egui::Button::new("Confirmar"))
                 .clicked()
             {
+                // Creo un incidente nuevo con la ubicación cambiada.
                 let mut incidente_nuevo = incidente.clone();
                 incidente_nuevo.lat = clicked_at.lat();
                 incidente_nuevo.lon = clicked_at.lon();
@@ -332,6 +363,9 @@ fn cambiar_ubicacion(
         });
 }
 
+/// Ventana para elegir si listar incidentes o cámaras.
+///
+/// Aparece en la esquina  inferior derecha.
 fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
     egui::Window::new("📝")
         .collapsible(false)
@@ -358,6 +392,7 @@ fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
 }
 
 impl eframe::App for Aplicacion {
+    /// Lo que ocurre cada vez que actualizamos
     fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
         let frame = egui::Frame {
             fill: contexto.style().visuals.panel_fill,
@@ -386,10 +421,8 @@ impl eframe::App for Aplicacion {
                 let mapa_final =
                     mostrado_incidentes_y_camaras(mapa_a_mostrar, &self.estado, &mut self.clicks);
 
-                // Draw the map widget.
                 ui.add(mapa_final);
 
-                // Draw utility windows.
                 {
                     use botones_mover_mapa::*;
 
@@ -397,6 +430,7 @@ impl eframe::App for Aplicacion {
                     self.clicks.mostrar_posicion(ui);
                 }
 
+                // Que mostrar en la esquina superior izquierda.
                 match self.accion_incidente {
                     AccionIncidente::Crear => {
                         if let Some(clicked_at) = self.clicks.clicked_at {
@@ -421,8 +455,10 @@ impl eframe::App for Aplicacion {
                         }
                     }
                 }
+                // Esquina inferior derecha.
                 listar(ui, self);
 
+                // Que mostrar en la esquina superior derecha.
                 match self.listar {
                     Listar::Incidentes => {
                         lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self)

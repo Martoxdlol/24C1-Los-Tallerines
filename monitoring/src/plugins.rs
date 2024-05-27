@@ -6,7 +6,7 @@ use walkers::{
     Plugin, Position, Projector,
 };
 
-/// Los lugares. Los iconos
+/// Muestra los incidentes en el mapa
 pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     let mut lugares = Vec::new();
 
@@ -21,6 +21,7 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     Places::new(lugares)
 }
 
+/// El estilo especial de los incidentes. Que sean rojos, letra más grande, etc.
 fn estilo_incidente() -> Style {
     Style {
         label_font: FontId::proportional(15.),
@@ -30,7 +31,7 @@ fn estilo_incidente() -> Style {
     }
 }
 
-/// Los lugares. Los iconos
+/// Muestra las camaras en el mapa según su estado
 pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
     let mut lugares = Vec::new();
 
@@ -52,11 +53,14 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
     Places::new(lugares)
 }
 
-/// Sample map plugin which draws custom stuff on the map.
+/// Sombreado circular en el mapa. Sirve para marcar el rango de las cámaras.
+///
+/// Futuramente va a marcar el rango de los drones.
 pub struct SombreadoCircular {
     pub posiciones: Vec<(Coordenadas, f64, bool)>,
 }
 
+/// Muestra el sombreado circular en el mapa según el estado de las cámaras.
 impl Plugin for SombreadoCircular {
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
         for (coordenadas, radio_metros, activa) in &self.posiciones {
@@ -77,6 +81,7 @@ impl Plugin for SombreadoCircular {
     }
 }
 
+/// Color del círculo según si la cámara está activa o no.
 fn color_circulo(activa: bool, mouse_encima: bool) -> Color32 {
     if activa {
         Color32::LIGHT_GREEN.gamma_multiply(if mouse_encima { 0.4 } else { 0.3 })
@@ -86,10 +91,12 @@ fn color_circulo(activa: bool, mouse_encima: bool) -> Color32 {
 }
 
 #[derive(Default, Clone)]
+/// Posición donde hiciste click dentro de la aplicación.
 pub struct ClickWatcher {
     pub clicked_at: Option<Position>,
 }
 
+/// Muestra la posición donde hiciste click en la aplicación.
 fn posicion_click(ui: &mut Ui, clicked_at: Position) {
     ui.label(format!(
         "lat, lon: {:.04} {:.04}",
@@ -99,6 +106,7 @@ fn posicion_click(ui: &mut Ui, clicked_at: Position) {
     .on_hover_text("Posición donde hiciste click");
 }
 
+/// Botón para cerrar la ventana posición_click.
 fn click_cerrar(ui: &mut Ui, clickwatcher: &mut ClickWatcher) {
     if ui.button("Cerrar").clicked() {
         clickwatcher.clear()
@@ -106,7 +114,7 @@ fn click_cerrar(ui: &mut Ui, clickwatcher: &mut ClickWatcher) {
 }
 
 impl ClickWatcher {
-    // Donde hiciste click
+    // Cartel donde aoarece la posición clikeada y un botón para cerrarlo.
     pub fn mostrar_posicion(&mut self, ui: &Ui) {
         if let Some(clicked_at) = self.clicked_at {
             egui::Window::new("Posicion clickeada")
@@ -123,12 +131,14 @@ impl ClickWatcher {
         }
     }
 
+    /// Limpia la posición clickeada.
     pub fn clear(&mut self) {
         self.clicked_at = None;
     }
 }
 
 impl Plugin for &mut ClickWatcher {
+    /// Muestra un puntero con la posición donde hiciste click.
     fn run(&mut self, response: &Response, painter: Painter, projector: &Projector) {
         if !response.changed() && response.clicked_by(egui::PointerButton::Primary) {
             self.clicked_at = response

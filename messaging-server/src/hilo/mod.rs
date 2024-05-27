@@ -26,7 +26,7 @@ pub struct Hilo {
     canal_recibir_instrucciones: Receiver<Instruccion>,
     /// Suscripciones de este hilo
     suscripciones: Suscripciones,
-    /// Retgisrador de eventos
+    /// Registrador de eventos
     registrador: Registrador,
     /// Conexiones de este hilo
     conexiones: HashMap<IdConexion, Conexion>,
