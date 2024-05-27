@@ -136,7 +136,7 @@ impl Sistema {
     }
 
     /// Carga los incidentes al inicializarse desde un csv.
-    /// 
+    ///
     /// Si no existe, lo crea y no se vera ningún incidente al iniciar.
     fn cargar_incidentes(&mut self) -> io::Result<()> {
         let ruta_archivo_incidentes = self
@@ -278,9 +278,8 @@ impl Sistema {
         })
     }
 
-    /// Solicita la actualización de las cámaras al servidor de NATS. 
+    /// Solicita la actualización de las cámaras al servidor de NATS.
     fn solicitar_actualizacion_camaras(&self, cliente: &Cliente) -> io::Result<()> {
         cliente.publicar("comandos.camaras", b"actualizar", None)
     }
 }
-

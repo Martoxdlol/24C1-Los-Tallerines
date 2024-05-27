@@ -23,29 +23,29 @@ impl Estado {
         }
     }
 
-    /// Agrega un incidente en el estado. 
-    /// 
+    /// Agrega un incidente en el estado.
+    ///
     /// Se usa cuando se genera un incidente.
     pub fn cargar_incidente(&mut self, incidente: Incidente) {
         self.incidentes.insert(incidente.id, incidente);
     }
 
     /// Elimina un incidente en el estado.
-    /// 
+    ///
     /// Se usa cuando se finaliza un incidente.
     pub fn finalizar_incidente(&mut self, id: &u64) -> Option<Incidente> {
         self.incidentes.remove(id)
     }
 
     /// Agrega una cámara en el estado.
-    /// 
+    ///
     /// Se usa cuando se conecta una cámara.
     pub fn conectar_camara(&mut self, camara: Camara) {
         self.camaras.insert(camara.id, camara);
     }
 
     /// Elimina una cámara en el estado.
-    /// 
+    ///
     /// Se usa cuando se desconecta una cámara.
     pub fn desconectar_camara(&mut self, id: &u64) -> Option<Camara> {
         self.camaras.remove(id)

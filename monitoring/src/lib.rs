@@ -106,7 +106,7 @@ impl Aplicacion {
 }
 
 /// Ventana para agregar un incidente.
-/// 
+///
 /// Accion_incidente debe ser Crear.
 fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mut Aplicacion) {
     egui::Window::new("Agregar Incidente")
@@ -166,7 +166,7 @@ fn mostrado_incidentes_y_camaras<'a>(
 }
 
 /// Lista de cámaras en la esquina superior derecha.
-/// 
+///
 /// Muestra el id de la cámara y si está activa o en ahorro.
 /// Listar tiene que estar en Cámaras.
 fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
@@ -199,7 +199,7 @@ fn estado_camara_a_string(camara: &camara::Camara) -> String {
 }
 
 /// Lista de incidentes en la esquina superior derecha.
-/// 
+///
 /// Muestra el detalle del incidente.
 /// Listar tiene que estar en Incidentes.
 fn lista_de_incidentes_actuales(
@@ -243,7 +243,7 @@ fn lista_de_incidentes_actuales(
 }
 
 /// Ventana para modificar un incidente.
-/// 
+///
 /// Accion_incidente debe ser Modificar.
 /// Te da todas las opciones para modificar un incidente.
 fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
@@ -313,7 +313,9 @@ fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente
             {
                 // Creo un incidente nuevo con el detalle cambiado.
                 let mut incidente_nuevo = incidente.clone();
-                incidente_nuevo.detalle.clone_from(&aplicacion.detalle_incidente);
+                incidente_nuevo
+                    .detalle
+                    .clone_from(&aplicacion.detalle_incidente);
                 aplicacion.detalle_incidente.clear();
                 aplicacion.accion_incidente = AccionIncidente::Crear;
 
@@ -324,7 +326,7 @@ fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente
 }
 
 /// Ventana para cambiar la ubicación de un incidente.
-/// 
+///
 /// Aparece en la esquina superior izquierda si accion_incidente es CambiarUbicacion.
 fn cambiar_ubicacion(
     ui: &mut Ui,
@@ -362,7 +364,7 @@ fn cambiar_ubicacion(
 }
 
 /// Ventana para elegir si listar incidentes o cámaras.
-/// 
+///
 /// Aparece en la esquina  inferior derecha.
 fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
     egui::Window::new("📝")

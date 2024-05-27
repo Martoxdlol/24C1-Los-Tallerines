@@ -1,6 +1,5 @@
 use walkers::{Position, Projector};
 
-
 /// Convierte grados a pixeles
 pub fn grados_a_pixeles(position: &Position, projector: &Projector) -> f32 {
     let p2 = Position::from_lat_lon(position.lat(), position.lon() + 1.);

@@ -54,7 +54,7 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
 }
 
 /// Sombreado circular en el mapa. Sirve para marcar el rango de las cámaras.
-/// 
+///
 /// Futuramente va a marcar el rango de los drones.
 pub struct SombreadoCircular {
     pub posiciones: Vec<(Coordenadas, f64, bool)>,
@@ -80,7 +80,6 @@ impl Plugin for SombreadoCircular {
         }
     }
 }
-
 
 /// Color del círculo según si la cámara está activa o no.
 fn color_circulo(activa: bool, mouse_encima: bool) -> Color32 {
