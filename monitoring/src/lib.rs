@@ -9,8 +9,8 @@ mod proveer_carto;
 use crate::plugins::ClickWatcher;
 use accion_incidente::AccionIncidente;
 use chrono::DateTime;
-use egui::{Color32, Context, Ui};
-use lib::{camara, incidente::Incidente};
+use egui::{Context, Ui};
+use lib::incidente::Incidente;
 use listar::Listar;
 use logica::{comando::Comando, estado::Estado};
 use proveer_carto::MapaCarto;
@@ -18,7 +18,7 @@ use std::{
     collections::HashMap,
     sync::mpsc::{Receiver, Sender},
 };
-use walkers::{HttpOptions, Map, MapMemory, Position, Tiles, TilesManager};
+use walkers::{HttpOptions, Map, MapMemory, Tiles, TilesManager};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Provider {
