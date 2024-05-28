@@ -8,8 +8,6 @@ fn main() {
 }
 
 fn intentar_iniciar_dron() -> Result<(), Box<dyn std::error::Error>> {
-    let dron = Dron::new();
-
     let configuracion = Configuracion::desde_argv()?;
 
     Ok(())
