@@ -8,9 +8,7 @@ mod plugins;
 mod proveer_carto;
 use crate::plugins::ClickWatcher;
 use accion_incidente::AccionIncidente;
-use chrono::DateTime;
-use egui::{Context, Ui};
-use lib::incidente::Incidente;
+use egui::Context;
 use listar::Listar;
 use logica::{comando::Comando, estado::Estado};
 use proveer_carto::MapaCarto;
@@ -91,47 +89,6 @@ impl Aplicacion {
     }
 }
 
-/// Ventana para agregar un incidente.
-///
-/// Accion_incidente debe ser Crear.
-fn agregar_incidente(ui: &mut Ui, clicked_at: walkers::Position, aplicacion: &mut Aplicacion) {
-    egui::Window::new("Agregar Incidente")
-        .collapsible(false)
-        .movable(true)
-        .resizable(false)
-        .collapsible(true)
-        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
-        .show(ui.ctx(), |ui| {
-            ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
-
-            ui.add_sized([350., 40.], |ui: &mut Ui| {
-                ui.text_edit_multiline(&mut aplicacion.detalle_incidente)
-            });
-
-            if !aplicacion.detalle_incidente.trim().is_empty()
-                && ui
-                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
-                    .clicked()
-            {
-                // Creo el incidente
-                let incidente = Incidente::new(
-                    0,
-                    aplicacion.detalle_incidente.clone(),
-                    clicked_at.lat(),
-                    clicked_at.lon(),
-                    chrono::offset::Local::now().timestamp_millis() as u64,
-                );
-
-                aplicacion.detalle_incidente.clear();
-
-                aplicacion.clicks.clear();
-
-                // Envio el comando.
-                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente);
-            }
-        });
-}
-
 /// Muestra los incidentes y las cámaras en el mapa.
 fn mostrado_incidentes_y_camaras<'a>(
     mapa_a_mostrar: Map<'a, 'a, 'a>,
@@ -149,127 +106,6 @@ fn mostrado_incidentes_y_camaras<'a>(
                 .collect(),
         })
         .with_plugin(clicks)
-}
-
-/// Ventana para modificar un incidente.
-///
-/// Accion_incidente debe ser Modificar.
-/// Te da todas las opciones para modificar un incidente.
-fn modificar_incidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
-    egui::Window::new("Modificar Incidente")
-        .collapsible(false)
-        .movable(true)
-        .resizable(false)
-        .collapsible(true)
-        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
-        .show(ui.ctx(), |ui| {
-            ui.label(format!("Incidente: {}", incidente.detalle));
-            ui.label(format!("En: {}, {}", incidente.lat, incidente.lon));
-            let dt = DateTime::from_timestamp_millis(incidente.inicio as i64);
-
-            // muestra la fecha del incidente.
-            let fecha = match dt {
-                Some(fecha) => fecha.format("%d/%m/%Y %H:%M:%S").to_string(),
-                None => "".to_string(),
-            };
-
-            ui.label(fecha);
-            ui.label("Estado: activo");
-
-            // Botones para finalizar, modificar detalle, cambiar ubicación y cancelar.
-            egui::Grid::new("some_unique_id").show(ui, |ui| {
-                if ui.button("Finalizar incidente").clicked() {
-                    Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                    aplicacion.detalle_incidente.clear();
-                    aplicacion.accion_incidente = AccionIncidente::Crear;
-                }
-                if ui.button("Modificar detalle").clicked() {
-                    aplicacion.detalle_incidente.clone_from(&incidente.detalle);
-                    aplicacion.accion_incidente = AccionIncidente::CambiarDetalle(incidente.id);
-                }
-                ui.end_row();
-
-                if ui.button("Modificar ubicacion").clicked() {
-                    aplicacion.accion_incidente = AccionIncidente::CambiarUbicacion(incidente.id);
-                }
-                if ui.button("Cancelar").clicked() {
-                    aplicacion.detalle_incidente.clear();
-                    aplicacion.accion_incidente = AccionIncidente::Crear;
-                }
-                ui.end_row();
-            });
-        });
-}
-
-/// Ventana para cambiar el detalle de un incidente.
-/// Aparece en la esquina superior izquierda si accion_incidente es CambiarDetalle.
-fn cambiar_detalle_incidente(ui: &mut Ui, aplicacion: &mut Aplicacion, incidente: &mut Incidente) {
-    egui::Window::new("Modificar Incidente")
-        .collapsible(false)
-        .movable(true)
-        .resizable(false)
-        .collapsible(true)
-        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
-        .show(ui.ctx(), |ui| {
-            ui.add_sized([350., 40.], |ui: &mut Ui| {
-                ui.text_edit_multiline(&mut aplicacion.detalle_incidente)
-            });
-
-            if !aplicacion.detalle_incidente.trim().is_empty()
-                && ui
-                    .add_sized([350., 40.], egui::Button::new("Confirmar"))
-                    .clicked()
-            {
-                // Creo un incidente nuevo con el detalle cambiado.
-                let mut incidente_nuevo = incidente.clone();
-                incidente_nuevo
-                    .detalle
-                    .clone_from(&aplicacion.detalle_incidente);
-                aplicacion.detalle_incidente.clear();
-                aplicacion.accion_incidente = AccionIncidente::Crear;
-
-                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
-            }
-        });
-}
-
-/// Ventana para cambiar la ubicación de un incidente.
-///
-/// Aparece en la esquina superior izquierda si accion_incidente es CambiarUbicacion.
-fn cambiar_ubicacion(
-    ui: &mut Ui,
-    aplicacion: &mut Aplicacion,
-    incidente: &mut Incidente,
-    clicked_at: walkers::Position,
-) {
-    egui::Window::new("Cambiar ubicación del incidente")
-        .collapsible(false)
-        .movable(true)
-        .resizable(true)
-        .collapsible(true)
-        .anchor(egui::Align2::LEFT_TOP, [10., 10.])
-        .show(ui.ctx(), |ui| {
-            ui.label(format!(
-                "Mover incidente a: {}, {}",
-                clicked_at.lat(),
-                clicked_at.lon()
-            ));
-            if ui
-                .add_sized([350., 40.], egui::Button::new("Confirmar"))
-                .clicked()
-            {
-                // Creo un incidente nuevo con la ubicación cambiada.
-                let mut incidente_nuevo = incidente.clone();
-                incidente_nuevo.lat = clicked_at.lat();
-                incidente_nuevo.lon = clicked_at.lon();
-                aplicacion.detalle_incidente.clear();
-                aplicacion.accion_incidente = AccionIncidente::Crear;
-
-                Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
-            }
-        });
 }
 
 impl eframe::App for Aplicacion {
@@ -315,23 +151,28 @@ impl eframe::App for Aplicacion {
                 match self.accion_incidente {
                     AccionIncidente::Crear => {
                         if let Some(clicked_at) = self.clicks.clicked_at {
-                            agregar_incidente(ui, clicked_at, self);
+                            AccionIncidente::agregar_incidente(ui, clicked_at, self);
                         }
                     }
                     AccionIncidente::Modificar(id) => {
                         if let Some(incidente) = self.estado.incidente(id) {
-                            modificar_incidente(ui, &incidente, self);
+                            AccionIncidente::modificar_incidente(ui, &incidente, self);
                         }
                     }
                     AccionIncidente::CambiarDetalle(id) => {
                         if let Some(mut incidente) = self.estado.incidente(id) {
-                            cambiar_detalle_incidente(ui, self, &mut incidente);
+                            AccionIncidente::cambiar_detalle_incidente(ui, self, &mut incidente);
                         }
                     }
                     AccionIncidente::CambiarUbicacion(id) => {
                         if let Some(mut incidente) = self.estado.incidente(id) {
                             if let Some(clicked_at) = self.clicks.clicked_at {
-                                cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
+                                AccionIncidente::cambiar_ubicacion(
+                                    ui,
+                                    self,
+                                    &mut incidente,
+                                    clicked_at,
+                                );
                             }
                         }
                     }
