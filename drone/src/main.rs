@@ -1,5 +1,4 @@
-use drone::{estado::Estado};
-use lib::configuracion::Configuracion;
+use lib::{configuracion::Configuracion, dron::Dron};
 
 fn main() {
     if let Err(e) = intentar_iniciar_dron() {
@@ -9,7 +8,7 @@ fn main() {
 }
 
 fn intentar_iniciar_dron() -> Result<(), Box<dyn std::error::Error>> {
-    let estado = Estado::new();
+    let dron = Dron::new();
 
     let configuracion = Configuracion::desde_argv()?;
 
