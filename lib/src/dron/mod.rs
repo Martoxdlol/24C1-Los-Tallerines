@@ -1,6 +1,12 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
+use crate::{
+    serializables::Serializable,
+    csv::csv_encodear_linea,
+};
+
+#[derive(Debug)]
 pub enum EstadoDron {
     EnEspera,
     VolviendoACentroDeOperacion,
@@ -18,15 +24,17 @@ pub struct Dron {
     estado: EstadoDron,
     direccion: f64, // En grados, sentido horario, empezando desde el norte
     velocidad: f64,
-    duracion_bateria: Duration,
+    duracion_bateria: u64, // En segundos
     incidentes_cercanos: HashSet<u64>,
-    central: (f64, f64), // Latitud y longitud
-    centro_area_operacion: (f64, f64) // Latitud y longitud
+    latitud_central: f64,
+    longitud_central: f64,
+    latitud_centro_operaciones: f64,
+    longitud_centro_operaciones: f64,
 }
 
 
 impl Dron {
-    pub fn new(id: u64, latitud: f64, longitud: f64, rango: f64, estado: EstadoDron, direccion: f64, velocidad: f64, duracion_bateria: Duration, central: (f64, f64), centro_area_operacion: (f64, f64)) -> Self {
+    pub fn new(id: u64, latitud: f64, longitud: f64, rango: f64, estado: EstadoDron, direccion: f64, velocidad: f64, duracion_bateria: u64, longitud_central: f64, latitud_central: f64, latitud_centro_operaciones: f64, longitud_centro_operaciones: f64) -> Self {
         Dron {
             id,
             latitud,
@@ -37,8 +45,10 @@ impl Dron {
             velocidad,
             duracion_bateria, 
             incidentes_cercanos: HashSet::new(),
-            central, 
-            centro_area_operacion,
+            latitud_central, 
+            longitud_central,
+            latitud_centro_operaciones,
+            longitud_centro_operaciones,
         }
     }
 }

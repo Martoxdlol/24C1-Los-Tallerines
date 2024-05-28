@@ -1,4 +1,8 @@
-use lib::configuracion::Configuracion;
+use lib::{
+    configuracion::Configuracion,
+    dron::Dron,
+    serializables::guardar::cargar_serializable,
+};
 use std::io;
 
 pub struct AplicacionDron {
@@ -19,15 +23,15 @@ impl AplicacionDron {
     }
 
     fn cargar_dron(&mut self) -> io::Result<()> {
-        let ruta_archivo_drones = self
+        let ruta_archivo_dron = self
             .configuracion
             .obtener::<String>("drones")
-            .unwrap_or("drones.csv".to_string());
+            .unwrap_or("dron.csv".to_string());
 
-        let existe = std::path::Path::new(&ruta_archivo_drones).exists();
+        let existe = std::path::Path::new(&ruta_archivo_dron).exists();
 
         if !existe {
-            std::fs::File::create(&ruta_archivo_drones)?;
+            std::fs::File::create(&ruta_archivo_dron)?;
         }
 
         Ok(())
