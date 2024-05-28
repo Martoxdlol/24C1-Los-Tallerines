@@ -36,6 +36,8 @@ impl AplicacionDron {
 
         let mut dron: Dron = cargar_serializable(&ruta_archivo_dron)?;
 
+        println!("{:?}", dron);
+
         Ok(())
     }
 }
