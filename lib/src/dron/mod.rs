@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::time::Duration;
 
 use crate::{
     serializables::Serializable,
@@ -51,4 +50,34 @@ impl Dron {
             longitud_centro_operaciones,
         }
     }
+}
+
+impl Serializable for Dron {
+
+    fn serializar(&self) -> Vec<u8> {
+        let mut parametros: Vec<String> = Vec::new();
+        parametros.push(format!("{}", self.id));
+        parametros.push(format!("{}", self.latitud));
+        parametros.push(format!("{}", self.longitud));
+        parametros.push(format!("{}", self.rango));
+        parametros.push(format!("{:?}", self.estado));
+        parametros.push(format!("{}", self.direccion));
+        parametros.push(format!("{}", self.velocidad));
+        parametros.push(format!("{}", self.duracion_bateria));
+        parametros.push(serializar_vector_incidentes(&self.incidentes_cercanos).to_string());
+        parametros.push(format!("{}", self.latitud_central));
+        parametros.push(format!("{}", self.longitud_central));
+        parametros.push(format!("{}", self.latitud_centro_operaciones));
+        parametros.push(format!("{}", self.longitud_centro_operaciones));
+
+        csv_encodear_linea(&parametros).into_bytes()
+    }
+}
+
+fn serializar_vector_incidentes(incidentes: &HashSet<u64>) -> String {
+    incidentes
+        .iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<String>>()
+        .join(";")
 }
