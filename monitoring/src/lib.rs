@@ -1,42 +1,28 @@
+mod accion_incidente;
 mod botones_mover_mapa;
 mod coordenadas;
 mod iconos;
+mod listar;
 pub mod logica;
 mod plugins;
 mod proveer_carto;
-
+use crate::plugins::ClickWatcher;
+use accion_incidente::AccionIncidente;
+use chrono::DateTime;
+use egui::{Color32, Context, Ui};
+use lib::{camara, incidente::Incidente};
+use listar::Listar;
+use logica::{comando::Comando, estado::Estado};
+use proveer_carto::MapaCarto;
 use std::{
     collections::HashMap,
     sync::mpsc::{Receiver, Sender},
 };
-
-use chrono::DateTime;
-use egui::{Color32, Context, Ui};
-use lib::{camara, incidente::Incidente};
-use logica::{comando::Comando, estado::Estado};
-
-use crate::plugins::ClickWatcher;
-use proveer_carto::MapaCarto;
 use walkers::{HttpOptions, Map, MapMemory, Position, Tiles, TilesManager};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Provider {
-    OpenStreetMap,
-    Geoportal,
     CartoMaps,
-}
-/// Enum para saber si se listan incidentes o cámaras.
-pub enum Listar {
-    Incidentes,
-    Camaras,
-}
-
-/// Enum para la ventana de la esquina superior izquierda.
-pub enum AccionIncidente {
-    Crear,
-    Modificar(u64),
-    CambiarDetalle(u64),
-    CambiarUbicacion(u64),
 }
 
 /// Opciones de HTTP para el proveedor de mapas.
@@ -165,83 +151,6 @@ fn mostrado_incidentes_y_camaras<'a>(
         .with_plugin(clicks)
 }
 
-/// Lista de cámaras en la esquina superior derecha.
-///
-/// Muestra el id de la cámara y si está activa o en ahorro.
-/// Listar tiene que estar en Cámaras.
-fn lista_de_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
-    if !camaras.is_empty() {
-        egui::Window::new("Lista de cámaras")
-            .collapsible(false)
-            .movable(true)
-            .resizable(true)
-            .collapsible(true)
-            .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
-            .show(ui.ctx(), |ui| {
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    for camara in camaras {
-                        let nombre = format!("{}: {}", camara.id, estado_camara_a_string(camara));
-
-                        ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
-                    }
-                });
-            });
-    }
-}
-
-/// Convierte el estado de la cámara a un string.
-fn estado_camara_a_string(camara: &camara::Camara) -> String {
-    if camara.activa() {
-        "Activa".to_string()
-    } else {
-        "Ahorro".to_string()
-    }
-}
-
-/// Lista de incidentes en la esquina superior derecha.
-///
-/// Muestra el detalle del incidente.
-/// Listar tiene que estar en Incidentes.
-fn lista_de_incidentes_actuales(
-    ui: &mut Ui,
-    incidentes: &[Incidente],
-    aplicacion: &mut Aplicacion,
-) {
-    if !incidentes.is_empty() {
-        egui::Window::new("Lista de incidentes")
-            .collapsible(false)
-            .movable(true)
-            .resizable(true)
-            .collapsible(true)
-            .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
-            .show(ui.ctx(), |ui| {
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    for incidente in incidentes {
-                        let nombre = incidente.detalle.to_string();
-
-                        ui.scope(|ui| {
-                            ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
-                                Color32::TRANSPARENT;
-                            if ui
-                                .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
-                                .clicked()
-                            {
-                                // Si clickeas el incidente te lleva a esa posición.
-                                aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
-                                    incidente.lat,
-                                    incidente.lon,
-                                ));
-                                // Cambia la AccionIncidente a Modificar.
-                                aplicacion.accion_incidente =
-                                    AccionIncidente::Modificar(incidente.id);
-                            }
-                        });
-                    }
-                });
-            });
-    }
-}
-
 /// Ventana para modificar un incidente.
 ///
 /// Accion_incidente debe ser Modificar.
@@ -363,34 +272,6 @@ fn cambiar_ubicacion(
         });
 }
 
-/// Ventana para elegir si listar incidentes o cámaras.
-///
-/// Aparece en la esquina  inferior derecha.
-fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
-    egui::Window::new("📝")
-        .collapsible(false)
-        .movable(true)
-        .resizable(true)
-        .collapsible(true)
-        .anchor(egui::Align2::RIGHT_BOTTOM, [-10., -10.])
-        .show(ui.ctx(), |ui| {
-            egui::ScrollArea::horizontal().show(ui, |ui| {
-                if ui
-                    .add_sized([100., 20.], egui::Button::new("Incidentes"))
-                    .clicked()
-                {
-                    aplicacion.listar = Listar::Incidentes;
-                }
-                if ui
-                    .add_sized([100., 20.], egui::Button::new("Camaras"))
-                    .clicked()
-                {
-                    aplicacion.listar = Listar::Camaras;
-                }
-            });
-        });
-}
-
 impl eframe::App for Aplicacion {
     /// Lo que ocurre cada vez que actualizamos
     fn update(&mut self, contexto: &egui::Context, _frame: &mut eframe::Frame) {
@@ -456,14 +337,14 @@ impl eframe::App for Aplicacion {
                     }
                 }
                 // Esquina inferior derecha.
-                listar(ui, self);
+                Listar::listar(ui, self);
 
                 // Que mostrar en la esquina superior derecha.
                 match self.listar {
                     Listar::Incidentes => {
-                        lista_de_incidentes_actuales(ui, &self.estado.incidentes(), self)
+                        Listar::listar_incidentes(ui, &self.estado.incidentes(), self)
                     }
-                    Listar::Camaras => lista_de_camaras(ui, &self.estado.camaras()),
+                    Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras()),
                 }
 
                 egui::Context::request_repaint(contexto)
