@@ -10,6 +10,9 @@ fn main() {
 
 fn intentar_iniciar_sistema() -> Result<(), Box<dyn std::error::Error>> {
     let estado = Estado::new();
+    let (enviar_respuesta, recibir_comandos) = interfaz();
+
+    let configuracion = Configuracion::desde_argv()?;
 
     Ok(())
 }
