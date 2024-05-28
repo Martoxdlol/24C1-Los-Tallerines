@@ -16,7 +16,7 @@ pub struct Dron {
     pub longitud: f64,
     pub rango: f64,
     estado: EstadoDron,
-    direccion: f64, // En grados
+    direccion: f64, // En grados, sentido horario, empezando desde el norte
     velocidad: f64,
     duracion_bateria: Duration,
     incidentes_cercanos: HashSet<u64>,
