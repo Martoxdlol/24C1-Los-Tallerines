@@ -8,6 +8,12 @@ pub struct Estado {
     pub incidentes: HashMap<u64, Incidente>,
 }
 
+impl Default for Estado {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Estado {
     pub fn new() -> Self {
         Self {
