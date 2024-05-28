@@ -9,5 +9,7 @@ fn main() {
 }
 
 fn intentar_iniciar_sistema() -> Result<(), Box<dyn std::error::Error>> {
+    let estado = Estado::new();
+
     Ok(())
 }
