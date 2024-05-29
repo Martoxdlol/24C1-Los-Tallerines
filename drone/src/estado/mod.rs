@@ -2,6 +2,11 @@ use std::collections::{HashMap, HashSet};
 
 use lib::{dron::Dron, incidente::Incidente};
 
+use std::{
+    sync::mpsc,
+    thread,
+};
+
 #[derive(Debug)]
 /// Estado de la aplicación del dron
 pub struct Estado {
@@ -29,6 +34,13 @@ impl Estado {
         dron.incidentes_cercanos = self.incidentes_en_rango(&dron);
         // REVISAR PORQUE ACÁ SE MUESTRAN LOS INCIDENTES EN RANGO PERO AFUERA DE ESTA FUNCION NO
         println!("\nIncidentes en rango: {:?}", dron.incidentes_cercanos);
+    }
+
+    pub fn iniciar_bateria_dron(&mut self, mut dron: Dron) {
+        let (tx, rx) = mpsc::channel::<u64>();
+
+        let hilo_bateria = thread::spawn(move || {
+        });
     }
 
     /// Incidentes que están en el rango de un dron

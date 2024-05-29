@@ -25,7 +25,6 @@ impl AplicacionDron {
     pub fn iniciar(&mut self) -> io::Result<()> {
         self.cargar_dron()?;
 
-
         Ok(())
     }
 
@@ -45,11 +44,14 @@ impl AplicacionDron {
 
         println!("\nDron: {:?}", dron);
 
-        self.estado.dron = Some(dron.clone());
         println!("\nAplicacion: {:?}", self);
 
         self.estado.incidentes.clear();
         self.estado.iniciar_dron(dron.clone());
+        self.estado.iniciar_bateria_dron(dron.clone());
+
+        self.estado.dron = Some(dron.clone());
+
         println!("\nIncidentes en rango: {:?}", dron.incidentes_cercanos);
 
         Ok(())
