@@ -1,10 +1,11 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, io};
 use std::str::FromStr;
 
 use crate::{
     coordenadas::Coordenadas,
     csv::{csv_encodear_linea, csv_parsear_linea},
-    serializables::{error::DeserializationError, Serializable},
+    serializables::{error::DeserializationError, Serializable, guardar::cargar_serializable}, 
+    configuracion::Configuracion,
 };
 
 #[derive(Debug, Clone)]
@@ -15,6 +16,7 @@ pub enum EstadoDron {
     AtendiendoIncidente,
     YendoACentral,
     CargandoEnCentral,
+    Error,
 }
 
 #[derive(Debug, Clone)]
@@ -33,40 +35,64 @@ pub struct Dron {
     longitud_central: f64,
     latitud_centro_operaciones: f64,
     longitud_centro_operaciones: f64,
+    pub configuracion: Configuracion,
 }
 
 impl Dron {
-    pub fn new(
-        id: u64,
-        latitud: f64,
-        longitud: f64,
-        rango: f64,
-        estado: EstadoDron,
-        direccion: f64,
-        velocidad: f64,
-        duracion_bateria: u64,
-        bateria_minima: u64,
-        longitud_central: f64,
-        latitud_central: f64,
-        latitud_centro_operaciones: f64,
-        longitud_centro_operaciones: f64,
-    ) -> Self {
+    pub fn new(configuracion: Configuracion) -> Self {
         Dron {
-            id,
-            latitud,
-            longitud,
-            rango,
-            estado,
-            direccion,
-            velocidad,
-            duracion_bateria,
-            bateria_minima,
+            id: 0,
+            latitud: 0.0,
+            longitud: 0.0,
+            rango: 0.0,
+            estado: EstadoDron::EnEspera,
+            direccion: 0.0,
+            velocidad: 0.0,
+            duracion_bateria: 0,
+            bateria_minima: 0,
             incidentes_cercanos: HashSet::new(),
-            latitud_central,
-            longitud_central,
-            latitud_centro_operaciones,
-            longitud_centro_operaciones,
+            latitud_central: 0.0,
+            longitud_central: 0.0,
+            latitud_centro_operaciones: 0.0,
+            longitud_centro_operaciones: 0.0,
+            configuracion,
         }
+    }
+
+    pub fn iniciar(&mut self) -> io::Result<()> {
+        self.cargar_dron()?;
+
+        Ok(())
+    }
+
+    fn cargar_dron(&mut self) -> io::Result<()> {
+        let ruta_archivo_dron = self
+            .configuracion
+            .obtener::<String>("drones")
+            .unwrap_or("dron.csv".to_string());
+
+        let existe = std::path::Path::new(&ruta_archivo_dron).exists();
+
+        if !existe {
+            std::fs::File::create(&ruta_archivo_dron)?;
+        }
+
+        let dron: Dron = cargar_serializable(&ruta_archivo_dron)?;
+        println!("\nDron: {:?}", dron);
+
+        /*
+        self.estado.incidentes.clear();
+        self.estado.iniciar_dron(dron.clone());
+
+        let (tx, rx) = mpsc::channel::<u64>();
+        self.estado.descargar_bateria_dron(dron.clone(), tx);
+
+        self.estado.dron = Some(dron.clone());
+
+        println!("\nIncidentes en rango: {:?}", dron.incidentes_cercanos);
+        */
+
+        Ok(())
     }
 
     pub fn posicion(&self) -> Coordenadas {
@@ -199,6 +225,7 @@ impl Serializable for Dron {
             longitud_central,
             latitud_centro_operaciones,
             longitud_centro_operaciones,
+            configuracion: Configuracion::new(),
         })
     }
 }

@@ -1,5 +1,4 @@
-use drone::{aplicacion::AplicacionDron, estado::Estado};
-use lib::configuracion::Configuracion;
+use lib::{configuracion::Configuracion, dron::Dron};
 
 fn main() {
     if let Err(e) = intentar_iniciar_aplicacion_dron() {
@@ -9,15 +8,11 @@ fn main() {
 }
 
 fn intentar_iniciar_aplicacion_dron() -> Result<(), Box<dyn std::error::Error>> {
-    let estado = Estado::new();
-
-    println!("Estado: {:?}", estado);
-
-    let configuracion = Configuracion::desde_argv()?;
+    let configuracion: Configuracion = Configuracion::desde_argv()?;
     println!("\nConfiguracion: {:?}", configuracion);
 
-    let mut aplicacion_dron = AplicacionDron::new(configuracion, estado);
-    println!("\nAplicacion del dron:: {:?}", aplicacion_dron);
+    let mut dron = Dron::new(configuracion);
+    println!("\nDron: {:?}", dron);
 
-    Ok(aplicacion_dron.iniciar()?)
+    Ok(dron.iniciar()?)
 }
