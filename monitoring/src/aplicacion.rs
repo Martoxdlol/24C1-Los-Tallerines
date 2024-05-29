@@ -4,7 +4,6 @@ use crate::iconos;
 use crate::listar::Listar;
 use crate::logica::comando::Comando;
 use crate::logica::estado::Estado;
-use crate::mostrado_incidentes_y_camaras;
 use crate::plugins;
 use crate::provider::estilo_mapa;
 use crate::provider::Provider;
@@ -12,6 +11,25 @@ use egui::Context;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
 use walkers::{Map, MapMemory, TilesManager};
+
+/// Muestra los incidentes y las cámaras en el mapa.
+fn mostrado_incidentes_y_camaras<'a>(
+    mapa_a_mostrar: Map<'a, 'a, 'a>,
+    estado: &Estado,
+    clicks: &'a mut plugins::ClickWatcher,
+) -> Map<'a, 'a, 'a> {
+    mapa_a_mostrar
+        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
+        .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
+        .with_plugin(plugins::SombreadoCircular {
+            posiciones: estado
+                .camaras()
+                .iter()
+                .map(|i| (i.posicion(), i.rango, i.activa()))
+                .collect(),
+        })
+        .with_plugin(clicks)
+}
 
 /// Aplicación de monitoreo. UI.
 pub struct Aplicacion {

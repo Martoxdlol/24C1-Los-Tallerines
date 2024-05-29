@@ -1,5 +1,5 @@
 use crate::accion_incidente::AccionIncidente;
-use crate::Aplicacion;
+use crate::aplicacion::Aplicacion;
 use egui::{Color32, Ui};
 use lib::{camara, incidente::Incidente};
 use walkers::Position;
