@@ -8,6 +8,7 @@ use std::io;
 
 use crate::estado::Estado;
 
+#[derive(Debug)]
 pub struct AplicacionDron {
     configuracion: Configuracion,
     estado: Estado,
@@ -39,13 +40,17 @@ impl AplicacionDron {
         if !existe {
             std::fs::File::create(&ruta_archivo_dron)?;
         }
-        /*
+
         let mut dron: Dron = cargar_serializable(&ruta_archivo_dron)?;
 
-        dron.incidentes_cercanos.clear();
+        println!("\nDron: {:?}", dron);
 
-        dron.iniciar_dron();
-        */
+        self.estado.dron = Some(dron.clone());
+        println!("\nAplicacion: {:?}", self);
+
+        self.estado.incidentes.clear();
+        self.estado.iniciar_dron(dron.clone());
+        println!("\nIncidentes en rango: {:?}", dron.incidentes_cercanos);
 
         Ok(())
     }

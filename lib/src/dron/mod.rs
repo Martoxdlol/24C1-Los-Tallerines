@@ -2,11 +2,12 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use crate::{
+    coordenadas::Coordenadas,
     serializables::{Serializable, error::DeserializationError},
     csv::{csv_encodear_linea, csv_parsear_linea},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EstadoDron {
     EnEspera,
     VolviendoACentroDeOperacion,
@@ -16,7 +17,7 @@ pub enum EstadoDron {
     CargandoEnCentral,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Dron {
     pub id: u64,
     pub latitud: f64,
@@ -51,6 +52,10 @@ impl Dron {
             latitud_centro_operaciones,
             longitud_centro_operaciones,
         }
+    }
+
+    pub fn posicion(&self) -> Coordenadas {
+        Coordenadas::from_lat_lon(self.latitud, self.longitud)
     }
 }
 
