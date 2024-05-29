@@ -1,18 +1,22 @@
 use lib::{
     configuracion::Configuracion,
     dron::Dron,
-    serializables::guardar::cargar_serializable,
+    serializables::guardar::cargar_serializable, serializables::guardar::guardar_serializable,
 };
 use std::io;
 
 pub struct AplicacionDron {
     configuracion: Configuracion,
+    dron: Option<Dron>,
 }
 
 impl AplicacionDron {
 
     pub fn new(configuracion: Configuracion) -> Self {
-        AplicacionDron { configuracion }
+        AplicacionDron { 
+            configuracion,
+            dron: None,
+        }
     } 
 
     pub fn iniciar(&mut self) -> io::Result<()> {
@@ -36,7 +40,7 @@ impl AplicacionDron {
 
         let mut dron: Dron = cargar_serializable(&ruta_archivo_dron)?;
 
-        println!("{:?}", dron);
+        dron.incidentes_cercanos.clear();
 
         Ok(())
     }

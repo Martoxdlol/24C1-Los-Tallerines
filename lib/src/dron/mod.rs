@@ -26,7 +26,7 @@ pub struct Dron {
     direccion: f64, // En grados, sentido horario, empezando desde el norte
     velocidad: f64,
     duracion_bateria: u64, // En segundos
-    incidentes_cercanos: HashSet<u64>,
+    pub incidentes_cercanos: HashSet<u64>,
     latitud_central: f64,
     longitud_central: f64,
     latitud_centro_operaciones: f64,
