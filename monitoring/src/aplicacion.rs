@@ -1,13 +1,13 @@
 use crate::accion_incidente::AccionIncidente;
 use crate::botones_mover_mapa;
-use crate::estilo_mapa;
 use crate::iconos;
 use crate::listar::Listar;
 use crate::logica::comando::Comando;
 use crate::logica::estado::Estado;
 use crate::mostrado_incidentes_y_camaras;
 use crate::plugins;
-use crate::Provider;
+use crate::provider::estilo_mapa;
+use crate::provider::Provider;
 use egui::Context;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
@@ -79,7 +79,8 @@ impl Aplicacion {
 
         let mapa_a_mostrar = Map::new(Some(mapa), &mut self.memoria_mapa, posicion_inicial);
 
-        let mapa_final = mostrado_incidentes_y_camaras(mapa_a_mostrar, &self.estado, &mut self.clicks);
+        let mapa_final =
+            mostrado_incidentes_y_camaras(mapa_a_mostrar, &self.estado, &mut self.clicks);
 
         ui.add(mapa_final);
     }
@@ -105,12 +106,7 @@ impl Aplicacion {
             AccionIncidente::CambiarUbicacion(id) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
-                        AccionIncidente::cambiar_ubicacion(
-                            ui,
-                            self,
-                            &mut incidente,
-                            clicked_at,
-                        );
+                        AccionIncidente::cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
                     }
                 }
             }
@@ -120,9 +116,7 @@ impl Aplicacion {
     /// Que mostrar en la esquina superior derecha.
     fn mostrar_esquina_inferior_derecha(&mut self, ui: &mut egui::Ui) {
         match self.listar {
-            Listar::Incidentes => {
-                Listar::listar_incidentes(ui, &self.estado.incidentes(), self)
-            }
+            Listar::Incidentes => Listar::listar_incidentes(ui, &self.estado.incidentes(), self),
             Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras()),
         }
     }
