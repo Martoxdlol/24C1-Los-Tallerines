@@ -2,10 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use lib::{dron::Dron, incidente::Incidente};
 
-use std::{
-    sync::mpsc,
-    thread,
-};
+use std::{sync::mpsc, thread};
 
 #[derive(Debug)]
 /// Estado de la aplicación del dron
@@ -39,8 +36,7 @@ impl Estado {
     pub fn iniciar_bateria_dron(&mut self, _dron: Dron) {
         let (_tx, _rx) = mpsc::channel::<u64>();
 
-        let _hilo_bateria = thread::spawn(move || {
-        });
+        let _hilo_bateria = thread::spawn(move || {});
     }
 
     /// Incidentes que están en el rango de un dron

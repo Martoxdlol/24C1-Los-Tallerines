@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 use crate::{
     coordenadas::Coordenadas,
-    serializables::{Serializable, error::DeserializationError},
     csv::{csv_encodear_linea, csv_parsear_linea},
+    serializables::{error::DeserializationError, Serializable},
 };
 
 #[derive(Debug, Clone)]
@@ -34,9 +34,21 @@ pub struct Dron {
     longitud_centro_operaciones: f64,
 }
 
-
 impl Dron {
-    pub fn new(id: u64, latitud: f64, longitud: f64, rango: f64, estado: EstadoDron, direccion: f64, velocidad: f64, duracion_bateria: u64, longitud_central: f64, latitud_central: f64, latitud_centro_operaciones: f64, longitud_centro_operaciones: f64) -> Self {
+    pub fn new(
+        id: u64,
+        latitud: f64,
+        longitud: f64,
+        rango: f64,
+        estado: EstadoDron,
+        direccion: f64,
+        velocidad: f64,
+        duracion_bateria: u64,
+        longitud_central: f64,
+        latitud_central: f64,
+        latitud_centro_operaciones: f64,
+        longitud_centro_operaciones: f64,
+    ) -> Self {
         Dron {
             id,
             latitud,
@@ -45,9 +57,9 @@ impl Dron {
             estado,
             direccion,
             velocidad,
-            duracion_bateria, 
+            duracion_bateria,
             incidentes_cercanos: HashSet::new(),
-            latitud_central, 
+            latitud_central,
             longitud_central,
             latitud_centro_operaciones,
             longitud_centro_operaciones,
@@ -60,7 +72,6 @@ impl Dron {
 }
 
 impl Serializable for Dron {
-
     fn serializar(&self) -> Vec<u8> {
         let mut parametros: Vec<String> = Vec::new();
         parametros.push(format!("{}", self.id));
@@ -179,7 +190,6 @@ impl Serializable for Dron {
             latitud_centro_operaciones,
             longitud_centro_operaciones,
         })
-
     }
 }
 

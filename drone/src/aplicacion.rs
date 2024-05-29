@@ -1,8 +1,4 @@
-use lib::{
-    configuracion::Configuracion,
-    dron::Dron,
-    serializables::guardar::cargar_serializable,
-};
+use lib::{configuracion::Configuracion, dron::Dron, serializables::guardar::cargar_serializable};
 
 use std::io;
 
@@ -16,11 +12,11 @@ pub struct AplicacionDron {
 
 impl AplicacionDron {
     pub fn new(configuracion: Configuracion, estado: Estado) -> Self {
-        AplicacionDron { 
+        AplicacionDron {
             configuracion,
             estado,
         }
-    } 
+    }
 
     pub fn iniciar(&mut self) -> io::Result<()> {
         self.cargar_dron()?;
