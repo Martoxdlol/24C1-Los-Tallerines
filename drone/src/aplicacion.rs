@@ -44,7 +44,7 @@ impl AplicacionDron {
 
         self.estado.incidentes.clear();
         self.estado.iniciar_dron(dron.clone());
-        self.estado.iniciar_bateria_dron(dron.clone());
+        self.estado.descargar_bateria_dron(dron.clone());
 
         self.estado.dron = Some(dron.clone());
 

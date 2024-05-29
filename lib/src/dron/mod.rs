@@ -26,7 +26,8 @@ pub struct Dron {
     estado: EstadoDron,
     direccion: f64, // En grados, sentido horario, empezando desde el norte
     velocidad: f64,
-    duracion_bateria: u64, // En segundos
+    pub duracion_bateria: u64, // En segundos
+    pub bateria_minima: u64,
     pub incidentes_cercanos: HashSet<u64>,
     latitud_central: f64,
     longitud_central: f64,
@@ -44,6 +45,7 @@ impl Dron {
         direccion: f64,
         velocidad: f64,
         duracion_bateria: u64,
+        bateria_minima: u64,
         longitud_central: f64,
         latitud_central: f64,
         latitud_centro_operaciones: f64,
@@ -58,6 +60,7 @@ impl Dron {
             direccion,
             velocidad,
             duracion_bateria,
+            bateria_minima,
             incidentes_cercanos: HashSet::new(),
             latitud_central,
             longitud_central,
@@ -145,6 +148,12 @@ impl Serializable for Dron {
             .parse()
             .map_err(|_| DeserializationError::InvalidData)?;
 
+        let bateria_minima = parametros
+            .next()
+            .ok_or(DeserializationError::InvalidData)?
+            .parse()
+            .map_err(|_| DeserializationError::InvalidData)?;
+
         let incidentes_cercanos = deserialize_vector_incidentes(
             &parametros
                 .next()
@@ -184,6 +193,7 @@ impl Serializable for Dron {
             direccion,
             velocidad,
             duracion_bateria,
+            bateria_minima,
             incidentes_cercanos,
             latitud_central,
             longitud_central,

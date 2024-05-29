@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, time::Duration};
 
 use lib::{dron::Dron, incidente::Incidente};
 
@@ -33,10 +33,12 @@ impl Estado {
         println!("\nIncidentes en rango: {:?}", dron.incidentes_cercanos);
     }
 
-    pub fn iniciar_bateria_dron(&mut self, _dron: Dron) {
-        let (_tx, _rx) = mpsc::channel::<u64>();
+    pub fn descargar_bateria_dron(&mut self, dron: Dron) {
+        let (tx, rx) = mpsc::channel::<u64>();
 
-        let _hilo_bateria = thread::spawn(move || {});
+        let hilo_bateria = thread::spawn(move || {
+
+        });
     }
 
     /// Incidentes que están en el rango de un dron
