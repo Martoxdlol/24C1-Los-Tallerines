@@ -1,4 +1,5 @@
-use monitoring::{logica::intentar_iniciar_sistema, Aplicacion};
+use monitoring::aplicacion::Aplicacion;
+use monitoring::logica::intentar_iniciar_sistema;
 use std::{sync::mpsc::channel, thread};
 
 fn main() -> Result<(), eframe::Error> {
