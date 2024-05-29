@@ -36,10 +36,10 @@ impl Estado {
         println!("\nIncidentes en rango: {:?}", dron.incidentes_cercanos);
     }
 
-    pub fn iniciar_bateria_dron(&mut self, mut dron: Dron) {
-        let (tx, rx) = mpsc::channel::<u64>();
+    pub fn iniciar_bateria_dron(&mut self, _dron: Dron) {
+        let (_tx, _rx) = mpsc::channel::<u64>();
 
-        let hilo_bateria = thread::spawn(move || {
+        let _hilo_bateria = thread::spawn(move || {
         });
     }
 

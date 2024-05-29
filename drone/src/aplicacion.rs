@@ -40,7 +40,7 @@ impl AplicacionDron {
             std::fs::File::create(&ruta_archivo_dron)?;
         }
 
-        let mut dron: Dron = cargar_serializable(&ruta_archivo_dron)?;
+        let dron: Dron = cargar_serializable(&ruta_archivo_dron)?;
 
         println!("\nDron: {:?}", dron);
 
