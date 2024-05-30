@@ -1,4 +1,6 @@
 use std::sync::mpsc::{self, Sender};
+use std::thread;
+use std::time::Duration;
 use std::{collections::HashSet, io};
 use std::str::FromStr;
 
@@ -64,6 +66,24 @@ impl Dron {
         let (tx_descarga_bateria, rx_descarga_bateria) = mpsc::channel::<u64>();
         self.cargar_dron(tx_descarga_bateria)?;
 
+        loop{
+            match rx_descarga_bateria.try_recv() {
+                Ok(bateria) => {
+                    println!("Alerta de nivel de bateria: {:.2}%", bateria);
+                    break;
+                }
+                Err(mpsc::TryRecvError::Empty) => {
+                    // No hay mensaje en el canal
+                }
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    // El hilo de descarga ha terminado
+                    break;
+                }
+            }
+    
+            thread::sleep(Duration::from_secs(2));
+        };
+
         Ok(())
     }
 
@@ -108,14 +128,26 @@ impl Dron {
     }
 
     fn descargar_bateria(&mut self, tx_descarga_bateria: Sender<u64>) {
-        /*
-        let (tx, rx) = mpsc::channel::<u64>();
-        self.descargar_bateria(dron.clone(), tx);
+        let bateria_minima = self.bateria_minima;
+        let duracion_bateria = self.duracion_bateria;
+        println!("Bateria minima: {}, duracion de la bateria: {}", bateria_minima, duracion_bateria);
 
-        self.estado.dron = Some(dron.clone());
+        thread::spawn(move || {
+            let descarga_por_segundo: u64 = (100 - bateria_minima) / duracion_bateria;
+            let mut bateria: u64 = 100;
 
-        println!("\nIncidentes en rango: {:?}", dron.incidentes);
-        */
+            while bateria > bateria_minima {
+                thread::sleep(Duration::from_secs(descarga_por_segundo));
+
+                bateria -= descarga_por_segundo;
+    
+                println!("Nivel de bateria: {:.2}%", bateria);
+    
+                if bateria <= bateria_minima {
+                    tx_descarga_bateria.send(bateria).unwrap();
+                }
+            }
+        });
     }
 
 }
