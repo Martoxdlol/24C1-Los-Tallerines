@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use crate::serializables::error::DeserializationError;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Coordenadas {
     pub lat: f64,
@@ -20,6 +24,25 @@ impl Coordenadas {
 
     pub fn from_lat_lon(lat: f64, lon: f64) -> Self {
         Coordenadas { lat, lon }
+    }
+}
+
+impl FromStr for Coordenadas {
+    type Err = DeserializationError;
+
+    // (XXX, YYY)
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        
+        let partes: Vec<&str> = s[1..s.len() - 1].split(';').collect();
+
+        let lat: f64 = partes[0].trim().parse().unwrap();
+        let lon: f64 = partes[1].trim().parse().unwrap();
+
+        Ok(Coordenadas {
+            lat,
+            lon,
+        })
     }
 }
 
