@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use std::sync::mpsc::{self, Sender};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 use std::{collections::HashSet, io};
@@ -41,6 +41,7 @@ pub struct Dron {
 }
 
 impl Dron {
+    /// Se inicia el dron sin valores concretos, solo se inicia la configuración
     pub fn new(configuracion: Configuracion) -> Self {
         Dron {
             id: 0,
@@ -61,32 +62,46 @@ impl Dron {
         }
     }
 
+    /// Se carga el dron, se va descargando la bateria, y mientras el dron realiza sus acciones
     pub fn iniciar(&mut self) -> io::Result<()> {
         // Canal por el cual se va comunicando la bateria del dron
         let (tx_descarga_bateria, rx_descarga_bateria) = mpsc::channel::<u64>();
         self.cargar_dron(tx_descarga_bateria)?;
 
-        loop {
-            match rx_descarga_bateria.try_recv() {
-                Ok(bateria) => {
-                    println!("Alerta de nivel de bateria: {:.2}%", bateria);
-                    break;
-                }
-                Err(mpsc::TryRecvError::Empty) => {
-                    // No hay mensaje en el canal
-                }
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    // El hilo de descarga ha terminado
-                    break;
-                }
-            }
 
-            thread::sleep(Duration::from_secs(2));
+        let mut bateria_descargada = false;
+        loop {
+            bateria_descargada = self.verificar_nivel_de_bateria(&rx_descarga_bateria);
+            if bateria_descargada {
+                break;
+            }
         }
 
         Ok(())
     }
 
+    fn verificar_nivel_de_bateria(&mut self, rx_descarga_bateria: &Receiver<u64>) -> bool {
+        match rx_descarga_bateria.try_recv() {
+            Ok(bateria) => {
+                println!("Alerta de nivel de bateria: {}%", bateria);
+                return true
+            }
+            Err(mpsc::TryRecvError::Empty) => {
+                // No hay mensaje en el canal
+            }
+            Err(mpsc::TryRecvError::Disconnected) => {
+                // El hilo de descarga ha terminado
+                return true;
+            }
+        }
+
+        thread::sleep(Duration::from_secs(2));
+
+        false
+    }
+
+    /// Se carga información del dron desde una configuración, se carga esa
+    /// información en el dron y se descarga la bateria del dron
     fn cargar_dron(&mut self, tx_descarga_bateria: Sender<u64>) -> io::Result<()> {
         let ruta_archivo_dron = self
             .configuracion
@@ -127,6 +142,7 @@ impl Dron {
         self.longitud_centro_operaciones = dron.longitud_centro_operaciones;
     }
 
+    /// Se descarga la bateria hasta alcanzar el nivel minimo de bateria del dron
     fn descargar_bateria(&mut self, tx_descarga_bateria: Sender<u64>) {
         let bateria_minima = self.bateria_minima;
         let duracion_bateria = self.duracion_bateria;
@@ -136,6 +152,7 @@ impl Dron {
         );
 
         thread::spawn(move || {
+            // Ejemplo: bateria_minima = 30, duracion_bateria = 35, descarga_por_segundo = 2
             let descarga_por_segundo: u64 = (100 - bateria_minima) / duracion_bateria;
             let mut bateria: u64 = 100;
 
@@ -144,8 +161,9 @@ impl Dron {
 
                 bateria -= descarga_por_segundo;
 
-                println!("Nivel de bateria: {:.2}%", bateria);
+                println!("Nivel de bateria: {}%", bateria);
 
+                // Envío al hilo principal la bateria del dron
                 if bateria <= bateria_minima {
                     tx_descarga_bateria.send(bateria).unwrap();
                 }
