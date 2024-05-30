@@ -4,7 +4,10 @@ use std::thread;
 use std::time::Duration;
 use std::{collections::HashSet, io};
 
-use crate::bateria::Bateria;
+//use crate::bateria::Bateria;
+
+use crate::coordenadas::Coordenadas;
+
 use crate::{
     configuracion::Configuracion,
     csv::{csv_encodear_linea, csv_parsear_linea},
@@ -24,10 +27,12 @@ pub enum EstadoDron {
 
 #[derive(Debug, Clone)]
 
-// TODO: Reemplazar campos duracion_bateria y bateria_minima por un struct bateria y hacer
-// la descarga de la bateria dentro del struct bateria
+// TODO: Simplificar estruct, convirtiendo campos latitud y longitud a struct coordenadas,
+// y campos duracion_bateria y bateria_minima a struct Bateria. Hacer la descarga de 
+// bateria dentro del struct
 pub struct Dron {
     pub id: u64,
+    //posicion_dron: Coordenadas,
     pub latitud: f64,
     pub longitud: f64,
     pub rango: f64,
@@ -38,8 +43,10 @@ pub struct Dron {
     pub duracion_bateria: u64, // En segundos
     pub bateria_minima: u64,
     pub incidentes_cercanos: HashSet<u64>,
+    //posicion_centro_area_dron: Coordenadas,
     latitud_central: f64,
     longitud_central: f64,
+    //posicion_centro_operaciones: Coordenadas,
     latitud_centro_operaciones: f64,
     longitud_centro_operaciones: f64,
     pub configuracion: Configuracion,
@@ -50,6 +57,7 @@ impl Dron {
     pub fn new(configuracion: Configuracion) -> Self {
         Dron {
             id: 0,
+            //posicion_dron: Coordenadas::from_lat_lon(0.0, 0.0),
             latitud: 0.0,
             longitud: 0.0,
             rango: 0.0,
@@ -60,8 +68,10 @@ impl Dron {
             duracion_bateria: 0,
             bateria_minima: 0,
             incidentes_cercanos: HashSet::new(),
+            //posicion_centro_area_dron: Coordenadas::from_lat_lon(0.0, 0.0),
             latitud_central: 0.0,
             longitud_central: 0.0,
+            //posicion_centro_operaciones: Coordenadas::from_lat_lon(0.0, 0.0),
             latitud_centro_operaciones: 0.0,
             longitud_centro_operaciones: 0.0,
             configuracion,
@@ -132,6 +142,7 @@ impl Dron {
 
     fn setear_valores(&mut self, dron: Dron) {
         self.id = dron.id;
+        //self.posicion_dron = dron.posicion_dron;
         self.latitud = dron.latitud;
         self.longitud = dron.longitud;
         self.rango = dron.rango;
@@ -142,8 +153,10 @@ impl Dron {
         self.duracion_bateria = dron.duracion_bateria;
         self.bateria_minima = dron.bateria_minima;
         self.incidentes_cercanos = dron.incidentes_cercanos;
+        //self.posicion_centro_area_dron = dron.posicion_centro_area_dron;
         self.latitud_central = dron.latitud_central;
         self.longitud_central = dron.longitud_central;
+        //self.posicion_centro_operaciones = dron.posicion_centro_operaciones;
         self.latitud_centro_operaciones = dron.latitud_centro_operaciones;
         self.longitud_centro_operaciones = dron.longitud_centro_operaciones;
     }
@@ -184,6 +197,7 @@ impl Serializable for Dron {
     fn serializar(&self) -> Vec<u8> {
         let mut parametros: Vec<String> = Vec::new();
         parametros.push(format!("{}", self.id));
+        //parametros.push(format!("{:?}", self.posicion_dron));
         parametros.push(format!("{}", self.latitud));
         parametros.push(format!("{}", self.longitud));
         parametros.push(format!("{}", self.rango));
@@ -194,8 +208,10 @@ impl Serializable for Dron {
         parametros.push(format!("{}", self.duracion_bateria));
         parametros.push(format!("{}", self.bateria_minima));
         parametros.push(serializar_vector_incidentes(&self.incidentes_cercanos).to_string());
+        //parametros.push(format!("{:?}", self.posicion_centro_area_dron));
         parametros.push(format!("{}", self.latitud_central));
         parametros.push(format!("{}", self.longitud_central));
+        //parametros.push(format!("{:?}", self.posicion_centro_operacione));
         parametros.push(format!("{}", self.latitud_centro_operaciones));
         parametros.push(format!("{}", self.longitud_centro_operaciones));
 
@@ -213,6 +229,14 @@ impl Serializable for Dron {
             .ok_or(DeserializationError::InvalidData)?
             .parse()
             .map_err(|_| DeserializationError::InvalidData)?;
+
+        /* 
+        let posicion_dron = parametros
+            .next()
+            .ok_or(DeserializationError::MissingField)?
+            .parse()
+            .map_err(|_| DeserializationError::InvalidData)?;
+        */
 
         let latitud = parametros
             .next()
@@ -276,6 +300,14 @@ impl Serializable for Dron {
                 .ok_or(DeserializationError::MissingField)?,
         )?;
 
+        /*
+        let posicion_centro_area_dron = parametros
+            .next()
+            .ok_or(DeserializationError::MissingField)?
+            .parse()
+            .map_err(|_| DeserializationError::InvalidData)?;
+        */
+
         let latitud_central = parametros
             .next()
             .ok_or(DeserializationError::InvalidData)?
@@ -287,6 +319,14 @@ impl Serializable for Dron {
             .ok_or(DeserializationError::InvalidData)?
             .parse()
             .map_err(|_| DeserializationError::InvalidData)?;
+
+        /*
+        let posicion_centro_operaciones = parametros
+            .next()
+            .ok_or(DeserializationError::InvalidData)?
+            .parse()
+            .map_err(|_| DeserializationError::InvalidData)?;
+        */
 
         let latitud_centro_operaciones = parametros
             .next()
