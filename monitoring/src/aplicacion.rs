@@ -136,7 +136,7 @@ impl Aplicacion {
     fn mostrar_esquina_inferior_derecha(&mut self, ui: &mut egui::Ui) {
         match self.listar {
             Listar::Incidentes => Listar::listar_incidentes(ui, &self.estado.incidentes(), self),
-            Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras()),
+            Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras(), self),
         }
     }
 }

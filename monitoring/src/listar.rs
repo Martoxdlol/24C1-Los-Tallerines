@@ -43,7 +43,7 @@ impl Listar {
     ///
     /// Muestra el id de la cámara y si está activa o en ahorro.
     /// Listar tiene que estar en Cámaras.
-    pub fn listar_camaras(ui: &mut Ui, camaras: &[camara::Camara]) {
+    pub fn listar_camaras(ui: &mut Ui, camaras: &[camara::Camara], aplicacion: &mut Aplicacion) {
         if !camaras.is_empty() {
             egui::Window::new("Lista de cámaras")
                 .collapsible(false)
@@ -57,7 +57,23 @@ impl Listar {
                             let nombre =
                                 format!("{}: {}", camara.id, estado_camara_a_string(camara));
 
-                            ui.add_sized([350., 40.], |ui: &mut Ui| ui.label(nombre));
+                                ui.scope(|ui| {
+                                    ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                                        Color32::TRANSPARENT;
+                                    if ui
+                                        .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
+                                        .clicked()
+                                    {
+                                        // Si clickeas el incidente te lleva a esa posición.
+                                        aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
+                                            camara.lat,
+                                            camara.lon,
+                                        ));
+                                        // Cambia la AccionIncidente a Modificar.
+                                        //aplicacion.accion =
+                                         //   Accion::Incidentes(AccionIncidente::Modificar(incidente.id));
+                                    }
+                                });
                         }
                     });
                 });
