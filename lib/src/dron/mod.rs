@@ -1,30 +1,18 @@
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::thread;
-use std::time::Duration;
-use std::{collections::HashSet, io};
-
-//use crate::bateria::Bateria;
-//use crate::coordenadas::Coordenadas;
+use std::{
+    sync::mpsc::{self, Receiver, Sender},
+    thread,
+    time::Duration,
+    {collections::HashSet, io},
+};
 
 use crate::{
     configuracion::Configuracion,
     csv::{csv_encodear_linea, csv_parsear_linea},
     serializables::{error::DeserializationError, guardar::cargar_serializable, Serializable},
     estado_dron::EstadoDron,
+    //bateria::Bateria,
+    //coordenadas::Coordenadas
 };
-
-/*
-#[derive(Debug, Clone)]
-pub enum EstadoDron {
-    EnEspera,
-    VolviendoACentroDeOperacion,
-    YendoAIncidente,
-    AtendiendoIncidente,
-    YendoACentral,
-    CargandoEnCentral,
-    Error,
-}
-*/
 
 #[derive(Debug, Clone)]
 

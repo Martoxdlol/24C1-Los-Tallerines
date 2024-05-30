@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{csv::{csv_encodear_linea, csv_parsear_linea}, serializables::{error::DeserializationError, Serializable}};
 
 #[derive(Debug, Clone)]
