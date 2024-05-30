@@ -5,11 +5,15 @@ use std::{
     {collections::HashSet, io},
 };
 
+use estado::Estado;
+
+//pub mod estado;
+//use estado::EstadoDron;
+
 use crate::{
     configuracion::Configuracion,
     csv::{csv_encodear_linea, csv_parsear_linea},
     serializables::{error::DeserializationError, guardar::cargar_serializable, Serializable},
-    estado_dron::EstadoDron,
     //bateria::Bateria,
     coordenadas::Coordenadas
 };
@@ -47,7 +51,7 @@ pub struct Dron {
     pub id: u64,
     posicion_dron: Coordenadas,
     pub rango: f64,
-    estado: EstadoDron,
+    estado: Estado,
     direccion: f64, // En grados, sentido horario, empezando desde el norte
     velocidad: f64,
     //bateria: Bateria,
@@ -89,7 +93,7 @@ impl Dron {
             id: 0,
             posicion_dron: Coordenadas::from_lat_lon(0.0, 0.0),
             rango: 0.0,
-            estado: EstadoDron::EnEspera,
+            estado: Estado::EnEspera,
             direccion: 0.0,
             velocidad: 0.0,
             //bateria: Bateria::new(0, 0),

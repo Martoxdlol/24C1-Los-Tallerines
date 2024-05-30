@@ -8,4 +8,3 @@ pub mod parseador;
 pub mod serializables;
 pub mod stream;
 pub mod bateria;
-pub mod estado_dron;
