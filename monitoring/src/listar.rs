@@ -3,6 +3,7 @@ use crate::aplicacion::Aplicacion;
 use egui::{Color32, Ui};
 use lib::{camara, incidente::Incidente};
 use walkers::Position;
+use crate::accion::Accion;
 
 /// Enum para saber si se listan incidentes o cámaras.
 pub enum Listar {
@@ -93,8 +94,8 @@ impl Listar {
                                         incidente.lon,
                                     ));
                                     // Cambia la AccionIncidente a Modificar.
-                                    aplicacion.accion_incidente =
-                                        AccionIncidente::Modificar(incidente.id);
+                                    aplicacion.accion =
+                                        Accion::Incidentes(AccionIncidente::Modificar(incidente.id));
                                 }
                             });
                         }

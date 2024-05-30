@@ -1,4 +1,5 @@
 use crate::accion_incidente::AccionIncidente;
+use crate::accion::Accion;
 use crate::botones_mover_mapa;
 use crate::iconos;
 use crate::listar::Listar;
@@ -42,7 +43,7 @@ pub struct Aplicacion {
     pub recibir_estado: Receiver<Estado>,
     pub enviar_comando: Sender<Comando>,
     pub listar: Listar,
-    pub accion_incidente: AccionIncidente,
+    pub accion: Accion,
 }
 
 impl Aplicacion {
@@ -63,7 +64,7 @@ impl Aplicacion {
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
-            accion_incidente: AccionIncidente::Crear,
+            accion: Accion::Incidentes(AccionIncidente::Crear),
         }
     }
 
@@ -105,23 +106,23 @@ impl Aplicacion {
 
     /// Que mostrar en la esquina superior izquierda.
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
-        match self.accion_incidente {
-            AccionIncidente::Crear => {
+        match self.accion {
+            Accion::Incidentes(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionIncidente::agregar_incidente(ui, clicked_at, self);
                 }
             }
-            AccionIncidente::Modificar(id) => {
+            Accion::Incidentes(AccionIncidente::Modificar(id)) => {
                 if let Some(incidente) = self.estado.incidente(id) {
                     AccionIncidente::modificar_incidente(ui, &incidente, self);
                 }
             }
-            AccionIncidente::CambiarDetalle(id) => {
+            Accion::Incidentes(AccionIncidente::CambiarDetalle(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     AccionIncidente::cambiar_detalle_incidente(ui, self, &mut incidente);
                 }
             }
-            AccionIncidente::CambiarUbicacion(id) => {
+            Accion::Incidentes(AccionIncidente::CambiarUbicacion(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionIncidente::cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
