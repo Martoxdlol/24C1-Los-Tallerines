@@ -7,3 +7,4 @@ pub mod incidente;
 pub mod parseador;
 pub mod serializables;
 pub mod stream;
+pub mod bateria;

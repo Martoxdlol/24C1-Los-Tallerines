@@ -4,6 +4,7 @@ use std::thread;
 use std::time::Duration;
 use std::{collections::HashSet, io};
 
+use crate::bateria::Bateria;
 use crate::{
     configuracion::Configuracion,
     csv::{csv_encodear_linea, csv_parsear_linea},
@@ -22,6 +23,9 @@ pub enum EstadoDron {
 }
 
 #[derive(Debug, Clone)]
+
+// TODO: Reemplazar campos duracion_bateria y bateria_minima por un struct bateria y hacer
+// la descarga de la bateria dentro del struct bateria
 pub struct Dron {
     pub id: u64,
     pub latitud: f64,
@@ -30,6 +34,7 @@ pub struct Dron {
     estado: EstadoDron,
     direccion: f64, // En grados, sentido horario, empezando desde el norte
     velocidad: f64,
+    //bateria: Bateria,
     pub duracion_bateria: u64, // En segundos
     pub bateria_minima: u64,
     pub incidentes_cercanos: HashSet<u64>,
@@ -51,6 +56,7 @@ impl Dron {
             estado: EstadoDron::EnEspera,
             direccion: 0.0,
             velocidad: 0.0,
+            //bateria: Bateria::new(0, 0),
             duracion_bateria: 0,
             bateria_minima: 0,
             incidentes_cercanos: HashSet::new(),
@@ -67,7 +73,6 @@ impl Dron {
         // Canal por el cual se va comunicando la bateria del dron
         let (tx_descarga_bateria, rx_descarga_bateria) = mpsc::channel::<u64>();
         self.cargar_dron(tx_descarga_bateria)?;
-
 
         let mut bateria_descargada = false;
         loop {
@@ -133,6 +138,7 @@ impl Dron {
         self.estado = dron.estado;
         self.direccion = dron.direccion;
         self.velocidad = dron.velocidad;
+        //self.bateria = dron.bateria;
         self.duracion_bateria = dron.duracion_bateria;
         self.bateria_minima = dron.bateria_minima;
         self.incidentes_cercanos = dron.incidentes_cercanos;
@@ -144,6 +150,8 @@ impl Dron {
 
     /// Se descarga la bateria hasta alcanzar el nivel minimo de bateria del dron
     fn descargar_bateria(&mut self, tx_descarga_bateria: Sender<u64>) {
+        //let bateria_minima = self.bateria.bateria_minima;
+        //let duracion_bateria = self.bateria.duracion_bateria;
         let bateria_minima = self.bateria_minima;
         let duracion_bateria = self.duracion_bateria;
         println!(
@@ -182,7 +190,9 @@ impl Serializable for Dron {
         parametros.push(format!("{:?}", self.estado));
         parametros.push(format!("{}", self.direccion));
         parametros.push(format!("{}", self.velocidad));
+        //parametros.push(format!("{:?}", self.bateria));
         parametros.push(format!("{}", self.duracion_bateria));
+        parametros.push(format!("{}", self.bateria_minima));
         parametros.push(serializar_vector_incidentes(&self.incidentes_cercanos).to_string());
         parametros.push(format!("{}", self.latitud_central));
         parametros.push(format!("{}", self.longitud_central));
@@ -240,6 +250,14 @@ impl Serializable for Dron {
             .parse()
             .map_err(|_| DeserializationError::InvalidData)?;
 
+        /*
+        let bateria = parametros
+            .next()
+            .ok_or(DeserializationError::InvalidData)?
+            .parse()
+            .map_err(|_| DeserializationError::InvalidData)?;
+        */
+
         let duracion_bateria = parametros
             .next()
             .ok_or(DeserializationError::InvalidData)?
@@ -290,6 +308,7 @@ impl Serializable for Dron {
             estado,
             direccion,
             velocidad,
+            //bateria,
             duracion_bateria,
             bateria_minima,
             incidentes_cercanos,
