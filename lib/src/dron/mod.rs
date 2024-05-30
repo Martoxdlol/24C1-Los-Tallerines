@@ -1,13 +1,13 @@
+use std::str::FromStr;
 use std::sync::mpsc::{self, Sender};
 use std::thread;
 use std::time::Duration;
 use std::{collections::HashSet, io};
-use std::str::FromStr;
 
 use crate::{
-    csv::{csv_encodear_linea, csv_parsear_linea},
-    serializables::{error::DeserializationError, Serializable, guardar::cargar_serializable}, 
     configuracion::Configuracion,
+    csv::{csv_encodear_linea, csv_parsear_linea},
+    serializables::{error::DeserializationError, guardar::cargar_serializable, Serializable},
 };
 
 #[derive(Debug, Clone)]
@@ -66,7 +66,7 @@ impl Dron {
         let (tx_descarga_bateria, rx_descarga_bateria) = mpsc::channel::<u64>();
         self.cargar_dron(tx_descarga_bateria)?;
 
-        loop{
+        loop {
             match rx_descarga_bateria.try_recv() {
                 Ok(bateria) => {
                     println!("Alerta de nivel de bateria: {:.2}%", bateria);
@@ -80,9 +80,9 @@ impl Dron {
                     break;
                 }
             }
-    
+
             thread::sleep(Duration::from_secs(2));
-        };
+        }
 
         Ok(())
     }
@@ -130,7 +130,10 @@ impl Dron {
     fn descargar_bateria(&mut self, tx_descarga_bateria: Sender<u64>) {
         let bateria_minima = self.bateria_minima;
         let duracion_bateria = self.duracion_bateria;
-        println!("Bateria minima: {}, duracion de la bateria: {}", bateria_minima, duracion_bateria);
+        println!(
+            "Bateria minima: {}, duracion de la bateria: {}",
+            bateria_minima, duracion_bateria
+        );
 
         thread::spawn(move || {
             let descarga_por_segundo: u64 = (100 - bateria_minima) / duracion_bateria;
@@ -140,16 +143,15 @@ impl Dron {
                 thread::sleep(Duration::from_secs(descarga_por_segundo));
 
                 bateria -= descarga_por_segundo;
-    
+
                 println!("Nivel de bateria: {:.2}%", bateria);
-    
+
                 if bateria <= bateria_minima {
                     tx_descarga_bateria.send(bateria).unwrap();
                 }
             }
         });
     }
-
 }
 
 impl Serializable for Dron {
