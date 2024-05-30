@@ -111,7 +111,7 @@ impl Listar {
                                     ));
                                     // Cambia la AccionIncidente a Modificar.
                                     aplicacion.accion =
-                                        Accion::Incidentes(AccionIncidente::Modificar(incidente.id));
+                                        Accion::Incidente(AccionIncidente::Modificar(incidente.id));
                                 }
                             });
                         }

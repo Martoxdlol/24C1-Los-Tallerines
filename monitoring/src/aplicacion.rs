@@ -64,7 +64,7 @@ impl Aplicacion {
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
-            accion: Accion::Incidentes(AccionIncidente::Crear),
+            accion: Accion::Incidente(AccionIncidente::Crear),
         }
     }
 
@@ -112,28 +112,29 @@ impl Aplicacion {
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
         //TODO: Separar por botones de incidentes y cámaras.
         match self.accion {
-            Accion::Incidentes(AccionIncidente::Crear) => {
+            Accion::Incidente(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionIncidente::agregar_incidente(ui, clicked_at, self);
                 }
             }
-            Accion::Incidentes(AccionIncidente::Modificar(id)) => {
+            Accion::Incidente(AccionIncidente::Modificar(id)) => {
                 if let Some(incidente) = self.estado.incidente(id) {
                     AccionIncidente::modificar_incidente(ui, &incidente, self);
                 }
             }
-            Accion::Incidentes(AccionIncidente::CambiarDetalle(id)) => {
+            Accion::Incidente(AccionIncidente::CambiarDetalle(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     AccionIncidente::cambiar_detalle_incidente(ui, self, &mut incidente);
                 }
             }
-            Accion::Incidentes(AccionIncidente::CambiarUbicacion(id)) => {
+            Accion::Incidente(AccionIncidente::CambiarUbicacion(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionIncidente::cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
                     }
                 }
             }
+            Accion::Camara(_) => {}
         }
     }
 

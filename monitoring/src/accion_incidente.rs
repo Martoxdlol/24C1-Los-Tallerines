@@ -119,7 +119,7 @@ impl AccionIncidente {
                         .detalle
                         .clone_from(&aplicacion.detalle_incidente);
                     aplicacion.detalle_incidente.clear();
-                    aplicacion.accion = Accion::Incidentes(AccionIncidente::Crear);
+                    aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
                     Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
                     Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
@@ -157,7 +157,7 @@ impl AccionIncidente {
                     incidente_nuevo.lat = clicked_at.lat();
                     incidente_nuevo.lon = clicked_at.lon();
                     aplicacion.detalle_incidente.clear();
-                    aplicacion.accion = Accion::Incidentes(AccionIncidente::Crear);
+                    aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
                     Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
                     Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
@@ -171,21 +171,21 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
         if ui.button("Finalizar incidente").clicked() {
             Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
             aplicacion.detalle_incidente.clear();
-            aplicacion.accion = Accion::Incidentes(AccionIncidente::Crear);
+            aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
         }
         if ui.button("Modificar detalle").clicked() {
             aplicacion.detalle_incidente.clone_from(&incidente.detalle);
-            aplicacion.accion = Accion::Incidentes(AccionIncidente::CambiarDetalle(incidente.id));
+            aplicacion.accion = Accion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
         }
         ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
             aplicacion.accion =
-                Accion::Incidentes(AccionIncidente::CambiarUbicacion(incidente.id));
+                Accion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
         }
         if ui.button("Cancelar").clicked() {
             aplicacion.detalle_incidente.clear();
-            aplicacion.accion = Accion::Incidentes(AccionIncidente::Crear);
+            aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
         }
         ui.end_row();
     });
