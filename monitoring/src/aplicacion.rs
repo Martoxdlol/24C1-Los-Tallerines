@@ -68,6 +68,9 @@ impl Aplicacion {
         }
     }
 
+    /// Actualiza la aplicación.
+    ///
+    /// Se llama en cada frame.
     fn actualizar_aplicacion(&mut self, ui: &mut egui::Ui) {
         self.actualizar_mapa(ui);
 
@@ -86,6 +89,7 @@ impl Aplicacion {
         self.mostrar_esquina_inferior_derecha(ui);
     }
 
+    /// Actualiza el mapa.
     fn actualizar_mapa(&mut self, ui: &mut egui::Ui) {
         // coordenadas iniciales
         let posicion_inicial = iconos::obelisco();
@@ -106,6 +110,7 @@ impl Aplicacion {
 
     /// Que mostrar en la esquina superior izquierda.
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
+        //TODO: Separar por botones de incidentes y cámaras.
         match self.accion {
             Accion::Incidentes(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
@@ -132,7 +137,8 @@ impl Aplicacion {
         }
     }
 
-    /// Que mostrar en la esquina superior derecha.
+
+    /// Que mostrar en la esquina inferior derecha.
     fn mostrar_esquina_inferior_derecha(&mut self, ui: &mut egui::Ui) {
         match self.listar {
             Listar::Incidentes => Listar::listar_incidentes(ui, &self.estado.incidentes(), self),
