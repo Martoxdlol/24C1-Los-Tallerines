@@ -1,8 +1,8 @@
+use std::sync::mpsc::{self, Sender};
 use std::{collections::HashSet, io};
 use std::str::FromStr;
 
 use crate::{
-    coordenadas::Coordenadas,
     csv::{csv_encodear_linea, csv_parsear_linea},
     serializables::{error::DeserializationError, Serializable, guardar::cargar_serializable}, 
     configuracion::Configuracion,
@@ -30,7 +30,7 @@ pub struct Dron {
     velocidad: f64,
     pub duracion_bateria: u64, // En segundos
     pub bateria_minima: u64,
-    pub incidentes: HashSet<u64>,
+    pub incidentes_cercanos: HashSet<u64>,
     latitud_central: f64,
     longitud_central: f64,
     latitud_centro_operaciones: f64,
@@ -50,7 +50,7 @@ impl Dron {
             velocidad: 0.0,
             duracion_bateria: 0,
             bateria_minima: 0,
-            incidentes: HashSet::new(),
+            incidentes_cercanos: HashSet::new(),
             latitud_central: 0.0,
             longitud_central: 0.0,
             latitud_centro_operaciones: 0.0,
@@ -60,12 +60,14 @@ impl Dron {
     }
 
     pub fn iniciar(&mut self) -> io::Result<()> {
-        self.cargar_dron()?;
+        // Canal por el cual se va comunicando la bateria del dron
+        let (tx_descarga_bateria, rx_descarga_bateria) = mpsc::channel::<u64>();
+        self.cargar_dron(tx_descarga_bateria)?;
 
         Ok(())
     }
 
-    fn cargar_dron(&mut self) -> io::Result<()> {
+    fn cargar_dron(&mut self, tx_descarga_bateria: Sender<u64>) -> io::Result<()> {
         let ruta_archivo_dron = self
             .configuracion
             .obtener::<String>("drones")
@@ -82,17 +84,8 @@ impl Dron {
         self.setear_valores(dron);
         println!("\nDron: {:?}", self);
 
-        self.incidentes.clear();
-        self.iniciar_dron();
-
-        /*
-        let (tx, rx) = mpsc::channel::<u64>();
-        self.descargar_bateria(dron.clone(), tx);
-
-        self.estado.dron = Some(dron.clone());
-
-        println!("\nIncidentes en rango: {:?}", dron.incidentes);
-        */
+        self.incidentes_cercanos.clear();
+        self.descargar_bateria(tx_descarga_bateria);
 
         Ok(())
     }
@@ -107,15 +100,22 @@ impl Dron {
         self.velocidad = dron.velocidad;
         self.duracion_bateria = dron.duracion_bateria;
         self.bateria_minima = dron.bateria_minima;
-        self.incidentes = dron.incidentes;
+        self.incidentes_cercanos = dron.incidentes_cercanos;
         self.latitud_central = dron.latitud_central;
         self.longitud_central = dron.longitud_central;
         self.latitud_centro_operaciones = dron.latitud_centro_operaciones;
         self.longitud_centro_operaciones = dron.longitud_centro_operaciones;
     }
 
-    fn iniciar_dron(&mut self) {
+    fn descargar_bateria(&mut self, tx_descarga_bateria: Sender<u64>) {
+        /*
+        let (tx, rx) = mpsc::channel::<u64>();
+        self.descargar_bateria(dron.clone(), tx);
 
+        self.estado.dron = Some(dron.clone());
+
+        println!("\nIncidentes en rango: {:?}", dron.incidentes);
+        */
     }
 
 }
@@ -131,7 +131,7 @@ impl Serializable for Dron {
         parametros.push(format!("{}", self.direccion));
         parametros.push(format!("{}", self.velocidad));
         parametros.push(format!("{}", self.duracion_bateria));
-        parametros.push(serializar_vector_incidentes(&self.incidentes).to_string());
+        parametros.push(serializar_vector_incidentes(&self.incidentes_cercanos).to_string());
         parametros.push(format!("{}", self.latitud_central));
         parametros.push(format!("{}", self.longitud_central));
         parametros.push(format!("{}", self.latitud_centro_operaciones));
@@ -200,7 +200,7 @@ impl Serializable for Dron {
             .parse()
             .map_err(|_| DeserializationError::InvalidData)?;
 
-        let incidentes = deserialize_vector_incidentes(
+        let incidentes_cercanos = deserialize_vector_incidentes(
             &parametros
                 .next()
                 .ok_or(DeserializationError::MissingField)?,
@@ -240,7 +240,7 @@ impl Serializable for Dron {
             velocidad,
             duracion_bateria,
             bateria_minima,
-            incidentes,
+            incidentes_cercanos,
             latitud_central,
             longitud_central,
             latitud_centro_operaciones,
