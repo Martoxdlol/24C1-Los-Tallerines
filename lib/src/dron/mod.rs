@@ -5,8 +5,7 @@ use std::time::Duration;
 use std::{collections::HashSet, io};
 
 //use crate::bateria::Bateria;
-
-use crate::coordenadas::Coordenadas;
+//use crate::coordenadas::Coordenadas;
 
 use crate::{
     configuracion::Configuracion,
@@ -85,12 +84,21 @@ impl Dron {
         self.cargar_dron(tx_descarga_bateria)?;
 
         let mut bateria_descargada = false;
-        loop {
-            bateria_descargada = self.verificar_nivel_de_bateria(&rx_descarga_bateria);
-            if bateria_descargada {
-                break;
+        while !bateria_descargada {
+            if let Err(e) = self.inicio() {
+                eprintln!("Error en hilo principal: {}", e);
+                std::thread::sleep(std::time::Duration::from_secs(1));
             }
+
+            bateria_descargada = self.verificar_nivel_de_bateria(&rx_descarga_bateria);
         }
+
+        Ok(())
+    }
+
+    /// Inicia el bucle de eventos del sistema
+    /// Este bucle puede terminar por un error de conexión
+    fn inicio(&mut self) -> io::Result<()> {
 
         Ok(())
     }
