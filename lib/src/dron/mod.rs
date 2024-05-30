@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
@@ -11,8 +10,10 @@ use crate::{
     configuracion::Configuracion,
     csv::{csv_encodear_linea, csv_parsear_linea},
     serializables::{error::DeserializationError, guardar::cargar_serializable, Serializable},
+    estado_dron::EstadoDron,
 };
 
+/*
 #[derive(Debug, Clone)]
 pub enum EstadoDron {
     EnEspera,
@@ -23,6 +24,7 @@ pub enum EstadoDron {
     CargandoEnCentral,
     Error,
 }
+*/
 
 #[derive(Debug, Clone)]
 
@@ -385,20 +387,4 @@ fn deserialize_vector_incidentes(data: &str) -> Result<HashSet<u64>, Deserializa
     data.split(';')
         .map(|id| id.parse().map_err(|_| DeserializationError::InvalidData))
         .collect()
-}
-
-impl FromStr for EstadoDron {
-    type Err = DeserializationError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "EnEspera" => Ok(EstadoDron::EnEspera),
-            "VolviendoACentroDeOperacion" => Ok(EstadoDron::VolviendoACentroDeOperacion),
-            "YendoAIncidente" => Ok(EstadoDron::YendoAIncidente),
-            "AtendiendoIncidente" => Ok(EstadoDron::AtendiendoIncidente),
-            "YendoACentral" => Ok(EstadoDron::YendoACentral),
-            "CargandoEnCentral" => Ok(EstadoDron::CargandoEnCentral),
-            _ => Err(DeserializationError::InvalidData),
-        }
-    }
 }
