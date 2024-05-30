@@ -1,16 +1,20 @@
 use crate::{csv::{csv_encodear_linea, csv_parsear_linea}, serializables::{error::DeserializationError, Serializable}};
 
+use std::sync::mpsc::Sender;
+
 #[derive(Debug, Clone)]
 pub struct Bateria {
     pub duracion_bateria: u64, // En segundos
     pub bateria_minima: u64,
+    pub canal_notificar_bateria: Option<Sender<u64>>,
 }
 
 impl Bateria {
-    pub fn new(duracion_bateria: u64, bateria_minima: u64) -> Self {
+    pub fn new(duracion_bateria: u64, bateria_minima: u64, canal_notificar_bateria: Sender<u64>) -> Self {
         Bateria {
             duracion_bateria,
-            bateria_minima
+            bateria_minima,
+            canal_notificar_bateria: Some(canal_notificar_bateria),
         }
     }
 }
@@ -41,7 +45,8 @@ impl Serializable for Bateria {
 
         Ok(Bateria {
             duracion_bateria, 
-            bateria_minima
+            bateria_minima,
+            canal_notificar_bateria: None,
         })
     }
 }
