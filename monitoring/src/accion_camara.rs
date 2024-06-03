@@ -103,6 +103,45 @@ impl AccionCamara {
                 }
             });
     }
+
+    pub fn conectar_camara(
+        ui: &mut Ui,
+        clicked_at: walkers::Position,
+        aplicacion: &mut Aplicacion,
+    ) {
+        egui::Window::new("Conectar cámara")
+            .collapsible(false)
+            .movable(true)
+            .resizable(false)
+            .collapsible(true)
+            .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+            .show(ui.ctx(), |ui| {
+                ui.label(format!(
+                    "Conectar cámara en: {}, {}",
+                    clicked_at.lat(),
+                    clicked_at.lon()
+                ));
+                ui.add_sized([350., 40.], |ui: &mut Ui| {
+                    ui.text_edit_multiline(&mut aplicacion.input_usuario)
+                });
+                if let Ok(rango) = aplicacion.input_usuario.parse::<f64>() {
+                    if ui
+                        .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                        .clicked()
+                    {
+                        Comando::conectar_camara(
+                            &aplicacion.enviar_comando,
+                            clicked_at.lat(),
+                            clicked_at.lon(),
+                            rango,
+                        );
+
+                        aplicacion.input_usuario.clear();
+                        aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                    }
+                }
+            });
+    }
 }
 
 fn mostrar_incidentes_camara(camara: &Camara, estado: &mut Estado) -> String {
@@ -119,10 +158,14 @@ fn mostrar_incidentes_camara(camara: &Camara, estado: &mut Estado) -> String {
 
 fn botones_modificar_camara(ui: &mut Ui, camara: &Camara, aplicacion: &mut Aplicacion) {
     egui::Grid::new("some_unique_id").show(ui, |ui| {
+        if ui.button("Desconectar cámara").clicked() {
+            Comando::desconectar_camara(&aplicacion.enviar_comando, camara.id);
+        }
         if ui.button("Modificar rango").clicked() {
             //aplicacion.detalle_incidente.clone_from(&incidente.detalle);
             aplicacion.accion = Accion::Camara(AccionCamara::CambiarRango(camara.id));
         }
+        ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
             aplicacion.accion = Accion::Camara(AccionCamara::CambiarUbicacion(camara.id));

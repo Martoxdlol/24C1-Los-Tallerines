@@ -152,6 +152,11 @@ impl Aplicacion {
                     AccionCamara::modificar_rango_camara(ui, &camara, self);
                 }
             }
+            Accion::Camara(AccionCamara::Conectar) => {
+                if let Some(clicked_at) = self.clicks.clicked_at {
+                    AccionCamara::conectar_camara(ui, clicked_at, self);
+                }
+            }
             _ => {}
         }
     }

@@ -249,6 +249,24 @@ impl Sistema {
                         )?;
                     }
                 }
+                Comando::ConectarCamara(lat, lon, rango) => {
+                    cliente.publicar(
+                        "comandos.camaras",
+                        format!("conectar {} {} {}", lat, lon, rango).as_bytes(),
+                        None,
+                    )?;
+                    //self.estado.conectar_camara(camara);
+                    self.actualizar_estado_ui()?;
+                }
+                Comando::DesconectarCamara(id) => {
+                    if let Some(camara) = self.estado.camara(id) {
+                        cliente.publicar(
+                            "comandos.camaras",
+                            format!("desconectar {}", id).as_bytes(),
+                            None,
+                        )?;
+                    }
+                }
             }
         }
 
