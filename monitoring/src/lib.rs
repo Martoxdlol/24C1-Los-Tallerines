@@ -1,4 +1,5 @@
 pub mod accion_incidente;
+pub mod accion_camara;
 pub mod aplicacion;
 pub mod botones_mover_mapa;
 pub mod coordenadas;
@@ -8,3 +9,4 @@ pub mod logica;
 pub mod plugins;
 pub mod proveer_carto;
 pub mod provider;
+pub mod accion;

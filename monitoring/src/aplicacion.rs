@@ -1,4 +1,5 @@
 use crate::accion_incidente::AccionIncidente;
+use crate::accion::Accion;
 use crate::botones_mover_mapa;
 use crate::iconos;
 use crate::listar::Listar;
@@ -42,7 +43,7 @@ pub struct Aplicacion {
     pub recibir_estado: Receiver<Estado>,
     pub enviar_comando: Sender<Comando>,
     pub listar: Listar,
-    pub accion_incidente: AccionIncidente,
+    pub accion: Accion,
 }
 
 impl Aplicacion {
@@ -63,10 +64,13 @@ impl Aplicacion {
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
-            accion_incidente: AccionIncidente::Crear,
+            accion: Accion::Incidente(AccionIncidente::Crear),
         }
     }
 
+    /// Actualiza la aplicación.
+    ///
+    /// Se llama en cada frame.
     fn actualizar_aplicacion(&mut self, ui: &mut egui::Ui) {
         self.actualizar_mapa(ui);
 
@@ -85,6 +89,7 @@ impl Aplicacion {
         self.mostrar_esquina_inferior_derecha(ui);
     }
 
+    /// Actualiza el mapa.
     fn actualizar_mapa(&mut self, ui: &mut egui::Ui) {
         // coordenadas iniciales
         let posicion_inicial = iconos::obelisco();
@@ -105,37 +110,40 @@ impl Aplicacion {
 
     /// Que mostrar en la esquina superior izquierda.
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
-        match self.accion_incidente {
-            AccionIncidente::Crear => {
+        //TODO: Separar por botones de incidentes y cámaras.
+        match self.accion {
+            Accion::Incidente(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionIncidente::agregar_incidente(ui, clicked_at, self);
                 }
             }
-            AccionIncidente::Modificar(id) => {
+            Accion::Incidente(AccionIncidente::Modificar(id)) => {
                 if let Some(incidente) = self.estado.incidente(id) {
                     AccionIncidente::modificar_incidente(ui, &incidente, self);
                 }
             }
-            AccionIncidente::CambiarDetalle(id) => {
+            Accion::Incidente(AccionIncidente::CambiarDetalle(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     AccionIncidente::cambiar_detalle_incidente(ui, self, &mut incidente);
                 }
             }
-            AccionIncidente::CambiarUbicacion(id) => {
+            Accion::Incidente(AccionIncidente::CambiarUbicacion(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionIncidente::cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
                     }
                 }
             }
+            Accion::Camara(_) => {}
         }
     }
 
-    /// Que mostrar en la esquina superior derecha.
+
+    /// Que mostrar en la esquina inferior derecha.
     fn mostrar_esquina_inferior_derecha(&mut self, ui: &mut egui::Ui) {
         match self.listar {
             Listar::Incidentes => Listar::listar_incidentes(ui, &self.estado.incidentes(), self),
-            Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras()),
+            Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras(), self),
         }
     }
 }

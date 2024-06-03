@@ -3,6 +3,7 @@ use crate::logica::comando::Comando;
 use chrono::DateTime;
 use egui::Ui;
 use lib::incidente::Incidente;
+use crate::accion::Accion;
 
 /// Enum para la ventana de la esquina superior izquierda.
 pub enum AccionIncidente {
@@ -84,30 +85,10 @@ impl AccionIncidente {
                 ui.label("Estado: activo");
 
                 // Botones para finalizar, modificar detalle, cambiar ubicación y cancelar.
-                egui::Grid::new("some_unique_id").show(ui, |ui| {
-                    if ui.button("Finalizar incidente").clicked() {
-                        Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                        aplicacion.detalle_incidente.clear();
-                        aplicacion.accion_incidente = AccionIncidente::Crear;
-                    }
-                    if ui.button("Modificar detalle").clicked() {
-                        aplicacion.detalle_incidente.clone_from(&incidente.detalle);
-                        aplicacion.accion_incidente = AccionIncidente::CambiarDetalle(incidente.id);
-                    }
-                    ui.end_row();
-
-                    if ui.button("Modificar ubicacion").clicked() {
-                        aplicacion.accion_incidente =
-                            AccionIncidente::CambiarUbicacion(incidente.id);
-                    }
-                    if ui.button("Cancelar").clicked() {
-                        aplicacion.detalle_incidente.clear();
-                        aplicacion.accion_incidente = AccionIncidente::Crear;
-                    }
-                    ui.end_row();
-                });
+                botones_modificar_inicidente(ui, incidente, aplicacion);
             });
     }
+
 
     /// Ventana para cambiar el detalle de un incidente.
     /// Aparece en la esquina superior izquierda si accion_incidente es CambiarDetalle.
@@ -138,10 +119,9 @@ impl AccionIncidente {
                         .detalle
                         .clone_from(&aplicacion.detalle_incidente);
                     aplicacion.detalle_incidente.clear();
-                    aplicacion.accion_incidente = AccionIncidente::Crear;
+                    aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
-                    Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                    Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+                    Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
                 }
             });
     }
@@ -176,11 +156,36 @@ impl AccionIncidente {
                     incidente_nuevo.lat = clicked_at.lat();
                     incidente_nuevo.lon = clicked_at.lon();
                     aplicacion.detalle_incidente.clear();
-                    aplicacion.accion_incidente = AccionIncidente::Crear;
+                    aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
-                    Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                    Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+                    Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
                 }
             });
     }
+}
+
+fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion){
+    egui::Grid::new("some_unique_id").show(ui, |ui| {
+        if ui.button("Finalizar incidente").clicked() {
+            Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
+            aplicacion.detalle_incidente.clear();
+            aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
+        }
+        if ui.button("Modificar detalle").clicked() {
+            aplicacion.detalle_incidente.clone_from(&incidente.detalle);
+            aplicacion.accion = Accion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
+        }
+        ui.end_row();
+
+        if ui.button("Modificar ubicacion").clicked() {
+            aplicacion.accion =
+                Accion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
+        }
+        if ui.button("Cancelar").clicked() {
+            aplicacion.detalle_incidente.clear();
+            aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
+        }
+        ui.end_row();
+    });
+
 }
