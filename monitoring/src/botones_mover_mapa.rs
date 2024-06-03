@@ -19,7 +19,7 @@ fn alejar(ui: &mut Ui, map_memory: &mut MapMemory) {
     {
         let _ = map_memory.zoom_out();
     }
-}      
+}
 
 /// Barra con los 3 botones para mover el mapa
 pub fn zoom(ui: &Ui, map_memory: &mut MapMemory) {

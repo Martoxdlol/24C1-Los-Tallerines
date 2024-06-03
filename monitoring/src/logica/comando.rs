@@ -1,9 +1,11 @@
 use std::sync::mpsc::Sender;
 
-use lib::incidente::Incidente;
+use lib::{configuracion::Configuracion, incidente::Incidente};
 
 /// Comandos que se pueden enviar al hilo de la lógica
 pub enum Comando {
+    Configurar(Configuracion),
+    Desconectar,
     NuevoIncidente(Incidente),
     ModificarIncidente(Incidente),
     IncidenteFinalizado(u64),
@@ -44,7 +46,16 @@ impl Comando {
     pub fn conectar_camara(canal: &Sender<Comando>, lat: f64, lon: f64, rango: f64) {
         Self::enviar(canal, Comando::ConectarCamara(lat, lon, rango));
     }
+
     pub fn desconectar_camara(canal: &Sender<Comando>, id: u64) {
         Self::enviar(canal, Comando::DesconectarCamara(id));
+    }
+
+    pub fn configurar(canal: &Sender<Comando>, configuracion: Configuracion) {
+        Self::enviar(canal, Comando::Configurar(configuracion));
+    }
+
+    pub fn desconectar(canal: &Sender<Comando>) {
+        Self::enviar(canal, Comando::Desconectar);
     }
 }

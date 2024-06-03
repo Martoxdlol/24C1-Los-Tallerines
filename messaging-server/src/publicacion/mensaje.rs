@@ -1,5 +1,9 @@
+use std::fmt::Debug;
+
+use lib::parseador::mensaje::formatear_payload_debug;
+
 /// Representa un mensaje que se va a publicar en un tópico
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PublicacionMensaje {
     pub sid: String,
     pub topico: String,
@@ -63,5 +67,16 @@ impl PublicacionMensaje {
         bytes.extend_from_slice(b"\r\n");
 
         bytes
+    }
+}
+
+impl Debug for PublicacionMensaje {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Mensaje")
+            .field("topico", &self.topico)
+            .field("replay_to", &self.replay_to)
+            .field("payload", &formatear_payload_debug(&self.payload))
+            .field("header", &self.header)
+            .finish()
     }
 }

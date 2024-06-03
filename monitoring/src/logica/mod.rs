@@ -1,6 +1,7 @@
 use std::{
     io,
     sync::mpsc::{Receiver, Sender},
+    time::Duration,
 };
 
 use lib::{
@@ -67,8 +68,24 @@ impl Sistema {
         self.cargar_incidentes()?;
 
         loop {
+            if !self.estado.conectado {
+                if let Ok(Comando::Configurar(config)) = self.recibir_comando.try_recv() {
+                    self.configuracion = config;
+
+                    if let Err(e) = self.inicio() {
+                        eprintln!("Error al conectar al sistema: {}", e);
+                        self.estado.mensaje_error = Some(format!("{}", e));
+                        let _ = self.actualizar_estado_ui();
+                        std::thread::sleep(std::time::Duration::from_secs(1));
+                    }
+                }
+
+                continue;
+            }
+
             if let Err(e) = self.inicio() {
                 eprintln!("Error en hilo principal: {}", e);
+                self.estado.mensaje_error = Some(format!("{}", e));
                 std::thread::sleep(std::time::Duration::from_secs(1));
             }
         }
@@ -80,6 +97,24 @@ impl Sistema {
     fn inicio(&mut self) -> io::Result<()> {
         // Conectar el cliente al servidor de NATS
         let mut cliente = self.conectar()?;
+
+        let sub_conectado = cliente.suscribirse("comandos.monitoreo.conectado", None)?;
+
+        cliente.publicar("comandos.monitoreo.conectado", b"", None)?;
+
+        if sub_conectado
+            .leer_con_limite_de_tiempo(Duration::from_secs(5))?
+            .is_some()
+        {
+            self.estado.conectado = true;
+            self.estado.mensaje_error = None;
+            drop(sub_conectado);
+        } else {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "No se pudo conectar al sistema".to_string(),
+            ));
+        }
 
         // Publicar al servidor de NATS el estado de todas las cámaras
         self.publicar_y_guardar_estado_general(&cliente)?;
@@ -232,13 +267,19 @@ impl Sistema {
                     }
                 }
                 Comando::CamaraNuevaUbicacion(id, lat, lon) => {
-                    if let Some(_camara) = self.estado.camara(id) {
+                    if self.estado.camara(id).is_some() {
                         cliente.publicar(
                             "comandos.camaras",
                             format!("modificar ubicacion {} {} {}", id, lat, lon).as_bytes(),
                             None,
                         )?;
                     }
+                }
+                Comando::Desconectar => {
+                    self.estado.conectado = false;
+                    self.configuracion = Configuracion::default();
+                    self.actualizar_estado_ui()?;
+                    return Err(io::Error::new(io::ErrorKind::Other, "".to_string()));
                 }
                 Comando::CamaraNuevoRango(id, rango) => {
                     if let Some(_camara) = self.estado.camara(id) {
@@ -267,6 +308,7 @@ impl Sistema {
                         )?;
                     }
                 }
+                _ => {}
             }
         }
 

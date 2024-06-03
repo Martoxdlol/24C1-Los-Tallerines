@@ -7,6 +7,8 @@ use lib::{camara::Camara, incidente::Incidente};
 pub struct Estado {
     camaras: HashMap<u64, Camara>,
     incidentes: HashMap<u64, Incidente>,
+    pub conectado: bool,
+    pub mensaje_error: Option<String>,
 }
 
 impl Default for Estado {
@@ -20,6 +22,8 @@ impl Estado {
         Estado {
             camaras: HashMap::default(),
             incidentes: HashMap::default(),
+            conectado: false,
+            mensaje_error: None,
         }
     }
 

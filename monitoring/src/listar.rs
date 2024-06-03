@@ -1,9 +1,11 @@
-use crate::{accion_camara::AccionCamara, accion_incidente::AccionIncidente};
+use crate::accion::Accion;
 use crate::aplicacion::Aplicacion;
+use crate::logica::comando::Comando;
+use crate::{accion_camara::AccionCamara, accion_incidente::AccionIncidente};
 use egui::{Color32, Ui};
+use lib::camara::Camara;
 use lib::{camara, incidente::Incidente};
 use walkers::Position;
-use crate::accion::Accion;
 
 /// Enum para saber si se listan incidentes o cámaras.
 pub enum Listar {
@@ -38,6 +40,13 @@ impl Listar {
                         aplicacion.listar = Listar::Camaras;
                         aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
                     }
+                    if ui
+                        .add_sized([100., 20.], egui::Button::new("Salir"))
+                        .clicked()
+                    {
+                        println!("Saliendo");
+                        Comando::desconectar(&aplicacion.enviar_comando);
+                    }
                 });
             });
     }
@@ -55,27 +64,29 @@ impl Listar {
                 .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
                 .show(ui.ctx(), |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        for camara in camaras {
+                        let mut sorted_camaras = camaras.iter().collect::<Vec<&Camara>>();
+                        sorted_camaras.sort_by(|a, b| a.id.cmp(&b.id));
+
+                        for camara in sorted_camaras {
                             let nombre =
                                 format!("{}: {}", camara.id, estado_camara_a_string(camara));
 
-                                ui.scope(|ui| {
-                                    ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
-                                        Color32::TRANSPARENT;
-                                    if ui
-                                        .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
-                                        .clicked()
-                                    {
-                                        // Si clickeas el incidente te lleva a esa posición.
-                                        aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
-                                            camara.lat,
-                                            camara.lon,
-                                        ));
-                                        // Cambia la AccionIncidente a Modificar.
-                                        aplicacion.accion =
-                                           Accion::Camara(AccionCamara::Modificar(camara.id));
-                                    }
-                                });
+                            ui.scope(|ui| {
+                                ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                                    Color32::TRANSPARENT;
+                                if ui
+                                    .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
+                                    .clicked()
+                                {
+                                    // Si clickeas el incidente te lleva a esa posición.
+                                    aplicacion
+                                        .memoria_mapa
+                                        .center_at(Position::from_lat_lon(camara.lat, camara.lon));
+                                    // Cambia la AccionIncidente a Modificar.
+                                    aplicacion.accion =
+                                        Accion::Camara(AccionCamara::Modificar(camara.id));
+                                }
+                            });
                         }
                     });
                 });
