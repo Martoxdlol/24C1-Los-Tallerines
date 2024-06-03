@@ -7,6 +7,8 @@ use lib::{parseador::mensaje::Mensaje, stream::Stream};
 use std::sync::Arc;
 use std::{fmt::Debug, io};
 
+use chrono::{DateTime, Local};
+
 use crate::cuenta::Cuenta;
 use crate::{
     publicacion::{mensaje::PublicacionMensaje, Publicacion},
@@ -24,6 +26,8 @@ pub struct Conexion {
     registrador: Registrador,
     /// El parser se encarga de leer los bytes y generar mensajes
     parser: Parseador,
+    /// Tiempo del ultimo PING
+    tiempo_ultimo_ping: DateTime<Local>,
 
     pub desconectado: bool,
 
@@ -47,6 +51,7 @@ impl Conexion {
             stream,
             parser: Parseador::new(),
             registrador,
+            tiempo_ultimo_ping: Local::now(),
             desconectado: false,
             autenticado: false,
             cuentas,
@@ -61,12 +66,29 @@ impl Conexion {
         if self.desconectado {
             return;
         }
+        // Si hace falta enviar un PING o no
+        if self.enviar_ping() {
+            _ = self.escribir_bytes(b"PING\r\n");
+        }
 
         // Lee los bytes del stream y los envía al parser
         self.leer_bytes();
 
         // Lee mensaje y actua en consecuencia
         self.leer_mensajes(salida);
+    }
+
+    /// Chequea si pasaron 20 segundos desde el ultimo PING enviado
+    fn enviar_ping(&mut self) -> bool {
+        let tiempo_actual = Local::now();
+        let duracion_ultimo_ping = tiempo_actual.signed_duration_since(self.tiempo_ultimo_ping);
+
+        if duracion_ultimo_ping.num_seconds() >= 20 {
+            self.tiempo_ultimo_ping = tiempo_actual;
+            true
+        } else {
+            false
+        }
     }
 
     /// Este método lo envia el Hilo cuando recibe un mensaje
