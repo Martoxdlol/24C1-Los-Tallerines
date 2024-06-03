@@ -82,11 +82,11 @@ impl Estado {
         self.camaras.clear();
     }
 
-    pub fn incidente_a_string(self: &mut Self, id_incidente: &u64) -> String {
+    pub fn incidente_a_string(&mut self, id_incidente: &u64) -> String {
         let incidente = self.incidente(*id_incidente);
         if let Some(incidente) = incidente {
-            return format!("{}", incidente.detalle);
+            return incidente.detalle.to_string();
         }
-        return format!("No se encontró el incidente");
+        "No se encontró el incidente".to_string()
     }
 }

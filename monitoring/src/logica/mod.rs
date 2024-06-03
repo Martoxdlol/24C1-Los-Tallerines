@@ -102,7 +102,7 @@ impl Sistema {
 
         cliente.publicar("comandos.monitoreo.conectado", b"", None)?;
 
-        if let Some(_) = sub_conectado.leer_con_limite_de_tiempo(Duration::from_secs(5))? {
+        if  sub_conectado.leer_con_limite_de_tiempo(Duration::from_secs(5))?.is_some() {
             self.estado.conectado = true;
             self.estado.mensaje_error = None;
             drop(sub_conectado);
@@ -264,7 +264,7 @@ impl Sistema {
                     }
                 }
                 Comando::CamaraNuevaUbicacion(id, lat, lon) => {
-                    if let Some(camara) = self.estado.camara(id) {
+                    if self.estado.camara(id).is_some() {
                         cliente.publicar(
                             "comandos.camaras",
                             format!("modificar ubicacion {} {} {}", id, lat, lon).as_bytes(),
@@ -319,12 +319,6 @@ impl Sistema {
     ) -> io::Result<()> {
         let bytes = incidente.serializar();
         let topico = format!("incidentes.{}.finalizado", incidente.id);
-        cliente.publicar(&topico, &bytes, None)
-    }
-
-    fn publicar_camara_desconectada(&self, cliente: &Cliente, camara: &Camara) -> io::Result<()> {
-        let bytes = camara.serializar();
-        let topico = format!("camara.{}.finalizado", camara.id);
         cliente.publicar(&topico, &bytes, None)
     }
 

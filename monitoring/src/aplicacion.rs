@@ -5,7 +5,6 @@ use crate::botones_mover_mapa;
 use crate::iconos;
 use crate::listar::Listar;
 use crate::logica::comando::Comando;
-use crate::logica::estado;
 use crate::logica::estado::Estado;
 use crate::plugins;
 use crate::provider::estilo_mapa;
@@ -70,7 +69,7 @@ impl Aplicacion {
             enviar_comando,
             listar: Listar::Incidentes,
             accion: Accion::Incidente(AccionIncidente::Crear),
-            configuracion: Configuracion::desde_argv().unwrap_or(Configuracion::new()),
+            configuracion: Configuracion::desde_argv().unwrap_or_default(),
         }
     }
 
@@ -163,8 +162,6 @@ impl Aplicacion {
     }
 
     fn mostrar_autenticacion(&mut self, ui: &mut egui::Ui) {
-        let h = ui.available_height();
-        let w = ui.available_width();
         egui::Window::new("Iniciar sesión")
             .collapsible(false)
             .movable(false)
@@ -259,7 +256,7 @@ impl eframe::App for Aplicacion {
         egui::CentralPanel::default()
             .frame(frame)
             .show(contexto, |ui| {
-                if (!self.estado.conectado) {
+                if !self.estado.conectado {
                     self.mostrar_autenticacion(ui);
                 } else {
                     self.mostrar_aplicacion(ui);

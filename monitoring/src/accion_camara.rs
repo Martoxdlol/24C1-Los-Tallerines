@@ -1,5 +1,5 @@
 use egui::Ui;
-use lib::camara::{self, Camara};
+use lib::camara::{Camara};
 
 use crate::{
     accion::Accion,
@@ -7,7 +7,7 @@ use crate::{
     listar::estado_camara_a_string,
     logica::{
         comando::Comando,
-        estado::{self, Estado},
+        estado::{Estado},
     },
 };
 
