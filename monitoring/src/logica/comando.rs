@@ -9,7 +9,10 @@ pub enum Comando {
     NuevoIncidente(Incidente),
     ModificarIncidente(Incidente),
     IncidenteFinalizado(u64),
+    ConectarCamara(f64, f64, f64),
+    DesconectarCamara(u64),
     CamaraNuevaUbicacion(u64, f64, f64),
+    CamaraNuevoRango(u64, f64),
 }
 
 impl Comando {
@@ -34,6 +37,18 @@ impl Comando {
 
     pub fn camara_nueva_ubicacion(canal: &Sender<Comando>, id: u64, lat: f64, lon: f64) {
         Self::enviar(canal, Comando::CamaraNuevaUbicacion(id, lat, lon));
+    }
+
+    pub fn camara_nuevo_rango(canal: &Sender<Comando>, id: u64, rango: f64) {
+        Self::enviar(canal, Comando::CamaraNuevoRango(id, rango));
+    }
+
+    pub fn conectar_camara(canal: &Sender<Comando>, lat: f64, lon: f64, rango: f64) {
+        Self::enviar(canal, Comando::ConectarCamara(lat, lon, rango));
+    }
+
+    pub fn desconectar_camara(canal: &Sender<Comando>, id: u64) {
+        Self::enviar(canal, Comando::DesconectarCamara(id));
     }
 
     pub fn configurar(canal: &Sender<Comando>, configuracion: Configuracion) {

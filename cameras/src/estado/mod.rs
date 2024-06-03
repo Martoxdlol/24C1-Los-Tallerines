@@ -33,6 +33,8 @@ impl Estado {
         if self.camara(camara.id).is_some() {
             return;
         }
+        camara.incidentes_primarios.clear();
+        camara.incidentes_secundarios.clear();
 
         // Establece las camaras lindantes
         self.establecer_camaras_lindantes(&camara);

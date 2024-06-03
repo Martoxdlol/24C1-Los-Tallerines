@@ -32,10 +32,10 @@ impl AccionIncidente {
                 ui.label(format!("En: {}, {}", clicked_at.lat(), clicked_at.lon()));
 
                 ui.add_sized([350., 40.], |ui: &mut Ui| {
-                    ui.text_edit_multiline(&mut aplicacion.detalle_incidente)
+                    ui.text_edit_multiline(&mut aplicacion.input_usuario)
                 });
 
-                if !aplicacion.detalle_incidente.trim().is_empty()
+                if !aplicacion.input_usuario.trim().is_empty()
                     && ui
                         .add_sized([350., 40.], egui::Button::new("Confirmar"))
                         .clicked()
@@ -43,13 +43,13 @@ impl AccionIncidente {
                     // Creo el incidente
                     let incidente = Incidente::new(
                         0,
-                        aplicacion.detalle_incidente.clone(),
+                        aplicacion.input_usuario.clone(),
                         clicked_at.lat(),
                         clicked_at.lon(),
                         chrono::offset::Local::now().timestamp_millis() as u64,
                     );
 
-                    aplicacion.detalle_incidente.clear();
+                    aplicacion.input_usuario.clear();
 
                     aplicacion.clicks.clear();
 
@@ -104,10 +104,10 @@ impl AccionIncidente {
             .anchor(egui::Align2::LEFT_TOP, [10., 10.])
             .show(ui.ctx(), |ui| {
                 ui.add_sized([350., 40.], |ui: &mut Ui| {
-                    ui.text_edit_multiline(&mut aplicacion.detalle_incidente)
+                    ui.text_edit_multiline(&mut aplicacion.input_usuario)
                 });
 
-                if !aplicacion.detalle_incidente.trim().is_empty()
+                if !aplicacion.input_usuario.trim().is_empty()
                     && ui
                         .add_sized([350., 40.], egui::Button::new("Confirmar"))
                         .clicked()
@@ -116,8 +116,8 @@ impl AccionIncidente {
                     let mut incidente_nuevo = incidente.clone();
                     incidente_nuevo
                         .detalle
-                        .clone_from(&aplicacion.detalle_incidente);
-                    aplicacion.detalle_incidente.clear();
+                        .clone_from(&aplicacion.input_usuario);
+                    aplicacion.input_usuario.clear();
                     aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
                     Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
@@ -154,7 +154,7 @@ impl AccionIncidente {
                     let mut incidente_nuevo = incidente.clone();
                     incidente_nuevo.lat = clicked_at.lat();
                     incidente_nuevo.lon = clicked_at.lon();
-                    aplicacion.detalle_incidente.clear();
+                    aplicacion.input_usuario.clear();
                     aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
                     Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
@@ -167,11 +167,11 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
     egui::Grid::new("some_unique_id").show(ui, |ui| {
         if ui.button("Finalizar incidente").clicked() {
             Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-            aplicacion.detalle_incidente.clear();
+            aplicacion.input_usuario.clear();
             aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
         }
         if ui.button("Modificar detalle").clicked() {
-            aplicacion.detalle_incidente.clone_from(&incidente.detalle);
+            aplicacion.input_usuario.clone_from(&incidente.detalle);
             aplicacion.accion = Accion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
         }
         ui.end_row();
@@ -180,7 +180,7 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
             aplicacion.accion = Accion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
         }
         if ui.button("Cancelar").clicked() {
-            aplicacion.detalle_incidente.clear();
+            aplicacion.input_usuario.clear();
             aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
         }
         ui.end_row();
