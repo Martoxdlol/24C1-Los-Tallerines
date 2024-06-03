@@ -234,6 +234,15 @@ impl Sistema {
                         )?;
                     }
                 }
+                Comando::CamaraNuevoRango(id, rango) => {
+                    if let Some(camara) = self.estado.camara(id) {
+                        cliente.publicar(
+                            "comandos.camaras",
+                            format!("modificar rango {} {}", id, rango).as_bytes(),
+                            None,
+                        )?;
+                    }
+                }
             }
         }
 

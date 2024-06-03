@@ -2,6 +2,7 @@
 #[derive(Debug)]
 pub enum Comando {
     Conectar(u64, f64, f64, f64),
+    ConectarSinId(f64, f64, f64),
     Desconectar(u64),
     ListarCamaras,
     Camara(u64),

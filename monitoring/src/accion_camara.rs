@@ -78,6 +78,31 @@ impl AccionCamara {
                 }
             });
     }
+
+    pub fn modificar_rango_camara(ui: &mut Ui, camara: &Camara, aplicacion: &mut Aplicacion) {
+        egui::Window::new("Modificar rango")
+            .collapsible(false)
+            .movable(true)
+            .resizable(false)
+            .collapsible(true)
+            .anchor(egui::Align2::LEFT_TOP, [10., 10.])
+            .show(ui.ctx(), |ui| {
+                ui.add_sized([350., 40.], |ui: &mut Ui| {
+                    ui.text_edit_multiline(&mut aplicacion.input_usuario)
+                });
+                if let Ok(rango) = aplicacion.input_usuario.parse::<f64>() {
+                    if ui
+                        .add_sized([350., 40.], egui::Button::new("Confirmar"))
+                        .clicked()
+                    {
+                        Comando::camara_nuevo_rango(&aplicacion.enviar_comando, camara.id, rango);
+
+                        aplicacion.input_usuario.clear();
+                        aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                    }
+                }
+            });
+    }
 }
 
 fn mostrar_incidentes_camara(camara: &Camara, estado: &mut Estado) -> String {

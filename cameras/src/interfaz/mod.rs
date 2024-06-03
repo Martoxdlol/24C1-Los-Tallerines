@@ -41,11 +41,21 @@ pub fn interpretar_comando(input: &str) -> Option<Comando> {
     let mut palabras = input.split_whitespace();
     match palabras.next() {
         Some("conectar") => {
-            let id = palabras.next()?.parse().ok()?;
-            let lat = palabras.next()?.parse().ok()?;
-            let lon = palabras.next()?.parse().ok()?;
-            let rango = palabras.next()?.parse().ok().unwrap_or(50.1);
-            Some(Comando::Conectar(id, lat, lon, rango))
+            let palabras_vector = palabras.collect::<Vec<&str>>();
+            if palabras_vector.len() == 3 {
+                let lat = palabras_vector[0].parse().ok()?;
+                let lon = palabras_vector[1].parse().ok()?;
+                let rango = palabras_vector[2].parse().ok()?;
+                Some(Comando::ConectarSinId(lat, lon, rango))
+            } else if palabras_vector.len() == 4 {
+                let id = palabras_vector[0].parse().ok()?;
+                let lat = palabras_vector[1].parse().ok()?;
+                let lon = palabras_vector[2].parse().ok()?;
+                let rango = palabras_vector[3].parse().ok().unwrap_or(50.1);
+                Some(Comando::Conectar(id, lat, lon, rango))
+            } else {
+                None
+            }
         }
         Some("desconectar") => {
             let id = palabras.next()?.parse().ok()?;

@@ -237,6 +237,10 @@ impl Sistema {
             Comando::Conectar(id, lat, lon, rango) => {
                 self.comando_conectar_camara(cliente, id, lat, lon, rango)?
             }
+            Comando::ConectarSinId(lat, lon, rango) => {
+                let id = self.buscar_id_camara();
+                self.comando_conectar_camara(cliente, id, lat, lon, rango)?
+            }
             Comando::Desconectar(id) => self.comando_desconectar_camara(cliente, id)?,
             Comando::ListarCamaras => self.comando_listar_camaras()?,
             Comando::ModifciarRango(id, rango) => {
@@ -250,6 +254,16 @@ impl Sistema {
             Comando::Actualizar => self.publicar_y_guardar_estado_general(cliente)?,
         }
         Ok(())
+    }
+
+    fn buscar_id_camara(&self) -> u64 {
+        let mut max_id = 1;
+        for camara in self.estado.camaras() {
+            if camara.id > max_id {
+                max_id = camara.id;
+            }
+        }
+        max_id + 1
     }
 
     fn leer_comandos_remotos(
