@@ -77,4 +77,12 @@ impl Estado {
     pub fn limpiar_camaras(&mut self) {
         self.camaras.clear();
     }
+
+    pub fn incidente_a_string(&mut self, id_incidente: &u64) -> String {
+        let incidente = self.incidente(*id_incidente);
+        if let Some(incidente) = incidente {
+            return incidente.detalle.to_string();
+        }
+        "No se encontró el incidente".to_string()
+    }
 }

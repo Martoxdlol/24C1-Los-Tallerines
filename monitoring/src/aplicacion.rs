@@ -1,5 +1,6 @@
-use crate::accion_incidente::AccionIncidente;
 use crate::accion::Accion;
+use crate::accion_camara::AccionCamara;
+use crate::accion_incidente::AccionIncidente;
 use crate::botones_mover_mapa;
 use crate::iconos;
 use crate::listar::Listar;
@@ -37,7 +38,7 @@ pub struct Aplicacion {
     pub opciones_mapa: HashMap<Provider, Box<dyn TilesManager + Send>>,
     pub estilo_mapa_elegido: Provider,
     pub memoria_mapa: MapMemory, // guarda el zoom, la posicion, el centro del mapa
-    pub detalle_incidente: String, // El input de cuando lo creas.
+    pub input_usuario: String,   // El input de cuando lo creas.
     pub clicks: plugins::ClickWatcher,
     pub estado: Estado,
     pub recibir_estado: Receiver<Estado>,
@@ -59,7 +60,7 @@ impl Aplicacion {
             estilo_mapa_elegido: Provider::CartoMaps,
             memoria_mapa: MapMemory::default(),
             clicks: Default::default(),
-            detalle_incidente: String::new(),
+            input_usuario: String::new(),
             estado: Estado::new(),
             recibir_estado,
             enviar_comando,
@@ -134,10 +135,30 @@ impl Aplicacion {
                     }
                 }
             }
-            Accion::Camara(_) => {}
+            Accion::Camara(AccionCamara::Modificar(id)) => {
+                if let Some(camara) = self.estado.camara(id) {
+                    AccionCamara::modificar_camara(ui, &camara, self);
+                }
+            }
+            Accion::Camara(AccionCamara::CambiarUbicacion(id)) => {
+                if let Some(camara) = self.estado.camara(id) {
+                    if let Some(clicked_at) = self.clicks.clicked_at {
+                        AccionCamara::modificar_ubicacion_camara(ui, &camara, self, clicked_at);
+                    }
+                }
+            }
+            Accion::Camara(AccionCamara::CambiarRango(id)) => {
+                if let Some(camara) = self.estado.camara(id) {
+                    AccionCamara::modificar_rango_camara(ui, &camara, self);
+                }
+            }
+            Accion::Camara(AccionCamara::Conectar) => {
+                if let Some(clicked_at) = self.clicks.clicked_at {
+                    AccionCamara::conectar_camara(ui, clicked_at, self);
+                }
+            }
         }
     }
-
 
     /// Que mostrar en la esquina inferior derecha.
     fn mostrar_esquina_inferior_derecha(&mut self, ui: &mut egui::Ui) {

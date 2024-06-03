@@ -231,6 +231,42 @@ impl Sistema {
                         self.actualizar_estado_ui()?;
                     }
                 }
+                Comando::CamaraNuevaUbicacion(id, lat, lon) => {
+                    if let Some(_camara) = self.estado.camara(id) {
+                        cliente.publicar(
+                            "comandos.camaras",
+                            format!("modificar ubicacion {} {} {}", id, lat, lon).as_bytes(),
+                            None,
+                        )?;
+                    }
+                }
+                Comando::CamaraNuevoRango(id, rango) => {
+                    if let Some(_camara) = self.estado.camara(id) {
+                        cliente.publicar(
+                            "comandos.camaras",
+                            format!("modificar rango {} {}", id, rango).as_bytes(),
+                            None,
+                        )?;
+                    }
+                }
+                Comando::ConectarCamara(lat, lon, rango) => {
+                    cliente.publicar(
+                        "comandos.camaras",
+                        format!("conectar {} {} {}", lat, lon, rango).as_bytes(),
+                        None,
+                    )?;
+                    //self.estado.conectar_camara(camara);
+                    self.actualizar_estado_ui()?;
+                }
+                Comando::DesconectarCamara(id) => {
+                    if let Some(_camara) = self.estado.camara(id) {
+                        cliente.publicar(
+                            "comandos.camaras",
+                            format!("desconectar {}", id).as_bytes(),
+                            None,
+                        )?;
+                    }
+                }
             }
         }
 

@@ -17,7 +17,7 @@ use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
 
 use crate::{
     estado::Estado,
-    interfaz::{comando::Comando, respuesta::Respuesta},
+    interfaz::{comando::Comando, interpretar_comando, respuesta::Respuesta},
 };
 
 pub struct Sistema {
@@ -226,24 +226,44 @@ impl Sistema {
     /// Lee comandos desde la interfaz y los procesa
     fn leer_comandos(&mut self, cliente: &Cliente) -> io::Result<()> {
         while let Ok(comando) = self.recibir_comandos.try_recv() {
-            match comando {
-                Comando::Conectar(id, lat, lon, rango) => {
-                    self.comando_conectar_camara(cliente, id, lat, lon, rango)?
-                }
-                Comando::Desconectar(id) => self.comando_desconectar_camara(cliente, id)?,
-                Comando::ListarCamaras => self.comando_listar_camaras()?,
-                Comando::ModifciarRango(id, rango) => {
-                    self.comando_modificar_rango(cliente, id, rango)?
-                }
-                Comando::ModificarUbicacion(id, lat, lon) => {
-                    self.comando_modificar_ubicacion(cliente, id, lat, lon)?
-                }
-                Comando::Camara(id) => self.comando_mostrar_camara(id)?,
-                Comando::Ayuda => self.comando_ayuda()?,
-            }
+            self.matchear_comandos(cliente, comando)?;
         }
 
         Ok(())
+    }
+
+    fn matchear_comandos(&mut self, cliente: &Cliente, comando: Comando) -> io::Result<()> {
+        match comando {
+            Comando::Conectar(id, lat, lon, rango) => {
+                self.comando_conectar_camara(cliente, id, lat, lon, rango)?
+            }
+            Comando::ConectarSinId(lat, lon, rango) => {
+                let id = self.buscar_id_camara();
+                self.comando_conectar_camara(cliente, id, lat, lon, rango)?
+            }
+            Comando::Desconectar(id) => self.comando_desconectar_camara(cliente, id)?,
+            Comando::ListarCamaras => self.comando_listar_camaras()?,
+            Comando::ModifciarRango(id, rango) => {
+                self.comando_modificar_rango(cliente, id, rango)?
+            }
+            Comando::ModificarUbicacion(id, lat, lon) => {
+                self.comando_modificar_ubicacion(cliente, id, lat, lon)?
+            }
+            Comando::Camara(id) => self.comando_mostrar_camara(id)?,
+            Comando::Ayuda => self.comando_ayuda()?,
+            Comando::Actualizar => self.publicar_y_guardar_estado_general(cliente)?,
+        }
+        Ok(())
+    }
+
+    fn buscar_id_camara(&self) -> u64 {
+        let mut max_id = 1;
+        for camara in self.estado.camaras() {
+            if camara.id > max_id {
+                max_id = camara.id;
+            }
+        }
+        max_id + 1
     }
 
     fn leer_comandos_remotos(
@@ -254,10 +274,8 @@ impl Sistema {
         while let Some(mensaje) = sub_comandos_remotos.intentar_leer()? {
             let mensaje_texto = String::from_utf8_lossy(&mensaje.payload);
 
-            if mensaje_texto.eq("actualizar") {
-                self.publicar_y_guardar_estado_general(cliente)?;
-            } else {
-                println!("Comando desconocido: {}", mensaje_texto);
+            if let Some(comando) = interpretar_comando(&mensaje_texto) {
+                self.matchear_comandos(cliente, comando)?;
             }
         }
 
