@@ -157,7 +157,6 @@ impl Aplicacion {
                     AccionCamara::conectar_camara(ui, clicked_at, self);
                 }
             }
-            _ => {}
         }
     }
 

@@ -232,7 +232,7 @@ impl Sistema {
                     }
                 }
                 Comando::CamaraNuevaUbicacion(id, lat, lon) => {
-                    if let Some(camara) = self.estado.camara(id) {
+                    if let Some(_camara) = self.estado.camara(id) {
                         cliente.publicar(
                             "comandos.camaras",
                             format!("modificar ubicacion {} {} {}", id, lat, lon).as_bytes(),
@@ -241,7 +241,7 @@ impl Sistema {
                     }
                 }
                 Comando::CamaraNuevoRango(id, rango) => {
-                    if let Some(camara) = self.estado.camara(id) {
+                    if let Some(_camara) = self.estado.camara(id) {
                         cliente.publicar(
                             "comandos.camaras",
                             format!("modificar rango {} {}", id, rango).as_bytes(),
@@ -259,7 +259,7 @@ impl Sistema {
                     self.actualizar_estado_ui()?;
                 }
                 Comando::DesconectarCamara(id) => {
-                    if let Some(camara) = self.estado.camara(id) {
+                    if let Some(_camara) = self.estado.camara(id) {
                         cliente.publicar(
                             "comandos.camaras",
                             format!("desconectar {}", id).as_bytes(),

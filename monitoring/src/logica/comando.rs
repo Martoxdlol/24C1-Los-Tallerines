@@ -1,10 +1,9 @@
 use std::sync::mpsc::Sender;
 
 use lib::{
-    camara::{self, Camara},
     incidente::Incidente,
 };
-use walkers::Position;
+
 
 /// Comandos que se pueden enviar al hilo de la lógica
 pub enum Comando {
