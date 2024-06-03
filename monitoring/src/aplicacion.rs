@@ -169,14 +169,28 @@ impl Aplicacion {
             .collapsible(false)
             .movable(false)
             .resizable(false)
-            .anchor(egui::Align2::CENTER_CENTER, [0.,0.])
+            .anchor(egui::Align2::CENTER_CENTER, [0., 0.])
             .show(ui.ctx(), |ui| {
-
-                let mut user = self.configuracion.obtener::<String>("user").unwrap_or("".to_string());
-                let mut pass = self.configuracion.obtener::<String>("pass").unwrap_or("".to_string());
-                let mut direccion = self.configuracion.obtener::<String>("direccion").unwrap_or("127.0.0.1".to_string());
-                let mut puerto = self.configuracion.obtener::<String>("puerto").unwrap_or("4222".to_string());
-                let mut archivo = self.configuracion.obtener::<String>("incidentes").unwrap_or("incidentes.csv".to_string());
+                let mut user = self
+                    .configuracion
+                    .obtener::<String>("user")
+                    .unwrap_or("".to_string());
+                let mut pass = self
+                    .configuracion
+                    .obtener::<String>("pass")
+                    .unwrap_or("".to_string());
+                let mut direccion = self
+                    .configuracion
+                    .obtener::<String>("direccion")
+                    .unwrap_or("127.0.0.1".to_string());
+                let mut puerto = self
+                    .configuracion
+                    .obtener::<String>("puerto")
+                    .unwrap_or("4222".to_string());
+                let mut archivo = self
+                    .configuracion
+                    .obtener::<String>("incidentes")
+                    .unwrap_or("incidentes.csv".to_string());
 
                 ui.label("Usuario");
                 ui.add_sized([350., 20.], |ui: &mut Ui| {
@@ -211,13 +225,17 @@ impl Aplicacion {
 
                 if let Some(error) = self.estado.mensaje_error.as_ref() {
                     if !error.is_empty() {
-                        ui.label(egui::RichText::new(error).heading().color(egui::Color32::from_rgb(255, 40, 40))); 
+                        ui.label(
+                            egui::RichText::new(error)
+                                .heading()
+                                .color(egui::Color32::from_rgb(255, 40, 40)),
+                        );
                     }
                 }
 
                 if ui
-                        .add_sized([350., 40.], egui::Button::new("Conectar al sistema"))
-                        .clicked()
+                    .add_sized([350., 40.], egui::Button::new("Conectar al sistema"))
+                    .clicked()
                 {
                     Comando::configurar(&self.enviar_comando, self.configuracion.clone());
                 }
@@ -241,12 +259,11 @@ impl eframe::App for Aplicacion {
         egui::CentralPanel::default()
             .frame(frame)
             .show(contexto, |ui| {
-                if(!self.estado.conectado) {
+                if (!self.estado.conectado) {
                     self.mostrar_autenticacion(ui);
                 } else {
                     self.mostrar_aplicacion(ui);
                 }
-
 
                 egui::Context::request_repaint(contexto)
             });

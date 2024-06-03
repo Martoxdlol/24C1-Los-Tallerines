@@ -1,6 +1,7 @@
 use std::{
     io,
-    sync::mpsc::{Receiver, Sender}, time::Duration,
+    sync::mpsc::{Receiver, Sender},
+    time::Duration,
 };
 
 use lib::{
@@ -106,9 +107,12 @@ impl Sistema {
             self.estado.mensaje_error = None;
             drop(sub_conectado);
         } else {
-            return  Err(io::Error::new(io::ErrorKind::Other, "No se pudo conectar al sistema".to_string()));
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "No se pudo conectar al sistema".to_string(),
+            ));
         }
-    
+
         // Publicar al servidor de NATS el estado de todas las cámaras
         self.publicar_y_guardar_estado_general(&cliente)?;
 

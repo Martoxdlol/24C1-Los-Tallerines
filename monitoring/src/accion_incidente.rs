@@ -1,9 +1,9 @@
+use crate::accion::Accion;
 use crate::aplicacion::Aplicacion;
 use crate::logica::comando::Comando;
 use chrono::DateTime;
 use egui::Ui;
 use lib::incidente::Incidente;
-use crate::accion::Accion;
 
 /// Enum para la ventana de la esquina superior izquierda.
 pub enum AccionIncidente {
@@ -89,7 +89,6 @@ impl AccionIncidente {
             });
     }
 
-
     /// Ventana para cambiar el detalle de un incidente.
     /// Aparece en la esquina superior izquierda si accion_incidente es CambiarDetalle.
     pub fn cambiar_detalle_incidente(
@@ -164,7 +163,7 @@ impl AccionIncidente {
     }
 }
 
-fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion){
+fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
     egui::Grid::new("some_unique_id").show(ui, |ui| {
         if ui.button("Finalizar incidente").clicked() {
             Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
@@ -178,8 +177,7 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
         ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
-            aplicacion.accion =
-                Accion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
+            aplicacion.accion = Accion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
         }
         if ui.button("Cancelar").clicked() {
             aplicacion.detalle_incidente.clear();
@@ -187,5 +185,4 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
         }
         ui.end_row();
     });
-
 }
