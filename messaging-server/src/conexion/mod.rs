@@ -1,6 +1,7 @@
 pub mod id;
 pub mod respuesta;
 pub mod tick_contexto;
+use lib::parseador::mensaje::{formatear_mensaje_debug, formatear_payload_debug};
 use lib::parseador::parametros_info::ParametrosInfo;
 use lib::parseador::Parseador;
 use lib::{parseador::mensaje::Mensaje, stream::Stream};
@@ -144,8 +145,10 @@ impl Conexion {
 
     pub fn leer_mensajes(&mut self, contexto: &mut TickContexto) {
         while let Some(mensaje) = self.parser.proximo_mensaje() {
-            self.registrador
-                .info(&format!("Mensaje recibido: {:?}", mensaje), Some(self.id));
+            self.registrador.info(
+                &format!("Mensaje recibido: {:?}", formatear_mensaje_debug(&mensaje)),
+                Some(self.id),
+            );
 
             if !self.autenticado {
                 match mensaje {
@@ -189,7 +192,12 @@ impl Conexion {
             match mensaje {
                 Mensaje::Publicar(subject, replay_to, payload) => {
                     self.registrador.info(
-                        &format!("Publicación: {:?} {:?} {:?}", subject, replay_to, payload),
+                        &format!(
+                            "Publicación: {:?} {:?} {:?}",
+                            subject,
+                            replay_to,
+                            formatear_payload_debug(&payload)
+                        ),
                         Some(self.id),
                     );
 
@@ -200,7 +208,10 @@ impl Conexion {
                     self.registrador.info(
                         &format!(
                             "Publicación con header: {:?} {:?} {:?} {:?}",
-                            subject, headers, replay_to, payload
+                            subject,
+                            headers,
+                            replay_to,
+                            formatear_payload_debug(&payload)
                         ),
                         Some(self.id),
                     );
