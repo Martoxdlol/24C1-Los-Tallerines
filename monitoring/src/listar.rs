@@ -3,6 +3,7 @@ use crate::aplicacion::Aplicacion;
 use crate::logica::comando::Comando;
 use crate::{accion_camara::AccionCamara, accion_incidente::AccionIncidente};
 use egui::{Color32, Ui};
+use lib::camara::Camara;
 use lib::{camara, incidente::Incidente};
 use walkers::Position;
 
@@ -63,7 +64,12 @@ impl Listar {
                 .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
                 .show(ui.ctx(), |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        for camara in camaras {
+                        let mut sorted_camaras = camaras
+                            .iter()
+                            .collect::<Vec<&Camara>>();
+                        sorted_camaras.sort_by(|a, b| a.id.cmp(&b.id));
+
+                        for camara in sorted_camaras {
                             let nombre =
                                 format!("{}: {}", camara.id, estado_camara_a_string(camara));
 
