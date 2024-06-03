@@ -116,6 +116,9 @@ impl Hilo {
             Instruccion::PublicarExacto(suscripcion, publicacion) => {
                 self.recibir_publicacion_exacto(&suscripcion, publicacion);
             }
+            Instruccion::NuevaPublicacion(publicacion) => {
+                self.enviar_instruccion_publicar(publicacion)
+            }
         }
     }
 
@@ -164,7 +167,7 @@ impl Hilo {
             }
 
             for publicacion in salida.publicaciones {
-                self.enviar_instruccion_publicar(publicacion);
+                self.enviar_instruccion(Instruccion::NuevaPublicacion(publicacion));
             }
         }
     }

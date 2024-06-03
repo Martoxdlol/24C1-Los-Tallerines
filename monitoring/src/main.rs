@@ -14,7 +14,7 @@ fn main() -> Result<(), eframe::Error> {
     });
 
     eframe::run_native(
-        "APLICACION DE MONITOREO", // Nombre de la ventana
+        "Aplicación de Monitoreo", // Nombre de la ventana
         Default::default(),
         Box::new(|cc| {
             Box::new(Aplicacion::new(

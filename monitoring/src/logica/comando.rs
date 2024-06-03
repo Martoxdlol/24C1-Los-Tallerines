@@ -1,13 +1,13 @@
 use std::sync::mpsc::Sender;
 
 use lib::{
-    camara::{self, Camara},
-    incidente::Incidente,
+    configuracion::Configuracion, incidente::Incidente
 };
-use walkers::Position;
 
 /// Comandos que se pueden enviar al hilo de la lógica
 pub enum Comando {
+    Configurar(Configuracion),
+    Desconectar,
     NuevoIncidente(Incidente),
     ModificarIncidente(Incidente),
     IncidenteFinalizado(u64),
@@ -36,5 +36,13 @@ impl Comando {
 
     pub fn camara_nueva_ubicacion(canal: &Sender<Comando>, id: u64, lat: f64, lon: f64) {
         Self::enviar(canal, Comando::CamaraNuevaUbicacion(id, lat, lon));
+    }
+
+    pub fn configurar(canal: &Sender<Comando>, configuracion: Configuracion) {
+        Self::enviar(canal, Comando::Configurar(configuracion));
+    }
+
+    pub fn desconectar(canal: &Sender<Comando>) {
+        Self::enviar(canal, Comando::Desconectar);
     }
 }

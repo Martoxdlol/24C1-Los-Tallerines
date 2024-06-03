@@ -15,4 +15,8 @@ pub enum Instruccion {
     Publicar(Publicacion),
     /// Enviar una publicación a una suscripción exacta
     PublicarExacto(Suscripcion, Publicacion),
+    /// Este comando se utiliza para poner en cola una nueva publicación
+    /// generada por un cliente y enviada al propio thread, esto se hace para evitar
+    /// Que el servidor envie la publicación antes de que se genere la suscripcion
+    NuevaPublicacion(Publicacion),
 }

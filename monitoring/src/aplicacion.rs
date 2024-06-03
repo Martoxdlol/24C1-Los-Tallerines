@@ -5,11 +5,14 @@ use crate::botones_mover_mapa;
 use crate::iconos;
 use crate::listar::Listar;
 use crate::logica::comando::Comando;
+use crate::logica::estado;
 use crate::logica::estado::Estado;
 use crate::plugins;
 use crate::provider::estilo_mapa;
 use crate::provider::Provider;
 use egui::Context;
+use egui::Ui;
+use lib::configuracion::Configuracion;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
 use walkers::{Map, MapMemory, TilesManager};
@@ -45,6 +48,7 @@ pub struct Aplicacion {
     pub enviar_comando: Sender<Comando>,
     pub listar: Listar,
     pub accion: Accion,
+    pub configuracion: Configuracion,
 }
 
 impl Aplicacion {
@@ -66,14 +70,13 @@ impl Aplicacion {
             enviar_comando,
             listar: Listar::Incidentes,
             accion: Accion::Incidente(AccionIncidente::Crear),
+            configuracion: Configuracion::desde_argv().unwrap_or(Configuracion::new()),
         }
     }
 
-    /// Actualiza la aplicación.
-    ///
-    /// Se llama en cada frame.
-    fn actualizar_aplicacion(&mut self, ui: &mut egui::Ui) {
-        self.actualizar_mapa(ui);
+    /// Se llama en cada frame y se encarga de dibujar en pantalla la aplicación.
+    fn mostrar_aplicacion(&mut self, ui: &mut egui::Ui) {
+        self.mostrar_mapa(ui);
 
         {
             use botones_mover_mapa::*;
@@ -90,8 +93,8 @@ impl Aplicacion {
         self.mostrar_esquina_inferior_derecha(ui);
     }
 
-    /// Actualiza el mapa.
-    fn actualizar_mapa(&mut self, ui: &mut egui::Ui) {
+    /// Mostrar el mapa en pantalla
+    fn mostrar_mapa(&mut self, ui: &mut egui::Ui) {
         // coordenadas iniciales
         let posicion_inicial = iconos::obelisco();
 
@@ -158,6 +161,68 @@ impl Aplicacion {
             Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras(), self),
         }
     }
+
+    fn mostrar_autenticacion(&mut self, ui: &mut egui::Ui) {
+        let h = ui.available_height();
+        let w = ui.available_width();
+        egui::Window::new("Iniciar sesión")
+            .collapsible(false)
+            .movable(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.,0.])
+            .show(ui.ctx(), |ui| {
+
+                let mut user = self.configuracion.obtener::<String>("user").unwrap_or("".to_string());
+                let mut pass = self.configuracion.obtener::<String>("pass").unwrap_or("".to_string());
+                let mut direccion = self.configuracion.obtener::<String>("direccion").unwrap_or("127.0.0.1".to_string());
+                let mut puerto = self.configuracion.obtener::<String>("puerto").unwrap_or("4222".to_string());
+                let mut archivo = self.configuracion.obtener::<String>("incidentes").unwrap_or("incidentes.csv".to_string());
+
+                ui.label("Usuario");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut user)
+                });
+
+                ui.label("Contraseña");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut pass)
+                });
+
+                ui.label("Dirección");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut direccion)
+                });
+
+                ui.label("Puerto");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut puerto)
+                });
+
+                ui.label("Archvio de incidentes");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut archivo)
+                });
+
+                self.configuracion.setear("user", user);
+                self.configuracion.setear("pass", pass);
+                self.configuracion.setear("direccion", direccion);
+                self.configuracion.setear("puerto", puerto);
+                self.configuracion.setear("incidentes", archivo);
+
+                if let Some(error) = self.estado.mensaje_error.as_ref() {
+                    if !error.is_empty() {
+                        ui.label(egui::RichText::new(error).heading().color(egui::Color32::from_rgb(255, 40, 40))); 
+                    }
+                }
+
+                if ui
+                        .add_sized([350., 40.], egui::Button::new("Conectar al sistema"))
+                        .clicked()
+                {
+                    Comando::configurar(&self.enviar_comando, self.configuracion.clone());
+                }
+            });
+    }
 }
 
 impl eframe::App for Aplicacion {
@@ -176,7 +241,12 @@ impl eframe::App for Aplicacion {
         egui::CentralPanel::default()
             .frame(frame)
             .show(contexto, |ui| {
-                self.actualizar_aplicacion(ui);
+                if(!self.estado.conectado) {
+                    self.mostrar_autenticacion(ui);
+                } else {
+                    self.mostrar_aplicacion(ui);
+                }
+
 
                 egui::Context::request_repaint(contexto)
             });
