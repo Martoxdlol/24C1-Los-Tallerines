@@ -102,7 +102,10 @@ impl Sistema {
 
         cliente.publicar("comandos.monitoreo.conectado", b"", None)?;
 
-        if  sub_conectado.leer_con_limite_de_tiempo(Duration::from_secs(5))?.is_some() {
+        if sub_conectado
+            .leer_con_limite_de_tiempo(Duration::from_secs(5))?
+            .is_some()
+        {
             self.estado.conectado = true;
             self.estado.mensaje_error = None;
             drop(sub_conectado);
