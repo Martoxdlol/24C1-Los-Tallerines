@@ -1,14 +1,11 @@
 use egui::Ui;
-use lib::camara::{Camara};
+use lib::camara::Camara;
 
 use crate::{
     accion::Accion,
     aplicacion::Aplicacion,
     listar::estado_camara_a_string,
-    logica::{
-        comando::Comando,
-        estado::{Estado},
-    },
+    logica::{comando::Comando, estado::Estado},
 };
 
 pub enum AccionCamara {

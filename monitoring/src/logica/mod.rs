@@ -310,12 +310,6 @@ impl Sistema {
         cliente.publicar(&topico, &bytes, None)
     }
 
-    fn publicar_camara_desconectada(&self, cliente: &Cliente, camara: &Camara) -> io::Result<()> {
-        let bytes = camara.serializar();
-        let topico = format!("camara.{}.finalizado", camara.id);
-        cliente.publicar(&topico, &bytes, None)
-    }
-
     /// Actualiza el estado de la interfaz de usuario
     fn actualizar_estado_ui(&self) -> io::Result<()> {
         self.enviar_estado.send(self.estado.clone()).map_err(|e| {
