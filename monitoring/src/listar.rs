@@ -1,4 +1,4 @@
-use crate::accion_incidente::AccionIncidente;
+use crate::{accion_camara::AccionCamara, accion_incidente::AccionIncidente};
 use crate::aplicacion::Aplicacion;
 use egui::{Color32, Ui};
 use lib::{camara, incidente::Incidente};
@@ -29,12 +29,14 @@ impl Listar {
                         .clicked()
                     {
                         aplicacion.listar = Listar::Incidentes;
+                        aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
                     }
                     if ui
                         .add_sized([100., 20.], egui::Button::new("Camaras"))
                         .clicked()
                     {
                         aplicacion.listar = Listar::Camaras;
+                        aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
                     }
                 });
             });
@@ -70,8 +72,8 @@ impl Listar {
                                             camara.lon,
                                         ));
                                         // Cambia la AccionIncidente a Modificar.
-                                        //aplicacion.accion =
-                                         //   Accion::Incidentes(AccionIncidente::Modificar(incidente.id));
+                                        aplicacion.accion =
+                                           Accion::Camara(AccionCamara::Modificar(camara.id));
                                     }
                                 });
                         }
@@ -122,7 +124,7 @@ impl Listar {
 }
 
 /// Convierte el estado de la cámara a un string.
-fn estado_camara_a_string(camara: &camara::Camara) -> String {
+pub fn estado_camara_a_string(camara: &camara::Camara) -> String {
     if camara.activa() {
         "Activa".to_string()
     } else {

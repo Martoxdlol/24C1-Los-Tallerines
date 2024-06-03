@@ -1,5 +1,6 @@
-use crate::accion_incidente::AccionIncidente;
 use crate::accion::Accion;
+use crate::accion_camara::AccionCamara;
+use crate::accion_incidente::AccionIncidente;
 use crate::botones_mover_mapa;
 use crate::iconos;
 use crate::listar::Listar;
@@ -134,10 +135,21 @@ impl Aplicacion {
                     }
                 }
             }
-            Accion::Camara(_) => {}
+            Accion::Camara(AccionCamara::Modificar(id)) => {
+                if let Some(camara) = self.estado.camara(id) {
+                    AccionCamara::modificar_camara(ui, &camara, self);
+                }
+            }
+            Accion::Camara(AccionCamara::CambiarUbicacion(id)) => {
+                if let Some(camara) = self.estado.camara(id) {
+                    if let Some(clicked_at) = self.clicks.clicked_at {
+                        AccionCamara::modificar_ubicacion_camara(ui, &camara, self, clicked_at);
+                    }
+                }
+            }
+            _ => {}
         }
     }
-
 
     /// Que mostrar en la esquina inferior derecha.
     fn mostrar_esquina_inferior_derecha(&mut self, ui: &mut egui::Ui) {

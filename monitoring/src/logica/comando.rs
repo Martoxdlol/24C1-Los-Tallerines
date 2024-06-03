@@ -1,11 +1,16 @@
 use std::sync::mpsc::Sender;
 
-use lib::incidente::Incidente;
+use lib::{
+    camara::{self, Camara},
+    incidente::Incidente,
+};
+use walkers::Position;
 
 /// Comandos que se pueden enviar al hilo de la lógica
 pub enum Comando {
     NuevoIncidente(Incidente),
     IncidenteFinalizado(u64),
+    CamaraNuevaUbicacion(u64, f64, f64),
 }
 
 impl Comando {
@@ -22,5 +27,9 @@ impl Comando {
     /// Envía un incidente finalizado al hilo de la lógica
     pub fn incidente_finalizado(canal: &Sender<Comando>, id: u64) {
         Self::enviar(canal, Comando::IncidenteFinalizado(id));
+    }
+
+    pub fn camara_nueva_ubicacion(canal: &Sender<Comando>, id: u64, lat: f64, lon: f64) {
+        Self::enviar(canal, Comando::CamaraNuevaUbicacion(id, lat, lon));
     }
 }

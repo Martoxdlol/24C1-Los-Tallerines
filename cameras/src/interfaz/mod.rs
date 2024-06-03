@@ -37,7 +37,7 @@ pub fn interfaz() -> (Sender<Respuesta>, Receiver<Comando>) {
 
 /// Interpreta un comando ingresado por el usuario.
 /// TODO: Si despues del comando pongo cualquier cosa lo toma correcto
-fn interpretar_comando(input: &str) -> Option<Comando> {
+pub fn interpretar_comando(input: &str) -> Option<Comando> {
     let mut palabras = input.split_whitespace();
     match palabras.next() {
         Some("conectar") => {
@@ -75,6 +75,7 @@ fn interpretar_comando(input: &str) -> Option<Comando> {
             }
         }
         Some("ayuda") => Some(Comando::Ayuda),
+        Some("actualizar") => Some(Comando::Actualizar),
         _ => None,
     }
 }

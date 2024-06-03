@@ -225,6 +225,15 @@ impl Sistema {
                         self.actualizar_estado_ui()?;
                     }
                 }
+                Comando::CamaraNuevaUbicacion(id, lat, lon) => {
+                    if let Some(camara) = self.estado.camara(id) {
+                        cliente.publicar(
+                            "comandos.camaras",
+                            format!("modificar ubicacion {} {} {}", id, lat, lon).as_bytes(),
+                            None,
+                        )?;
+                    }
+                }
             }
         }
 
@@ -265,6 +274,12 @@ impl Sistema {
     ) -> io::Result<()> {
         let bytes = incidente.serializar();
         let topico = format!("incidentes.{}.finalizado", incidente.id);
+        cliente.publicar(&topico, &bytes, None)
+    }
+
+    fn publicar_camara_desconectada(&self, cliente: &Cliente, camara: &Camara) -> io::Result<()> {
+        let bytes = camara.serializar();
+        let topico = format!("camara.{}.finalizado", camara.id);
         cliente.publicar(&topico, &bytes, None)
     }
 
