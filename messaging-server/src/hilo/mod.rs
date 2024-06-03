@@ -167,7 +167,17 @@ impl Hilo {
             }
 
             for publicacion in salida.publicaciones {
-                self.enviar_instruccion(Instruccion::NuevaPublicacion(publicacion));
+                self.enviar_instruccion_si_mismo(Instruccion::NuevaPublicacion(publicacion));
+            }
+        }
+    }
+
+    pub fn enviar_instruccion_si_mismo(&mut self, instruccion: Instruccion) {
+        if let Some(canal) = self.canales_enviar_instrucciones.get(&self.id) {
+            let r = canal.send(instruccion.clone());
+            if r.is_err() {
+                self.registrador
+                    .error("No se pudo enviar la instrucción a si", None);
             }
         }
     }
