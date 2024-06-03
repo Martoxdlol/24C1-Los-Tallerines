@@ -64,9 +64,7 @@ impl Listar {
                 .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
                 .show(ui.ctx(), |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        let mut sorted_camaras = camaras
-                            .iter()
-                            .collect::<Vec<&Camara>>();
+                        let mut sorted_camaras = camaras.iter().collect::<Vec<&Camara>>();
                         sorted_camaras.sort_by(|a, b| a.id.cmp(&b.id));
 
                         for camara in sorted_camaras {

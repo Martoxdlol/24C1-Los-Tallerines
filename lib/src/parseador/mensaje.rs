@@ -41,15 +41,19 @@ pub fn formatear_mensaje_debug(mensaje: &Mensaje) -> String {
     if let Mensaje::Publicar(topico, reply_to, payload) = mensaje {
         return format!(
             "MensajePublicar({:?}, {:?}, {:?})",
-            topico, reply_to, formatear_payload_debug(payload)
+            topico,
+            reply_to,
+            formatear_payload_debug(payload)
         );
     } else if let Mensaje::PublicarConHeader(topico, reply_to, headers, payload) = mensaje {
         return format!(
             "MensajePublicarConHeader({:?}, {:?}, {:?}, {:?})",
-            topico, reply_to, formatear_payload_debug(headers), formatear_payload_debug(payload)
+            topico,
+            reply_to,
+            formatear_payload_debug(headers),
+            formatear_payload_debug(payload)
         );
     }
 
     format!("{:?}", mensaje)
 }
-   
