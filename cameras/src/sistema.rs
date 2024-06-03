@@ -153,14 +153,14 @@ impl Sistema {
         &mut self,
         cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
-        sub_clientes_finalizados: &Suscripcion,
+        sub_incidentes_finalizados: &Suscripcion,
         sub_comandos: &Suscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_incidentes(
             cliente,
             sub_nuevos_incidentes,
-            sub_clientes_finalizados,
+            sub_incidentes_finalizados,
             sub_incidentes,
         )?;
         self.leer_comandos(cliente)?;
@@ -177,7 +177,7 @@ impl Sistema {
         &mut self,
         cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
-        sub_clientes_finalizados: &Suscripcion,
+        sub_incidentes_finalizados: &Suscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
         let mut enviar_actualizacion = false;
@@ -192,7 +192,7 @@ impl Sistema {
             }
         }
 
-        while let Some(mensaje) = sub_clientes_finalizados.intentar_leer()? {
+        while let Some(mensaje) = sub_incidentes_finalizados.intentar_leer()? {
             match Incidente::deserializar(&mensaje.payload) {
                 Ok(incidente) => {
                     self.estado.finalizar_incidente(incidente.id);

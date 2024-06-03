@@ -218,6 +218,12 @@ impl Sistema {
                     self.publicar_nuevo_incidente(cliente, &incidente)?;
                     self.actualizar_estado_ui()?;
                 }
+                Comando::ModificarIncidente(incidente) => {
+                    self.estado.cargar_incidente(incidente.clone());
+                    self.guardar_incidentes()?;
+                    self.publicar_nuevo_incidente(cliente, &incidente)?;
+                    self.actualizar_estado_ui()?;
+                }
                 Comando::IncidenteFinalizado(id) => {
                     if let Some(incidente) = self.estado.finalizar_incidente(&id) {
                         self.guardar_incidentes()?;

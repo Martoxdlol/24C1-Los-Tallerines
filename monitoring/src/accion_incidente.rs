@@ -120,8 +120,7 @@ impl AccionIncidente {
                     aplicacion.input_usuario.clear();
                     aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
-                    Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                    Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+                    Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
                 }
             });
     }
@@ -158,8 +157,7 @@ impl AccionIncidente {
                     aplicacion.input_usuario.clear();
                     aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
 
-                    Comando::incidente_finalizado(&aplicacion.enviar_comando, incidente.id);
-                    Comando::nuevo_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+                    Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
                 }
             });
     }
