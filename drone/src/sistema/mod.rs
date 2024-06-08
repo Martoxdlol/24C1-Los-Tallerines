@@ -22,11 +22,11 @@ impl Sistema {
         }
     }
 
-    /// Devuelve el tiempo en ms desde la última iteración (en general 100ms +-)
+    /// Devuelve el tiempo en segundos desde la última iteración (en general 0.100s +-)
     fn establecer_diferencial_tiempo(&mut self) {
         let ms_ahora = chrono::offset::Local::now().timestamp_millis();
         let diferencial_tiempo = ms_ahora - self.ms_ultima_iteracion;
-        self.diferencial_tiempo = diferencial_tiempo as f64;
+        self.diferencial_tiempo = (diferencial_tiempo as f64) / 1000.;
     }
 
     pub fn iniciar(&mut self) {
@@ -56,15 +56,22 @@ impl Sistema {
             self.establecer_velocidad();
             self.establecer_direccion();
         }
-
+        println!(
+            "{:?} bateria: {}, destino: {:?}, velocidad: {}, acción: {:?}",
+            self.dron.posicion,
+            self.dron.bateria_actual,
+            self.destino(),
+            self.dron.velocidad_actual,
+            self.dron.accion()
+        );
         self.comunicacion.ciclo(&mut self.dron);
     }
 
     fn destino(&self) -> Coordenadas {
         match self.dron.accion() {
             Accion::Incidente(incidente) => incidente.posicion(),
-            Accion::Cargar => self.dron.punto_de_espera,
-            Accion::Espera => self.dron.central_de_carga,
+            Accion::Cargar => self.dron.central_de_carga,
+            Accion::Espera => self.dron.punto_de_espera,
         }
     }
 

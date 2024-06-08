@@ -1,5 +1,7 @@
 pub mod accion;
 
+use std::fmt;
+
 use accion::Accion;
 
 use crate::{
@@ -46,8 +48,8 @@ impl Dron {
                 config.obtener("lon").unwrap_or(punto_de_espera_lon),
             ),
             punto_de_espera,
-            velocidad_maxima: config.obtener("rapidez").unwrap_or(2.5),
-            velocidad_actual: config.obtener("rapidez").unwrap_or(0.),
+            velocidad_maxima: config.obtener("velocidad_maxima").unwrap_or(2.5),
+            velocidad_actual: config.obtener("velocidad_actual").unwrap_or(0.),
             velocidad_descarga_bateria: config
                 .obtener("velocidad_descarga_bateria")
                 .unwrap_or(1. / 3600.),

@@ -1,15 +1,14 @@
+pub mod comando;
 pub mod contexto;
 
-use std::{collections::HashMap, io};
+use std::io;
 
+use comando::Comando;
 use contexto::Contexto;
 use lib::{
-    configuracion::Configuracion,
-    dron::Dron,
-    incidente::{self, Incidente},
-    serializables::Serializable,
+    configuracion::Configuracion, dron::Dron, incidente::Incidente, serializables::Serializable,
 };
-use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
+use messaging_client::cliente::Cliente;
 
 pub struct Comunicacion {
     direccion_server: String,
@@ -68,7 +67,11 @@ impl Comunicacion {
     }
 
     fn ciclo_interno(&mut self, dron: &mut Dron) -> io::Result<()> {
-        if chrono::offset::Local::now().timestamp_millis() - self.ultimo_envio_estado < 1000 {
+        if chrono::offset::Local::now().timestamp_millis() - self.ultimo_envio_estado > 1000 {
+            println!(
+                "{}",
+                chrono::offset::Local::now().timestamp_millis() - self.ultimo_envio_estado
+            );
             self.enviar_estado(dron)?;
         }
 
@@ -93,7 +96,15 @@ impl Comunicacion {
     fn recibir_comandos(&mut self, dron: &mut Dron) -> io::Result<()> {
         let contexto = self.usar_contexto(&dron)?;
 
-        while let Some(publicacion) = contexto.suscripcion_comandos.intentar_leer()? {}
+        while let Some(publicacion) = contexto.suscripcion_comandos.intentar_leer()? {
+            if let Ok(comando) = Comando::deserializar(&publicacion.payload) {
+                match comando {
+                    Comando::AtenderIncidente(incidente) => {
+                        dron.incidente_actual = Some(incidente);
+                    }
+                }
+            }
+        }
 
         Ok(())
     }
