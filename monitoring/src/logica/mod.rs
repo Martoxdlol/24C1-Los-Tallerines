@@ -29,6 +29,7 @@ pub struct Sistema {
     recibir_comando: Receiver<Comando>,
     enviar_estado: Sender<Estado>,
     proximo_id_incidente: u64,
+    ultimo_ciclo: i64,
 }
 
 /// Crea un nuevo sistema e intenta iniciarlo.
@@ -59,6 +60,7 @@ impl Sistema {
             recibir_comando,
             enviar_estado,
             proximo_id_incidente: 0,
+            ultimo_ciclo: 0,
         }
     }
 
@@ -135,6 +137,14 @@ impl Sistema {
 
         loop {
             self.ciclo(
+                &cliente,
+                &suscripcion_camaras,
+                &suscripcion_comandos,
+                &suscripcion_estado_drone,
+                &suscripcion_incidentes_drones_disponibles,
+            )?;
+
+            self.ciclo_cada_un_segundo(
                 &cliente,
                 &suscripcion_camaras,
                 &suscripcion_comandos,
@@ -233,6 +243,32 @@ impl Sistema {
         )?;
 
         std::thread::sleep(std::time::Duration::from_millis(5));
+
+        Ok(())
+    }
+
+    fn ciclo_cada_un_segundo(
+        &mut self,
+        cliente: &Cliente,
+        suscripcion_camaras: &Suscripcion,
+        suscripcion_comandos: &Suscripcion,
+        suscripcion_estado_drone: &Suscripcion,
+        suscripcion_incidentes_drones_disponibles: &Suscripcion,
+    ) -> io::Result<()> {
+        if self.ultimo_ciclo + 1000 < chrono::offset::Local::now().timestamp_millis() {
+            self.ultimo_ciclo = chrono::offset::Local::now().timestamp_millis();
+        }
+
+        // Eliminar drones que no aparecen hace más de 10 segundos
+        self.estado.limpiar_drones();
+
+        for incidente in self.estado.incidentes() {
+            let drones_incidente = self.estado.drones_incidente(&incidente.id);
+
+            if drones_incidente.len() < 2 {
+                self.pedir_drone_para_incidente(cliente, &incidente)?;
+            }
+        }
 
         Ok(())
     }
@@ -417,6 +453,20 @@ impl Sistema {
     fn publicar_nuevo_incidente(&self, cliente: &Cliente, incidente: &Incidente) -> io::Result<()> {
         let bytes = incidente.serializar();
         let topico = format!("incidentes.{}.creado", incidente.id);
+        cliente.publicar(&topico, &bytes, None)?;
+
+        // TODO: Limpiar drones si en realidad no es un nuevo incidente
+
+        self.pedir_drone_para_incidente(cliente, incidente)
+    }
+
+    fn pedir_drone_para_incidente(
+        &self,
+        cliente: &Cliente,
+        incidente: &Incidente,
+    ) -> io::Result<()> {
+        let bytes = incidente.serializar();
+        let topico = format!("incidentes.{}.pedir_dron", incidente.id);
         cliente.publicar(&topico, &bytes, None)
     }
 

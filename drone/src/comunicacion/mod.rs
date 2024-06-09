@@ -43,7 +43,7 @@ impl Comunicacion {
             )?;
 
             let suscripcion_incidentes_creados =
-                cliente.suscribirse("incidentes.*.creado", None)?;
+                cliente.suscribirse("incidentes.*.pedir_dron", None)?;
             let suscripcion_incidentes_finalizados =
                 cliente.suscribirse("incidentes.*.finalizado", None)?;
             let suscripcion_comandos =
@@ -101,6 +101,8 @@ impl Comunicacion {
     fn recibir_comandos(&mut self, dron: &mut Dron) -> io::Result<()> {
         let contexto = self.usar_contexto(dron)?;
 
+        let mut enviar_estado = false;
+
         while let Some(publicacion) = contexto.suscripcion_comandos.intentar_leer()? {
             if let Ok(comando) = Comando::deserializar(&publicacion.payload) {
                 println!("Comando: {:?}", comando);
@@ -117,7 +119,13 @@ impl Comunicacion {
                         }
                     }
                 }
+
+                enviar_estado = true;
             }
+        }
+
+        if enviar_estado {
+            self.enviar_estado(dron)?;
         }
 
         Ok(())
