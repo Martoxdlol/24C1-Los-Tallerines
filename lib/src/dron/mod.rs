@@ -72,6 +72,14 @@ impl Dron {
 
         Accion::Espera
     }
+
+    pub fn destino(&self) -> Coordenadas {
+        match self.accion() {
+            Accion::Incidente(incidente) => incidente.posicion(),
+            Accion::Cargar => self.central_de_carga,
+            Accion::Espera => self.punto_de_espera,
+        }
+    }
 }
 
 impl Serializable for Dron {
