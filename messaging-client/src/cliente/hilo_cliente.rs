@@ -116,6 +116,7 @@ impl HiloCliente {
             Mensaje::Ping() => {
                 self.stream.write_all(b"PONG\r\n")?;
             }
+            Mensaje::Pong() => {}
             _ => {
                 eprintln!("Mensaje no reconocido: {:?}", mensaje)
             }
