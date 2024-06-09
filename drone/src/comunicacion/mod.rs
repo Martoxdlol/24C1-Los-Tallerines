@@ -21,7 +21,7 @@ pub struct Comunicacion {
 
 impl Comunicacion {
     pub fn new(config: &Configuracion) -> Self {
-        return Self {
+        Self {
             ultimo_envio_estado: 0,
             direccion_server: config
                 .obtener::<String>("direccion_server")
@@ -30,7 +30,7 @@ impl Comunicacion {
             user: config.obtener::<String>("user"),
             pass: config.obtener::<String>("pass"),
             contexto: None,
-        };
+        }
     }
 
     pub fn usar_contexto(&mut self, dron: &Dron) -> io::Result<&Contexto> {
@@ -83,7 +83,7 @@ impl Comunicacion {
     }
 
     fn enviar_estado(&mut self, dron: &mut Dron) -> io::Result<()> {
-        let contexto = self.usar_contexto(&dron)?;
+        let contexto = self.usar_contexto(dron)?;
         contexto
             .cliente
             .publicar(&format!("drones.{}", dron.id), &dron.serializar(), None)?;
@@ -94,7 +94,7 @@ impl Comunicacion {
     }
 
     fn recibir_comandos(&mut self, dron: &mut Dron) -> io::Result<()> {
-        let contexto = self.usar_contexto(&dron)?;
+        let contexto = self.usar_contexto(dron)?;
 
         while let Some(publicacion) = contexto.suscripcion_comandos.intentar_leer()? {
             if let Ok(comando) = Comando::deserializar(&publicacion.payload) {
@@ -110,7 +110,7 @@ impl Comunicacion {
     }
 
     fn recibir_incidentes(&mut self, dron: &mut Dron) -> io::Result<()> {
-        let contexto = self.usar_contexto(&dron)?;
+        let contexto = self.usar_contexto(dron)?;
 
         while let Some(publicacion) = contexto.suscripcion_incidentes_creados.intentar_leer()? {
             match dron.accion() {
@@ -127,7 +127,7 @@ impl Comunicacion {
                 if incidente.posicion().distancia(&dron.posicion) < dron.rango {
                     contexto.cliente.publicar(
                         &format!("incidentes.{}.dron", incidente.id),
-                        &&dron.serializar(),
+                        &dron.serializar(),
                         None,
                     )?;
                 }
@@ -138,7 +138,7 @@ impl Comunicacion {
     }
 
     fn recibir_incidentes_finalizados(&mut self, dron: &mut Dron) -> io::Result<()> {
-        let contexto = self.usar_contexto(&dron)?;
+        let contexto = self.usar_contexto(dron)?;
         while let Some(publicacion) = contexto
             .suscripcion_incidentes_finalizados
             .intentar_leer()?

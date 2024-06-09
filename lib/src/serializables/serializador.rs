@@ -5,6 +5,12 @@ pub struct Serializador {
     pub elementos: usize,
 }
 
+impl Default for Serializador {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Serializador {
     pub fn new() -> Self {
         Self {

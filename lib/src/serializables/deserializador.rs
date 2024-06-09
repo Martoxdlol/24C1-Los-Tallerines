@@ -45,7 +45,7 @@ impl Deserializador {
     ) -> Result<T, DeserializationError> {
         let texto = self.sacar_elemento::<String>()?;
 
-        T::deserializar(&texto.as_bytes())
+        T::deserializar(texto.as_bytes())
     }
 }
 

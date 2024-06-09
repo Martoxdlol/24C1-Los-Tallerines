@@ -1,12 +1,6 @@
-use lib::{
-    csv::csv_parsear_linea,
-    serializables::{
-        deserializador::{self, Deserializador},
-        error::DeserializationError,
-        guardar::cargar_serializable,
-        serializador::Serializador,
-        Serializable,
-    },
+use lib::serializables::{
+    deserializador::Deserializador, error::DeserializationError, guardar::cargar_serializable,
+    serializador::Serializador, Serializable,
 };
 
 #[derive(Debug, Clone)]

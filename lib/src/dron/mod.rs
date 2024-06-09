@@ -67,7 +67,7 @@ impl Dron {
             return Accion::Incidente(incidente.clone());
         }
 
-        return Accion::Espera;
+        Accion::Espera
     }
 }
 

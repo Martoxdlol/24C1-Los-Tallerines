@@ -54,7 +54,7 @@ impl<T: Serializable> Serializable for Vec<T> {
                 continue;
             }
 
-            let descapado = desescapar_solo_salto_de_linea(&linea);
+            let descapado = desescapar_solo_salto_de_linea(linea);
             let element = T::deserializar(descapado.as_bytes())?;
             result.push(element);
         }
@@ -106,7 +106,7 @@ impl<T: Serializable + Eq + Hash> Serializable for HashSet<T> {
                 continue;
             }
 
-            let descapado = desescapar_solo_salto_de_linea(&linea);
+            let descapado = desescapar_solo_salto_de_linea(linea);
             let element = T::deserializar(descapado.as_bytes())?;
             result.insert(element);
         }
