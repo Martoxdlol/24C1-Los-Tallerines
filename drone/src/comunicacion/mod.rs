@@ -68,7 +68,13 @@ impl Comunicacion {
     }
 
     fn ciclo_interno(&mut self, dron: &mut Dron) -> io::Result<()> {
-        if chrono::offset::Local::now().timestamp_millis() - dron.envio_ultimo_estado > 1000 {
+        let mut tiempo = 1500;
+
+        if dron.velocidad_actual > 0. {
+            tiempo = 150
+        }
+
+        if chrono::offset::Local::now().timestamp_millis() - dron.envio_ultimo_estado > tiempo {
             self.enviar_estado(dron)?;
         }
 
@@ -81,10 +87,11 @@ impl Comunicacion {
 
     fn enviar_estado(&mut self, dron: &mut Dron) -> io::Result<()> {
         println!(
-            "{:?} bateria: {}, velocidad: {}, acción: {:?}",
+            "{:?} bateria: {}, velocidad: {}, destino: {:?}, acción: {:?}",
             dron.posicion,
             dron.bateria_actual,
             dron.velocidad_actual,
+            dron.destino(),
             dron.accion()
         );
 
