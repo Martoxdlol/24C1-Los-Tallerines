@@ -34,7 +34,7 @@ impl Sistema {
         loop {
             self.ciclo();
             self.ms_ultima_iteracion = chrono::offset::Local::now().timestamp_millis();
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            std::thread::sleep(std::time::Duration::from_millis(25));
         }
     }
 
@@ -58,11 +58,7 @@ impl Sistema {
     }
 
     fn destino(&self) -> Coordenadas {
-        match self.dron.accion() {
-            Accion::Incidente(incidente) => incidente.posicion(),
-            Accion::Cargar => self.dron.central_de_carga,
-            Accion::Espera => self.dron.punto_de_espera,
-        }
+        self.dron.destino()
     }
 
     fn en_destino(&self) -> bool {
@@ -74,12 +70,17 @@ impl Sistema {
         let diff_lon = self.destino().lon - self.dron.posicion.lon;
         let hipotenusa = (diff_lat.powi(2) + diff_lon.powi(2)).sqrt();
         let direccion = (diff_lat / hipotenusa).acos().to_degrees();
-        self.dron.direccion_actual = direccion;
+
+        if diff_lon < 0. {
+            self.dron.direccion_actual = 360. - direccion;
+        } else {
+            self.dron.direccion_actual = direccion;
+        }
     }
 
     fn establecer_velocidad(&mut self) {
         let distancia = self.destino().distancia(&self.dron.posicion);
-        if distancia > 50. {
+        if distancia > 20. {
             self.dron.velocidad_actual = self.dron.velocidad_maxima;
         } else {
             self.dron.velocidad_actual = self.dron.velocidad_maxima * 0.4;
