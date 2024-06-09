@@ -46,11 +46,8 @@ impl Sistema {
         if self.en_destino() {
             self.dron.velocidad_actual = 0.;
 
-            match self.dron.accion() {
-                Accion::Cargar => {
-                    self.dron.bateria_actual = 100.;
-                }
-                _ => {}
+            if let Accion::Cargar = self.dron.accion() {
+                self.dron.bateria_actual = 100.;
             }
         } else {
             self.establecer_velocidad();
