@@ -1,13 +1,27 @@
 use self::error::DeserializationError;
 
+pub mod deserializador;
 pub mod error;
+pub mod escape;
 pub mod guardar;
+pub mod serializador;
 
 pub trait Serializable {
     fn serializar(&self) -> Vec<u8>;
     fn deserializar(data: &[u8]) -> Result<Self, DeserializationError>
     where
         Self: Sized;
+
+    fn serializar_string(&self) -> String {
+        String::from_utf8(self.serializar()).unwrap()
+    }
+
+    fn deserializar_string(data: &str) -> Result<Self, DeserializationError>
+    where
+        Self: Sized,
+    {
+        Self::deserializar(data.as_bytes())
+    }
 }
 
 // Each element is a line of a csv file
@@ -51,4 +65,14 @@ pub fn serializar_vec<T: Serializable>(vec: &Vec<T>) -> Vec<u8> {
 
 pub fn deserializar_vec<T: Serializable>(data: &[u8]) -> Result<Vec<T>, DeserializationError> {
     Vec::<T>::deserializar(data)
+}
+
+impl Serializable for String {
+    fn serializar(&self) -> Vec<u8> {
+        self.as_bytes().to_vec()
+    }
+
+    fn deserializar(data: &[u8]) -> Result<Self, DeserializationError> {
+        String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)
+    }
 }

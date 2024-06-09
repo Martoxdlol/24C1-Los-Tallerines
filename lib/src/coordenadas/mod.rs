@@ -22,7 +22,7 @@ impl Coordenadas {
         Coordenadas { lat, lon }
     }
 
-    pub fn mover_en_direccion(&self, distancia: f64, direccion: f64) -> Self { 
+    pub fn mover_en_direccion(&self, distancia: f64, direccion: f64) -> Self {
         let metros_lat = distancia * ((direccion).to_radians()).cos();
         let metros_lon = distancia * ((direccion).to_radians()).sin();
 
@@ -30,7 +30,7 @@ impl Coordenadas {
     }
 
     pub fn mover(&self, metros_lat: f64, metros_lon: f64) -> Self {
-        let metros_por_grado = self.distancia(&Self::from_lat_lon(self.lat+1., self.lon));
+        let metros_por_grado = self.distancia(&Self::from_lat_lon(self.lat + 1., self.lon));
         let grados_por_metro = 1. / metros_por_grado;
 
         Coordenadas {
@@ -62,7 +62,7 @@ mod tests {
 
         println!("{:?}", destino);
         assert!(destino.lat > -34.5138);
-        assert!(destino.lat < -34.5137);   
+        assert!(destino.lat < -34.5137);
         assert!(destino.lon == -58.3816);
     }
 
@@ -72,8 +72,9 @@ mod tests {
         let destino = obelisco.mover_en_direccion(10000., 155.);
 
         println!("{:?}", destino);
-        assert!(destino.lat > -34.5138);
-        assert!(destino.lat < -34.5137);   
-        assert!(destino.lon == -58.3689);
+        assert!(destino.lat < -34.685);
+        assert!(destino.lat > -34.686);
+        assert!(destino.lon < -58.343);
+        assert!(destino.lon > -58.344);
     }
 }
