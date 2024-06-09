@@ -6,7 +6,10 @@ use std::io;
 use comando::Comando;
 use contexto::Contexto;
 use lib::{
-    configuracion::Configuracion, dron::Dron, incidente::Incidente, serializables::Serializable,
+    configuracion::Configuracion,
+    dron::{accion::Accion, Dron},
+    incidente::Incidente,
+    serializables::Serializable,
 };
 use messaging_client::cliente::Cliente;
 
@@ -15,14 +18,12 @@ pub struct Comunicacion {
     puerto_server: u16,
     user: Option<String>,
     pass: Option<String>,
-    ultimo_envio_estado: i64,
     contexto: Option<Contexto>,
 }
 
 impl Comunicacion {
     pub fn new(config: &Configuracion) -> Self {
         Self {
-            ultimo_envio_estado: 0,
             direccion_server: config
                 .obtener::<String>("direccion_server")
                 .unwrap_or("127.0.0.1".to_string()),
@@ -67,11 +68,7 @@ impl Comunicacion {
     }
 
     fn ciclo_interno(&mut self, dron: &mut Dron) -> io::Result<()> {
-        if chrono::offset::Local::now().timestamp_millis() - self.ultimo_envio_estado > 1000 {
-            println!(
-                "{}",
-                chrono::offset::Local::now().timestamp_millis() - self.ultimo_envio_estado
-            );
+        if chrono::offset::Local::now().timestamp_millis() - dron.envio_ultimo_estado > 1000 {
             self.enviar_estado(dron)?;
         }
 
@@ -83,12 +80,20 @@ impl Comunicacion {
     }
 
     fn enviar_estado(&mut self, dron: &mut Dron) -> io::Result<()> {
+        println!(
+            "{:?} bateria: {}, velocidad: {}, acción: {:?}",
+            dron.posicion,
+            dron.bateria_actual,
+            dron.velocidad_actual,
+            dron.accion()
+        );
+
         let contexto = self.usar_contexto(dron)?;
         contexto
             .cliente
             .publicar(&format!("drones.{}", dron.id), &dron.serializar(), None)?;
 
-        self.ultimo_envio_estado = chrono::offset::Local::now().timestamp_millis();
+        dron.envio_ultimo_estado = chrono::offset::Local::now().timestamp_millis();
 
         Ok(())
     }
@@ -98,9 +103,18 @@ impl Comunicacion {
 
         while let Some(publicacion) = contexto.suscripcion_comandos.intentar_leer()? {
             if let Ok(comando) = Comando::deserializar(&publicacion.payload) {
+                println!("Comando: {:?}", comando);
+
                 match comando {
                     Comando::AtenderIncidente(incidente) => {
                         dron.incidente_actual = Some(incidente);
+                    }
+                    Comando::DesatenderIncidente(incidente) => {
+                        if let Some(incidente_dron) = dron.incidente_actual.take() {
+                            if incidente_dron.id.eq(&incidente.id) {
+                                dron.incidente_actual = None;
+                            }
+                        }
                     }
                 }
             }
@@ -113,23 +127,16 @@ impl Comunicacion {
         let contexto = self.usar_contexto(dron)?;
 
         while let Some(publicacion) = contexto.suscripcion_incidentes_creados.intentar_leer()? {
-            match dron.accion() {
-                lib::dron::accion::Accion::Cargar => {
-                    continue;
-                }
-                lib::dron::accion::Accion::Incidente(_) => {
-                    continue;
-                }
-                _ => {}
-            }
-
-            if let Ok(incidente) = Incidente::deserializar(&publicacion.payload) {
-                if incidente.posicion().distancia(&dron.posicion) < dron.rango {
-                    contexto.cliente.publicar(
-                        &format!("incidentes.{}.dron", incidente.id),
-                        &dron.serializar(),
-                        None,
-                    )?;
+            if let Accion::Espera = dron.accion() {
+                if let Ok(incidente) = Incidente::deserializar(&publicacion.payload) {
+                    if incidente.posicion().distancia(&dron.posicion) < dron.rango {
+                        // EL dron publica que es capaz de atender al incidente
+                        contexto.cliente.publicar(
+                            &format!("incidentes.{}.dron", incidente.id),
+                            &dron.serializar(),
+                            None,
+                        )?;
+                    }
                 }
             }
         }

@@ -1,10 +1,11 @@
 use egui::ahash::HashMap;
-use lib::{camara::Camara, incidente::Incidente};
+use lib::{camara::Camara, dron::Dron, incidente::Incidente};
 
 #[derive(Clone, Debug)]
 
 /// Estado de la aplicación. Todos los incidentes y cámaras que hay que mostrar.
 pub struct Estado {
+    drones: HashMap<u64, Dron>,
     camaras: HashMap<u64, Camara>,
     incidentes: HashMap<u64, Incidente>,
     pub conectado: bool,
@@ -20,6 +21,7 @@ impl Default for Estado {
 impl Estado {
     pub fn new() -> Self {
         Estado {
+            drones: HashMap::default(),
             camaras: HashMap::default(),
             incidentes: HashMap::default(),
             conectado: false,
@@ -80,6 +82,31 @@ impl Estado {
     /// Limpia todas las cámaras.
     pub fn limpiar_camaras(&mut self) {
         self.camaras.clear();
+    }
+
+    pub fn cargar_dron(&mut self, dron: Dron) {
+        self.drones.insert(dron.id, dron);
+    }
+
+    pub fn limpiar_drones(&mut self) {
+        let ahora = chrono::offset::Local::now().timestamp_millis();
+        // Eliminar si pasaron más de 10 segundos
+        self.drones
+            .retain(|_, dron| ahora - dron.envio_ultimo_estado < 10000);
+    }
+
+    /// Devuelve los drones que atienden al incidente.
+    pub fn drones_incidente(&self, id_incidente: &u64) -> Vec<&Dron> {
+        self.drones
+            .values()
+            .filter(|dron| {
+                if let Some(incidente) = &dron.incidente_actual {
+                    incidente.id.eq(id_incidente)
+                } else {
+                    false
+                }
+            })
+            .collect()
     }
 
     pub fn incidente_a_string(&mut self, id_incidente: &u64) -> String {

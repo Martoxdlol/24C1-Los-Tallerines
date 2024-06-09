@@ -7,6 +7,7 @@ use std::{
 use lib::{
     camara::Camara,
     configuracion::Configuracion,
+    dron::Dron,
     incidente::Incidente,
     serializables::{
         deserializar_vec,
@@ -123,12 +124,23 @@ impl Sistema {
 
         let suscripcion_comandos = cliente.suscribirse("comandos.monitoreo", None)?;
 
+        let suscripcion_estado_drone = cliente.suscribirse("drones.*", None)?;
+
+        let suscripcion_incidentes_drones_disponibles =
+            cliente.suscribirse("incidentes.*.dron", None)?;
+
         self.actualizar_estado_ui()?;
 
         self.solicitar_actualizacion_camaras(&cliente)?;
 
         loop {
-            self.ciclo(&cliente, &suscripcion_camaras, &suscripcion_comandos)?;
+            self.ciclo(
+                &cliente,
+                &suscripcion_camaras,
+                &suscripcion_comandos,
+                &suscripcion_estado_drone,
+                &suscripcion_incidentes_drones_disponibles,
+            )?;
         }
     }
 
@@ -208,10 +220,17 @@ impl Sistema {
         cliente: &Cliente,
         suscripcion_camaras: &Suscripcion,
         suscripcion_comandos: &Suscripcion,
+        suscripcion_estado_drone: &Suscripcion,
+        suscripcion_incidentes_drones_disponibles: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
         self.leer_comandos_remotos(cliente, suscripcion_comandos)?;
+        self.leer_estado_drones(cliente, suscripcion_estado_drone)?;
+        self.leer_incidentes_drones_disponibles(
+            cliente,
+            suscripcion_incidentes_drones_disponibles,
+        )?;
 
         std::thread::sleep(std::time::Duration::from_millis(5));
 
@@ -296,7 +315,6 @@ impl Sistema {
                         format!("conectar {} {} {}", lat, lon, rango).as_bytes(),
                         None,
                     )?;
-                    //self.estado.conectar_camara(camara);
                     self.actualizar_estado_ui()?;
                 }
                 Comando::DesconectarCamara(id) => {
@@ -329,6 +347,67 @@ impl Sistema {
             } else {
                 println!("Comando desconocido: {}", comando);
             }
+        }
+
+        Ok(())
+    }
+
+    fn leer_estado_drones(
+        &mut self,
+        _cliente: &Cliente,
+        suscripcion_estado_drone: &Suscripcion,
+    ) -> io::Result<()> {
+        if let Some(mensaje) = suscripcion_estado_drone.intentar_leer()? {
+            if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
+                self.estado.cargar_dron(drone);
+                self.actualizar_estado_ui()?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn leer_incidentes_drones_disponibles(
+        &mut self,
+        cliente: &Cliente,
+        suscripcion_incidentes_drones_disponibles: &Suscripcion,
+    ) -> io::Result<()> {
+        if let Some(mensaje) = suscripcion_incidentes_drones_disponibles.intentar_leer()? {
+            let segmentos_topico = mensaje.subject.split('.').collect::<Vec<&str>>();
+
+            if segmentos_topico.len() != 3 {
+                return Ok(());
+            }
+
+            if let Ok(id_incidente) = segmentos_topico[1].parse::<u64>() {
+                let drones_incidente = self.estado.drones_incidente(&id_incidente);
+
+                if drones_incidente.len() >= 2 {
+                    return Ok(());
+                }
+
+                if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
+                    self.asignar_incidente_a_dron(cliente, id_incidente, drone)?;
+                    self.actualizar_estado_ui()?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn asignar_incidente_a_dron(
+        &mut self,
+        cliente: &Cliente,
+        id_incidente: u64,
+        drone: Dron,
+    ) -> io::Result<()> {
+        if let Some(incidente) = self.estado.incidente(id_incidente) {
+            cliente.publicar(
+                &format!("drones.{}.comandos", drone.id),
+                format!("atender_incidente {}", incidente.serializar_string()).as_bytes(),
+                None,
+            )?;
         }
 
         Ok(())

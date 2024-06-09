@@ -53,14 +53,7 @@ impl Sistema {
             self.establecer_velocidad();
             self.establecer_direccion();
         }
-        println!(
-            "{:?} bateria: {}, destino: {:?}, velocidad: {}, acción: {:?}",
-            self.dron.posicion,
-            self.dron.bateria_actual,
-            self.destino(),
-            self.dron.velocidad_actual,
-            self.dron.accion()
-        );
+
         self.comunicacion.ciclo(&mut self.dron);
     }
 

@@ -9,6 +9,7 @@ use crate::{
     serializables::{deserializador::Deserializador, serializador::Serializador, Serializable},
 };
 
+#[derive(Clone, Debug)]
 pub struct Dron {
     pub id: u64,
     pub rango: f64,
@@ -21,6 +22,7 @@ pub struct Dron {
     pub bateria_actual: f64,
     pub velocidad_actual: f64,
     pub incidente_actual: Option<Incidente>,
+    pub envio_ultimo_estado: i64,
 }
 
 impl Dron {
@@ -48,11 +50,12 @@ impl Dron {
                 config.obtener("lon").unwrap_or(punto_de_espera_lon),
             ),
             punto_de_espera,
-            velocidad_maxima: config.obtener("velocidad_maxima").unwrap_or(2.5),
+            velocidad_maxima: config.obtener("velocidad_maxima").unwrap_or(10.),
             velocidad_actual: config.obtener("velocidad_actual").unwrap_or(0.),
             velocidad_descarga_bateria: config
                 .obtener("velocidad_descarga_bateria")
                 .unwrap_or(1. / 3600.),
+            envio_ultimo_estado: 0,
         })
     }
 }
@@ -88,8 +91,9 @@ impl Serializable for Dron {
         let direccion_actual = deserializador.sacar_elemento()?;
         let bateria_actual = deserializador.sacar_elemento()?;
         let velocidad_actual = deserializador.sacar_elemento()?;
-
         let incidente_actual = deserializador.sacar_elemento_serializable()?;
+        let envio_ultimo_estado = deserializador.sacar_elemento()?;
+
         Ok(Dron {
             id,
             rango,
@@ -102,6 +106,7 @@ impl Serializable for Dron {
             bateria_actual,
             velocidad_actual,
             incidente_actual,
+            envio_ultimo_estado,
         })
     }
 
@@ -119,6 +124,7 @@ impl Serializable for Dron {
         serializador.agregar_elemento(&self.bateria_actual);
         serializador.agregar_elemento(&self.velocidad_actual);
         serializador.agregar_elemento_serializable(&self.incidente_actual);
+        serializador.agregar_elemento(&self.envio_ultimo_estado);
 
         serializador.bytes
     }
