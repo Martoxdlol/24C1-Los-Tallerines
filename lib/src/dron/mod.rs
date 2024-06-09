@@ -1,12 +1,12 @@
 pub mod accion;
 
-use std::fmt;
-
 use accion::Accion;
 
 use crate::{
-    configuracion::Configuracion, coordenadas::Coordenadas, incidente::Incidente,
-    serializables::Serializable,
+    configuracion::Configuracion,
+    coordenadas::Coordenadas,
+    incidente::Incidente,
+    serializables::{deserializador::Deserializador, serializador::Serializador, Serializable},
 };
 
 pub struct Dron {
@@ -76,10 +76,50 @@ impl Serializable for Dron {
     where
         Self: Sized,
     {
-        todo!()
+        let mut deserializador = Deserializador::new(data.to_vec());
+
+        let id = deserializador.sacar_elemento()?;
+        let rango = deserializador.sacar_elemento()?;
+        let central_de_carga = deserializador.sacar_elemento_serializable()?;
+        let punto_de_espera = deserializador.sacar_elemento_serializable()?;
+        let velocidad_maxima = deserializador.sacar_elemento()?;
+        let velocidad_descarga_bateria = deserializador.sacar_elemento()?;
+        let posicion = deserializador.sacar_elemento_serializable()?;
+        let direccion_actual = deserializador.sacar_elemento()?;
+        let bateria_actual = deserializador.sacar_elemento()?;
+        let velocidad_actual = deserializador.sacar_elemento()?;
+
+        let incidente_actual = deserializador.sacar_elemento_serializable()?;
+        Ok(Dron {
+            id,
+            rango,
+            central_de_carga,
+            punto_de_espera,
+            velocidad_maxima,
+            velocidad_descarga_bateria,
+            posicion,
+            direccion_actual,
+            bateria_actual,
+            velocidad_actual,
+            incidente_actual,
+        })
     }
 
     fn serializar(&self) -> Vec<u8> {
-        todo!()
+        let mut serializador = Serializador::new();
+
+        serializador.agregar_elemento(&self.id);
+        serializador.agregar_elemento(&self.rango);
+        serializador.agregar_elemento_serializable(&self.central_de_carga);
+        serializador.agregar_elemento_serializable(&self.punto_de_espera);
+        serializador.agregar_elemento(&self.velocidad_maxima);
+        serializador.agregar_elemento(&self.velocidad_descarga_bateria);
+        serializador.agregar_elemento_serializable(&self.posicion);
+        serializador.agregar_elemento(&self.direccion_actual);
+        serializador.agregar_elemento(&self.bateria_actual);
+        serializador.agregar_elemento(&self.velocidad_actual);
+        serializador.agregar_elemento_serializable(&self.incidente_actual);
+
+        serializador.bytes
     }
 }

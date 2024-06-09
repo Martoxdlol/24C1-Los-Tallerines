@@ -1,3 +1,5 @@
+use crate::serializables::Serializable;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Coordenadas {
     pub lat: f64,
@@ -37,6 +39,26 @@ impl Coordenadas {
             lat: self.lat + metros_lat * grados_por_metro,
             lon: self.lon + metros_lon * grados_por_metro,
         }
+    }
+}
+
+impl Serializable for Coordenadas {
+    fn serializar(&self) -> Vec<u8> {
+        let mut serializador = crate::serializables::serializador::Serializador::new();
+        serializador.agregar_elemento(&self.lat);
+        serializador.agregar_elemento(&self.lon);
+        serializador.bytes
+    }
+
+    fn deserializar(data: &[u8]) -> Result<Self, crate::serializables::error::DeserializationError>
+    where
+        Self: Sized,
+    {
+        let mut deserializador =
+            crate::serializables::deserializador::Deserializador::new(data.to_vec());
+        let lat = deserializador.sacar_elemento()?;
+        let lon = deserializador.sacar_elemento()?;
+        Ok(Coordenadas { lat, lon })
     }
 }
 

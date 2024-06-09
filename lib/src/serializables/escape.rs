@@ -57,6 +57,40 @@ pub fn desescapar(texto: &str) -> String {
     resultado
 }
 
+pub fn escapar_solo_salto_de_linea(texto: &str) -> String {
+    let mut resultado = String::new();
+
+    for caracter in texto.chars() {
+        match caracter {
+            '\n' => resultado.push_str("\\n"),
+            _ => resultado.push(caracter),
+        }
+    }
+
+    resultado
+}
+
+pub fn desescapar_solo_salto_de_linea(texto: &str) -> String {
+    let mut resultado = String::new();
+    let mut iter = texto.chars().peekable();
+
+    while let Some(caracter) = iter.next() {
+        if caracter == '\\' {
+            match iter.peek() {
+                Some(&'n') => {
+                    resultado.push('\n');
+                    iter.next();
+                }
+                _ => resultado.push(caracter),
+            }
+        } else {
+            resultado.push(caracter);
+        }
+    }
+
+    resultado
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
