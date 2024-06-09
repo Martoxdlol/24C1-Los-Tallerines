@@ -1,6 +1,6 @@
 use crate::coordenadas::metros_a_pixeles_en_mapa;
-use egui::{Color32, FontId, Painter, Response, Ui};
-use lib::{camara::Camara, coordenadas::Coordenadas, incidente::Incidente};
+use egui::{Color32, FontId, Painter, Response, Stroke, Ui};
+use lib::{camara::Camara, coordenadas::Coordenadas, dron::Dron, incidente::Incidente};
 use walkers::{
     extras::{Place, Places, Style},
     Plugin, Position, Projector,
@@ -48,6 +48,31 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
             label: format!("Id: {}, Estado: {}", camara.id, estado),
             symbol,
             style: Style::default(),
+        });
+    }
+    Places::new(lugares)
+}
+
+fn estilo_dron() -> Style {
+    Style {
+        symbol_font: FontId::proportional(20.),
+        symbol_stroke: Stroke::new(12., Color32::from_rgb(255, 51, 236)),
+        symbol_color: Color32::WHITE,
+        ..Default::default()
+    }
+}
+
+pub fn mostrar_drones(drones: &[Dron]) -> impl Plugin {
+    let mut lugares = Vec::new();
+
+    for dron in drones.iter() {
+        let mut symbol = '🚁';
+
+        lugares.push(Place {
+            position: Position::from_lat_lon(dron.posicion.lat, dron.posicion.lon),
+            label: format!("Id: {}", dron.id),
+            symbol,
+            style: estilo_dron(),
         });
     }
     Places::new(lugares)

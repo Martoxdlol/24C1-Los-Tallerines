@@ -69,6 +69,9 @@ impl Estado {
         self.camaras.values().cloned().collect()
     }
 
+    pub fn drones(&self) -> Vec<Dron> {
+        self.drones.values().cloned().collect()
+    }
     /// Envía un incidente segun su id.
     pub fn incidente(&self, id: u64) -> Option<Incidente> {
         self.incidentes.get(&id).cloned()
