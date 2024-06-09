@@ -250,13 +250,45 @@ impl Sistema {
     fn ciclo_cada_un_segundo(
         &mut self,
         cliente: &Cliente,
-        suscripcion_camaras: &Suscripcion,
-        suscripcion_comandos: &Suscripcion,
-        suscripcion_estado_drone: &Suscripcion,
-        suscripcion_incidentes_drones_disponibles: &Suscripcion,
+        _suscripcion_camaras: &Suscripcion,
+        _suscripcion_comandos: &Suscripcion,
+        _suscripcion_estado_drone: &Suscripcion,
+        _suscripcion_incidentes_drones_disponibles: &Suscripcion,
     ) -> io::Result<()> {
-        if self.ultimo_ciclo + 1000 < chrono::offset::Local::now().timestamp_millis() {
-            self.ultimo_ciclo = chrono::offset::Local::now().timestamp_millis();
+        let ahora = chrono::offset::Local::now().timestamp_millis();
+
+        if self.ultimo_ciclo + 1000 < ahora {
+            self.ultimo_ciclo = ahora;
+        } else {
+            return Ok(());
+        }
+
+        for mut incidente in self.estado.incidentes() {
+            if incidente.inicio + 20 * 60 * 1000 < ahora as u64 {
+                if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
+                    self.guardar_incidentes()?;
+                    self.publicar_incidente_finalizado(cliente, &incidente)?;
+                    self.actualizar_estado_ui()?;
+                }
+                continue;
+            }
+
+            let drones_incidente = self.estado.drones_incidente(&incidente.id);
+
+            if drones_incidente.len() >= 2 {
+                incidente.tiempo_atendido += 1000;
+                self.estado.cargar_incidente(incidente.clone());
+            }
+        }
+
+        for incidente in self.estado.incidentes() {
+            if incidente.tiempo_atendido > 300000 {
+                if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
+                    self.guardar_incidentes()?;
+                    self.publicar_incidente_finalizado(cliente, &incidente)?;
+                    self.actualizar_estado_ui()?;
+                }
+            }
         }
 
         // Eliminar drones que no aparecen hace más de 10 segundos

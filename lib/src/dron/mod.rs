@@ -80,6 +80,21 @@ impl Dron {
             Accion::Espera => self.punto_de_espera,
         }
     }
+
+    pub fn predecir_posicion(&self, tiempo: f64) -> Coordenadas {
+        let distancia = self.velocidad_actual * tiempo;
+        let destino = self.destino();
+        let distancia_destino = self.posicion.distancia(&destino);
+
+        if distancia_destino <= distancia {
+            return destino;
+        }
+
+        let direccion = self.posicion.direccion(&destino);
+        let nueva_posicion = self.posicion.mover_en_direccion(distancia, direccion);
+
+        nueva_posicion
+    }
 }
 
 impl Serializable for Dron {

@@ -24,6 +24,19 @@ impl Coordenadas {
         Coordenadas { lat, lon }
     }
 
+    pub fn direccion(&self, other: &Self) -> f64 {
+        let diff_lat = other.lat - self.lat;
+        let diff_lon = other.lon - self.lon;
+        let hipotenusa = (diff_lat.powi(2) + diff_lon.powi(2)).sqrt();
+        let direccion = (diff_lat / hipotenusa).acos().to_degrees();
+
+        if diff_lon < 0. {
+            360. - direccion
+        } else {
+            direccion
+        }
+    }
+
     pub fn mover_en_direccion(&self, distancia: f64, direccion: f64) -> Self {
         let metros_lat = distancia * ((direccion).to_radians()).cos();
         let metros_lon = distancia * ((direccion).to_radians()).sin();

@@ -71,7 +71,7 @@ impl Comunicacion {
         let mut tiempo = 1500;
 
         if dron.velocidad_actual > 0. {
-            tiempo = 150
+            tiempo = 300
         }
 
         if chrono::offset::Local::now().timestamp_millis() - dron.envio_ultimo_estado > tiempo {
@@ -116,6 +116,10 @@ impl Comunicacion {
 
                 match comando {
                     Comando::AtenderIncidente(incidente) => {
+                        if dron.incidente_actual.is_some() {
+                            continue;
+                        }
+
                         dron.incidente_actual = Some(incidente);
                     }
                     Comando::DesatenderIncidente(incidente) => {

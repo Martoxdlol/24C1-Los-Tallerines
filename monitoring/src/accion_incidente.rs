@@ -84,6 +84,14 @@ impl AccionIncidente {
                 ui.label(fecha);
                 ui.label("Estado: activo");
 
+                let drones = aplicacion.estado.drones_incidente(&incidente.id);
+
+                ui.label(format!("Drones atendiendo: {}/2", drones.len()));
+                ui.label(format!(
+                    "Tiempo atendido: {}/300 segundos",
+                    incidente.tiempo_atendido / 1000
+                ));
+
                 // Botones para finalizar, modificar detalle, cambiar ubicación y cancelar.
                 botones_modificar_inicidente(ui, incidente, aplicacion);
             });

@@ -10,6 +10,7 @@ pub struct Incidente {
     pub lat: f64,
     pub lon: f64,
     pub inicio: u64,
+    pub tiempo_atendido: i64,
 }
 
 impl Incidente {
@@ -20,6 +21,7 @@ impl Incidente {
             lat,
             lon,
             inicio,
+            tiempo_atendido: 0,
         }
     }
 
@@ -37,6 +39,7 @@ impl Serializable for Incidente {
         serializador.agregar_elemento(&self.lat);
         serializador.agregar_elemento(&self.lon);
         serializador.agregar_elemento(&self.inicio);
+        serializador.agregar_elemento(&self.tiempo_atendido);
 
         serializador.bytes
     }
@@ -52,6 +55,7 @@ impl Serializable for Incidente {
         let lat = deserializador.sacar_elemento()?;
         let lon = deserializador.sacar_elemento()?;
         let inicio = deserializador.sacar_elemento()?;
+        let tiempo_atendido = deserializador.sacar_elemento()?;
 
         Ok(Incidente {
             id,
@@ -59,6 +63,7 @@ impl Serializable for Incidente {
             lat,
             lon,
             inicio,
+            tiempo_atendido,
         })
     }
 }
