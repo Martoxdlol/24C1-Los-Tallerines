@@ -36,6 +36,10 @@ impl Grupo {
     }
 
     pub fn suscripcion_random(&self) -> Option<&Suscripcion> {
+        if self.suscripciones.len() == 0 {
+            return None;
+        }
+
         let index = thread_rng().gen_range(0..self.suscripciones.len());
         return self.suscripciones.iter().nth(index);
     }
