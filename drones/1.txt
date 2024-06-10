@@ -1,4 +1,3 @@
-id=1
 central_de_carga.lat=-34.617637
 central_de_carga.lon=-58.367949
 punto_de_espera.lat=-34.6184673

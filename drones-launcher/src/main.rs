@@ -16,15 +16,27 @@ fn main() {
     let mut drones = Vec::<Dron>::new();
 
     for ruta in drones_config_rutas {
-        let ruta = ruta.expect("Error al leer ruta de dron").path();
+        let ruta = ruta
+            .expect("Error al leer ruta de dron")
+            .path()
+            .to_str()
+            .expect("No se puede cargar la ruta del dron")
+            .to_string();
 
-        let config_dron =
-            Configuracion::leer(ruta.to_str().expect("No se puede cargar la ruta del dron"))
-                .expect("Error al leer configuración de dron");
+        let mut config_dron =
+            Configuracion::leer(&ruta).expect("Error al leer configuración de dron");
+
+        let mut nombre = ruta.split(&['/', '\\'][..]).last().unwrap();
+        nombre = nombre.split('.').next().unwrap();
+
+        if let Ok(id) = nombre.parse::<u64>() {
+            println!("Dron con id: {}", id);
+            config_dron.setear("id", id);
+        }
 
         drones.push(
             Dron::crear(&config_dron)
-                .expect(&format!("Configuración de dron incompleta: {:?}", ruta)),
+                .expect(&format!("Configuración de dron incompleta: {:?}", nombre)),
         );
     }
 

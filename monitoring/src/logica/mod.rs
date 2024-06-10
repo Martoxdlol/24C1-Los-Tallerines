@@ -31,6 +31,7 @@ pub struct Sistema {
     enviar_estado: Sender<Estado>,
     proximo_id_incidente: u64,
     ultimo_ciclo: i64,
+    actualizar_estado: bool,
 }
 
 /// Crea un nuevo sistema e intenta iniciarlo.
@@ -62,6 +63,7 @@ impl Sistema {
             enviar_estado,
             proximo_id_incidente: 0,
             ultimo_ciclo: 0,
+            actualizar_estado: false,
         }
     }
 
@@ -79,7 +81,7 @@ impl Sistema {
                     if let Err(e) = self.inicio() {
                         eprintln!("Error al conectar al sistema: {}", e);
                         self.estado.mensaje_error = Some(format!("{}", e));
-                        let _ = self.actualizar_estado_ui();
+                        let _ = self.requerir_actualizar_estado_ui();
                         std::thread::sleep(std::time::Duration::from_secs(1));
                     }
                 }
@@ -129,7 +131,7 @@ impl Sistema {
 
         let suscripcion_estado_drone = cliente.suscribirse("drones.*", None)?;
 
-        self.actualizar_estado_ui()?;
+        self.requerir_actualizar_estado_ui();
 
         self.solicitar_actualizacion_camaras(&cliente)?;
 
@@ -147,6 +149,10 @@ impl Sistema {
                 &suscripcion_comandos,
                 &suscripcion_estado_drone,
             )?;
+
+            if self.actualizar_estado {
+                self.actualizar_estado_ui()?;
+            }
         }
     }
 
@@ -258,7 +264,7 @@ impl Sistema {
                 if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
                     self.guardar_incidentes()?;
                     self.publicar_incidente_finalizado(cliente, &incidente)?;
-                    self.actualizar_estado_ui()?;
+                    self.requerir_actualizar_estado_ui();
                 }
                 continue;
             }
@@ -276,7 +282,7 @@ impl Sistema {
                 if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
                     self.guardar_incidentes()?;
                     self.publicar_incidente_finalizado(cliente, &incidente)?;
-                    self.actualizar_estado_ui()?;
+                    self.requerir_actualizar_estado_ui();
                 }
             }
         }
@@ -304,7 +310,7 @@ impl Sistema {
                 self.estado.conectar_camara(camara);
             }
 
-            self.actualizar_estado_ui()?;
+            self.requerir_actualizar_estado_ui();
         }
 
         Ok(())
@@ -322,21 +328,21 @@ impl Sistema {
                     self.estado.cargar_incidente(incidente.clone());
                     self.guardar_incidentes()?;
                     self.publicar_nuevo_incidente(cliente, &incidente)?;
-                    self.actualizar_estado_ui()?;
+                    self.requerir_actualizar_estado_ui();
                     self.asignar_incidentes_sin_asignar(cliente)?;
                 }
                 Comando::ModificarIncidente(incidente) => {
                     self.estado.cargar_incidente(incidente.clone());
                     self.guardar_incidentes()?;
                     self.publicar_nuevo_incidente(cliente, &incidente)?;
-                    self.actualizar_estado_ui()?;
+                    self.requerir_actualizar_estado_ui();
                     self.asignar_incidentes_sin_asignar(cliente)?;
                 }
                 Comando::IncidenteFinalizado(id) => {
                     if let Some(incidente) = self.estado.finalizar_incidente(&id) {
                         self.guardar_incidentes()?;
                         self.publicar_incidente_finalizado(cliente, &incidente)?;
-                        self.actualizar_estado_ui()?;
+                        self.requerir_actualizar_estado_ui();
                     }
                 }
                 Comando::CamaraNuevaUbicacion(id, lat, lon) => {
@@ -351,7 +357,7 @@ impl Sistema {
                 Comando::Desconectar => {
                     self.estado.conectado = false;
                     self.configuracion = Configuracion::default();
-                    self.actualizar_estado_ui()?;
+                    self.requerir_actualizar_estado_ui();
                     return Err(io::Error::new(io::ErrorKind::Other, "".to_string()));
                 }
                 Comando::CamaraNuevoRango(id, rango) => {
@@ -369,7 +375,7 @@ impl Sistema {
                         format!("conectar {} {} {}", lat, lon, rango).as_bytes(),
                         None,
                     )?;
-                    self.actualizar_estado_ui()?;
+                    self.requerir_actualizar_estado_ui();
                 }
                 Comando::DesconectarCamara(id) => {
                     if let Some(_camara) = self.estado.camara(id) {
@@ -414,7 +420,7 @@ impl Sistema {
         if let Some(mensaje) = suscripcion_estado_drone.intentar_leer()? {
             if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
                 self.estado.cargar_dron(drone);
-                self.actualizar_estado_ui()?;
+                self.requerir_actualizar_estado_ui();
             }
         }
 
@@ -507,14 +513,22 @@ impl Sistema {
         cliente.publicar(&topico, &bytes, None)
     }
 
+    /// Marca que se debe actualizar la ui
+    fn requerir_actualizar_estado_ui(&mut self) {
+        self.actualizar_estado = true;
+    }
+
     /// Actualiza el estado de la interfaz de usuario
-    fn actualizar_estado_ui(&self) -> io::Result<()> {
+    fn actualizar_estado_ui(&mut self) -> io::Result<()> {
         self.enviar_estado.send(self.estado.clone()).map_err(|e| {
             io::Error::new(
                 io::ErrorKind::Other,
                 format!("Error al enviar estado a la interfaz: {}", e),
             )
-        })
+        })?;
+
+        self.actualizar_estado = false;
+        Ok(())
     }
 
     /// Solicita la actualización de las cámaras al servidor de NATS.
