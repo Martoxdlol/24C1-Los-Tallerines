@@ -60,7 +60,7 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
 
 fn estilo_dron(dron: &Dron) -> Style {
     let mut stroke = Stroke::new(16., Color32::from_rgb(255, 51, 236));
-    if let Accion::Incidente(incidente) = dron.accion() {
+    if let Accion::Incidente(_incidente) = dron.accion() {
         stroke = Stroke::new(16., Color32::from_rgb(140, 27, 144))
     }
     Style {
