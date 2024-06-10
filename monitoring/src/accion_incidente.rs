@@ -81,6 +81,8 @@ impl AccionIncidente {
                     None => "".to_string(),
                 };
 
+                let ahora = chrono::offset::Local::now().timestamp_millis() as u64;
+
                 ui.label(fecha);
                 ui.label("Estado: activo");
 
@@ -90,6 +92,11 @@ impl AccionIncidente {
                 ui.label(format!(
                     "Tiempo atendido: {}/300 segundos",
                     incidente.tiempo_atendido / 1000
+                ));
+
+                ui.label(format!(
+                    "Tiempo maximo de espera: {}/1200 segundos (20 min)",
+                    (ahora - incidente.inicio) / 1000
                 ));
 
                 // Botones para finalizar, modificar detalle, cambiar ubicación y cancelar.

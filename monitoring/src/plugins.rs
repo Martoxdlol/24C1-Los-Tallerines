@@ -1,4 +1,4 @@
-use crate::coordenadas::{self, metros_a_pixeles_en_mapa};
+use crate::coordenadas::metros_a_pixeles_en_mapa;
 use egui::{Color32, FontId, Painter, Response, Stroke, Ui};
 use lib::{camara::Camara, coordenadas::Coordenadas, dron::Dron, incidente::Incidente};
 use walkers::{

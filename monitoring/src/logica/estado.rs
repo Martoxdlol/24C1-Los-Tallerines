@@ -112,6 +112,30 @@ impl Estado {
             .collect()
     }
 
+    /// Devuelve los drones que no tienen incidentes asignados.
+    pub fn drones_disponibles(&self) -> Vec<&Dron> {
+        self.drones
+            .values()
+            .filter(|dron| dron.incidente_actual.is_none())
+            .collect()
+    }
+
+    pub fn incidentes_sin_asignar(&self) -> Vec<(&Incidente, usize)> {
+        self.incidentes
+            .values()
+            .filter(|incidente| {
+                let drones_incidente = self.drones_incidente(&incidente.id);
+
+                drones_incidente.len() < 2
+            })
+            .map(|incidente| {
+                let drones_incidente = self.drones_incidente(&incidente.id);
+                (incidente, 2 - drones_incidente.len())
+            })
+            .collect()
+    }
+
+    /// Transforma un incidente a un texto legible por un humano.
     pub fn incidente_a_string(&mut self, id_incidente: &u64) -> String {
         let incidente = self.incidente(*id_incidente);
         if let Some(incidente) = incidente {

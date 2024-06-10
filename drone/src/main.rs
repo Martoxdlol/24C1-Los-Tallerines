@@ -1,9 +1,5 @@
-use comunicacion::Comunicacion;
+use drone::{comunicacion::Comunicacion, sistema::Sistema};
 use lib::{configuracion::Configuracion, dron::Dron};
-use sistema::Sistema;
-
-pub mod comunicacion;
-pub mod sistema;
 
 fn main() {
     if let Ok(config) = Configuracion::desde_argv() {
