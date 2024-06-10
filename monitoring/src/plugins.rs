@@ -1,6 +1,11 @@
 use crate::coordenadas::metros_a_pixeles_en_mapa;
 use egui::{Color32, FontId, Painter, Response, Stroke, Ui};
-use lib::{camara::Camara, coordenadas::Coordenadas, dron::Dron, incidente::Incidente};
+use lib::{
+    camara::Camara,
+    coordenadas::Coordenadas,
+    dron::{accion::Accion, Dron},
+    incidente::Incidente,
+};
 use walkers::{
     extras::{Place, Places, Style},
     Plugin, Position, Projector,
@@ -53,11 +58,16 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
     Places::new(lugares)
 }
 
-fn estilo_dron() -> Style {
+fn estilo_dron(dron: &Dron) -> Style {
+    let mut stroke = Stroke::new(16., Color32::from_rgb(255, 51, 236));
+    if let Accion::Incidente(_incidente) = dron.accion() {
+        stroke = Stroke::new(16., Color32::from_rgb(140, 27, 144))
+    }
     Style {
         symbol_font: FontId::proportional(20.),
-        symbol_stroke: Stroke::new(16., Color32::from_rgb(255, 51, 236)),
+        symbol_stroke: stroke,
         symbol_color: Color32::WHITE,
+        label_font: FontId::proportional(8.),
         ..Default::default()
     }
 }
@@ -67,19 +77,40 @@ pub fn mostrar_drones(drones: &[Dron]) -> impl Plugin {
 
     for dron in drones.iter() {
         let symbol = '🚁';
-
         let diferencial_tiempo = chrono::Local::now().timestamp_millis() - dron.envio_ultimo_estado;
-
         let coordenadas = dron.predecir_posicion((diferencial_tiempo as f64) / 1000.);
 
         lugares.push(Place {
             position: Position::from_lat_lon(coordenadas.lat, coordenadas.lon),
             label: format!("Id: {}", dron.id),
             symbol,
-            style: estilo_dron(),
+            style: estilo_dron(dron),
         });
     }
     Places::new(lugares)
+}
+
+pub fn mostrar_centros_carga(drones: &[Dron]) -> impl Plugin {
+    let mut lugares = Vec::new();
+
+    for dron in drones.iter() {
+        lugares.push(Place {
+            position: Position::from_lat_lon(dron.central_de_carga.lat, dron.central_de_carga.lon),
+            label: "Centro de carga".to_string(),
+            symbol: '🔋',
+            style: estilo_centro_de_carga(),
+        });
+    }
+    Places::new(lugares)
+}
+
+fn estilo_centro_de_carga() -> Style {
+    Style {
+        symbol_font: FontId::proportional(20.),
+        symbol_color: Color32::WHITE,
+        symbol_background: Color32::from_rgb(4, 246, 4),
+        ..Default::default()
+    }
 }
 
 /// Sombreado circular en el mapa. Sirve para marcar el rango de las cámaras.

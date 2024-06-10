@@ -2,7 +2,7 @@ use egui::Ui;
 use lib::camara::Camara;
 
 use crate::{
-    accion::Accion,
+    accion::AccionAplicacion,
     aplicacion::Aplicacion,
     listar::estado_camara_a_string,
     logica::{comando::Comando, estado::Estado},
@@ -71,7 +71,7 @@ impl AccionCamara {
                         clicked_at.lon(),
                     );
 
-                    aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                    aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
                 }
             });
     }
@@ -95,7 +95,7 @@ impl AccionCamara {
                         Comando::camara_nuevo_rango(&aplicacion.enviar_comando, camara.id, rango);
 
                         aplicacion.input_usuario.clear();
-                        aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                        aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
                     }
                 }
             });
@@ -134,7 +134,7 @@ impl AccionCamara {
                         );
 
                         aplicacion.input_usuario.clear();
-                        aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                        aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
                     }
                 }
             });
@@ -160,16 +160,16 @@ fn botones_modificar_camara(ui: &mut Ui, camara: &Camara, aplicacion: &mut Aplic
         }
         if ui.button("Modificar rango").clicked() {
             //aplicacion.detalle_incidente.clone_from(&incidente.detalle);
-            aplicacion.accion = Accion::Camara(AccionCamara::CambiarRango(camara.id));
+            aplicacion.accion = AccionAplicacion::Camara(AccionCamara::CambiarRango(camara.id));
         }
         ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
-            aplicacion.accion = Accion::Camara(AccionCamara::CambiarUbicacion(camara.id));
+            aplicacion.accion = AccionAplicacion::Camara(AccionCamara::CambiarUbicacion(camara.id));
         }
         if ui.button("Cancelar").clicked() {
             //aplicacion.detalle_incidente.clear();
-            aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+            aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
         }
         ui.end_row();
     });

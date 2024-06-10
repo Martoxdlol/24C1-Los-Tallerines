@@ -1,5 +1,6 @@
-use crate::accion::Accion;
+use crate::accion::AccionAplicacion;
 use crate::accion_camara::AccionCamara;
+use crate::accion_dron::AccionDron;
 use crate::accion_incidente::AccionIncidente;
 use crate::botones_mover_mapa;
 use crate::iconos;
@@ -9,11 +10,13 @@ use crate::logica::estado::Estado;
 use crate::plugins;
 use crate::provider::estilo_mapa;
 use crate::provider::Provider;
+
 use egui::Context;
 use egui::Ui;
 use lib::configuracion::Configuracion;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
+
 use walkers::{Map, MapMemory, TilesManager};
 
 /// Muestra los incidentes y las cámaras en el mapa.
@@ -23,9 +26,10 @@ fn mostrado_incidentes_y_camaras<'a>(
     clicks: &'a mut plugins::ClickWatcher,
 ) -> Map<'a, 'a, 'a> {
     mapa_a_mostrar
-        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
+        .with_plugin(plugins::mostrar_centros_carga(&estado.drones()))
         .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
         .with_plugin(plugins::mostrar_drones(&estado.drones()))
+        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
         .with_plugin(plugins::SombreadoCircular {
             posiciones: estado
                 .camaras()
@@ -47,7 +51,7 @@ pub struct Aplicacion {
     pub recibir_estado: Receiver<Estado>,
     pub enviar_comando: Sender<Comando>,
     pub listar: Listar,
-    pub accion: Accion,
+    pub accion: AccionAplicacion,
     pub configuracion: Configuracion,
 }
 
@@ -69,7 +73,7 @@ impl Aplicacion {
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
-            accion: Accion::Incidente(AccionIncidente::Crear),
+            accion: AccionAplicacion::Incidente(AccionIncidente::Crear),
             configuracion: Configuracion::desde_argv().unwrap_or_default(),
         }
     }
@@ -116,48 +120,58 @@ impl Aplicacion {
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
         //TODO: Separar por botones de incidentes y cámaras.
         match self.accion {
-            Accion::Incidente(AccionIncidente::Crear) => {
+            AccionAplicacion::Incidente(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionIncidente::agregar_incidente(ui, clicked_at, self);
                 }
             }
-            Accion::Incidente(AccionIncidente::Modificar(id)) => {
+            AccionAplicacion::Incidente(AccionIncidente::Modificar(id)) => {
                 if let Some(incidente) = self.estado.incidente(id) {
                     AccionIncidente::modificar_incidente(ui, &incidente, self);
                 }
             }
-            Accion::Incidente(AccionIncidente::CambiarDetalle(id)) => {
+            AccionAplicacion::Incidente(AccionIncidente::CambiarDetalle(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     AccionIncidente::cambiar_detalle_incidente(ui, self, &mut incidente);
                 }
             }
-            Accion::Incidente(AccionIncidente::CambiarUbicacion(id)) => {
+            AccionAplicacion::Incidente(AccionIncidente::CambiarUbicacion(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionIncidente::cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
                     }
                 }
             }
-            Accion::Camara(AccionCamara::Modificar(id)) => {
+            AccionAplicacion::Camara(AccionCamara::Modificar(id)) => {
                 if let Some(camara) = self.estado.camara(id) {
                     AccionCamara::modificar_camara(ui, &camara, self);
                 }
             }
-            Accion::Camara(AccionCamara::CambiarUbicacion(id)) => {
+            AccionAplicacion::Camara(AccionCamara::CambiarUbicacion(id)) => {
                 if let Some(camara) = self.estado.camara(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionCamara::modificar_ubicacion_camara(ui, &camara, self, clicked_at);
                     }
                 }
             }
-            Accion::Camara(AccionCamara::CambiarRango(id)) => {
+            AccionAplicacion::Camara(AccionCamara::CambiarRango(id)) => {
                 if let Some(camara) = self.estado.camara(id) {
                     AccionCamara::modificar_rango_camara(ui, &camara, self);
                 }
             }
-            Accion::Camara(AccionCamara::Conectar) => {
+            AccionAplicacion::Camara(AccionCamara::Conectar) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionCamara::conectar_camara(ui, clicked_at, self);
+                }
+            }
+            AccionAplicacion::Dron(AccionDron::Mostrar) => {
+                if let Some(clicked_at) = self.clicks.clicked_at {
+                    AccionIncidente::agregar_incidente(ui, clicked_at, self);
+                }
+            }
+            AccionAplicacion::Dron(AccionDron::VerDetalles(id)) => {
+                if let Some(dron) = self.estado.dron(id) {
+                    AccionDron::ver_detalles_dron(ui, &dron, self);
                 }
             }
         }
@@ -168,6 +182,7 @@ impl Aplicacion {
         match self.listar {
             Listar::Incidentes => Listar::listar_incidentes(ui, &self.estado.incidentes(), self),
             Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras(), self),
+            Listar::Drones => Listar::listar_drones(ui, &self.estado.drones(), self),
         }
     }
 
