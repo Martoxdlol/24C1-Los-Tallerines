@@ -15,6 +15,13 @@ fn main() {
 
     let mut drones = Vec::<Dron>::new();
 
+    let direccion = config
+        .obtener("direccion")
+        .unwrap_or("127.0.0.1".to_string());
+    let puerto = config.obtener("puerto").unwrap_or(4222);
+    let user: Option<String> = config.obtener("user");
+    let pass: Option<String> = config.obtener("pass");
+
     for ruta in drones_config_rutas {
         let ruta = ruta
             .expect("Error al leer ruta de dron")
@@ -30,9 +37,26 @@ fn main() {
         nombre = nombre.split('.').next().unwrap();
 
         if let Ok(id) = nombre.parse::<u64>() {
-            println!("Dron con id: {}", id);
             config_dron.setear("id", id);
         }
+
+        if config_dron.obtener::<String>("direccion").is_none() {
+            config_dron.setear("direccion", direccion.clone());
+        }
+
+        if config_dron.obtener::<u16>("puerto").is_none() {
+            config_dron.setear("puerto", puerto);
+        }
+
+        if user.is_some() && config_dron.obtener::<String>("user").is_none() {
+            config_dron.setear("user", user.clone().unwrap());
+        }
+
+        if pass.is_some() && config_dron.obtener::<String>("pass").is_none() {
+            config_dron.setear("pass", pass.clone().unwrap());
+        }
+
+        println!("{:?}", config_dron);
 
         drones.push(
             Dron::crear(&config_dron)
