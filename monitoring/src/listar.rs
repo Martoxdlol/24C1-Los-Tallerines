@@ -1,4 +1,4 @@
-use crate::accion::Accion;
+use crate::accion::AccionAplicacion;
 use crate::accion_dron::AccionDron;
 use crate::aplicacion::Aplicacion;
 use crate::logica::comando::Comando;
@@ -33,21 +33,21 @@ impl Listar {
                         .clicked()
                     {
                         aplicacion.listar = Listar::Incidentes;
-                        aplicacion.accion = Accion::Incidente(AccionIncidente::Crear);
+                        aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::Crear);
                     }
                     if ui
                         .add_sized([100., 20.], egui::Button::new("Camaras"))
                         .clicked()
                     {
                         aplicacion.listar = Listar::Camaras;
-                        aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                        aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
                     }
                     if ui
                         .add_sized([100., 20.], egui::Button::new("Drones"))
                         .clicked()
                     {
                         aplicacion.listar = Listar::Drones;
-                        aplicacion.accion = Accion::Dron(AccionDron::Mostrar);
+                        aplicacion.accion = AccionAplicacion::Dron(AccionDron::Mostrar);
                     }
                     if ui
                         .add_sized([100., 20.], egui::Button::new("Salir"))
@@ -92,8 +92,9 @@ impl Listar {
                                         .memoria_mapa
                                         .center_at(Position::from_lat_lon(camara.lat, camara.lon));
                                     // Cambia la AccionIncidente a Modificar.
-                                    aplicacion.accion =
-                                        Accion::Camara(AccionCamara::Modificar(camara.id));
+                                    aplicacion.accion = AccionAplicacion::Camara(
+                                        AccionCamara::Modificar(camara.id),
+                                    );
                                 }
                             });
                         }
@@ -132,8 +133,9 @@ impl Listar {
                                         incidente.lon,
                                     ));
                                     // Cambia la AccionIncidente a Modificar.
-                                    aplicacion.accion =
-                                        Accion::Incidente(AccionIncidente::Modificar(incidente.id));
+                                    aplicacion.accion = AccionAplicacion::Incidente(
+                                        AccionIncidente::Modificar(incidente.id),
+                                    );
                                 }
                             });
                         }
@@ -168,8 +170,8 @@ impl Listar {
                                         dron.posicion.lon,
                                     ));
                                     // Cambia la AccionIncidente a VerDetalle.
-                                    //aplicacion.accion =
-                                    //    Accion::Dron(AccionDron::VerDetalles(dron.id));
+                                    aplicacion.accion =
+                                        AccionAplicacion::Dron(AccionDron::VerDetalles(dron.id));
                                 }
                             });
                         }

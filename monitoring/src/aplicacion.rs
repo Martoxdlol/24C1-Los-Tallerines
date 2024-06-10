@@ -1,4 +1,4 @@
-use crate::accion::Accion;
+use crate::accion::AccionAplicacion;
 use crate::accion_camara::AccionCamara;
 use crate::accion_dron::AccionDron;
 use crate::accion_incidente::AccionIncidente;
@@ -48,7 +48,7 @@ pub struct Aplicacion {
     pub recibir_estado: Receiver<Estado>,
     pub enviar_comando: Sender<Comando>,
     pub listar: Listar,
-    pub accion: Accion,
+    pub accion: AccionAplicacion,
     pub configuracion: Configuracion,
 }
 
@@ -70,7 +70,7 @@ impl Aplicacion {
             recibir_estado,
             enviar_comando,
             listar: Listar::Incidentes,
-            accion: Accion::Incidente(AccionIncidente::Crear),
+            accion: AccionAplicacion::Incidente(AccionIncidente::Crear),
             configuracion: Configuracion::desde_argv().unwrap_or_default(),
         }
     }
@@ -117,59 +117,59 @@ impl Aplicacion {
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
         //TODO: Separar por botones de incidentes y cámaras.
         match self.accion {
-            Accion::Incidente(AccionIncidente::Crear) => {
+            AccionAplicacion::Incidente(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionIncidente::agregar_incidente(ui, clicked_at, self);
                 }
             }
-            Accion::Incidente(AccionIncidente::Modificar(id)) => {
+            AccionAplicacion::Incidente(AccionIncidente::Modificar(id)) => {
                 if let Some(incidente) = self.estado.incidente(id) {
                     AccionIncidente::modificar_incidente(ui, &incidente, self);
                 }
             }
-            Accion::Incidente(AccionIncidente::CambiarDetalle(id)) => {
+            AccionAplicacion::Incidente(AccionIncidente::CambiarDetalle(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     AccionIncidente::cambiar_detalle_incidente(ui, self, &mut incidente);
                 }
             }
-            Accion::Incidente(AccionIncidente::CambiarUbicacion(id)) => {
+            AccionAplicacion::Incidente(AccionIncidente::CambiarUbicacion(id)) => {
                 if let Some(mut incidente) = self.estado.incidente(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionIncidente::cambiar_ubicacion(ui, self, &mut incidente, clicked_at);
                     }
                 }
             }
-            Accion::Camara(AccionCamara::Modificar(id)) => {
+            AccionAplicacion::Camara(AccionCamara::Modificar(id)) => {
                 if let Some(camara) = self.estado.camara(id) {
                     AccionCamara::modificar_camara(ui, &camara, self);
                 }
             }
-            Accion::Camara(AccionCamara::CambiarUbicacion(id)) => {
+            AccionAplicacion::Camara(AccionCamara::CambiarUbicacion(id)) => {
                 if let Some(camara) = self.estado.camara(id) {
                     if let Some(clicked_at) = self.clicks.clicked_at {
                         AccionCamara::modificar_ubicacion_camara(ui, &camara, self, clicked_at);
                     }
                 }
             }
-            Accion::Camara(AccionCamara::CambiarRango(id)) => {
+            AccionAplicacion::Camara(AccionCamara::CambiarRango(id)) => {
                 if let Some(camara) = self.estado.camara(id) {
                     AccionCamara::modificar_rango_camara(ui, &camara, self);
                 }
             }
-            Accion::Camara(AccionCamara::Conectar) => {
+            AccionAplicacion::Camara(AccionCamara::Conectar) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionCamara::conectar_camara(ui, clicked_at, self);
                 }
             }
-            Accion::Dron(AccionDron::Mostrar) => {
+            AccionAplicacion::Dron(AccionDron::Mostrar) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
                     AccionIncidente::agregar_incidente(ui, clicked_at, self);
                 }
             }
-            Accion::Dron(AccionDron::VerDetalles(id)) => {
-                //if let Some(dron) = self.estado.dron(id) {
-                //    AccionDron::ver_detalles_dron(ui, &dron, self);
-                //}
+            AccionAplicacion::Dron(AccionDron::VerDetalles(id)) => {
+                if let Some(dron) = self.estado.dron(id) {
+                    AccionDron::ver_detalles_dron(ui, &dron, self);
+                }
             }
         }
     }
