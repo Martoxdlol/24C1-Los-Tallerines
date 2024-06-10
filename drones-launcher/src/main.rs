@@ -60,7 +60,7 @@ fn main() {
 
         drones.push(
             Dron::crear(&config_dron)
-                .expect(&format!("Configuración de dron incompleta: {:?}", nombre)),
+                .unwrap_or_else(|| panic!("Configuración de dron incompleta: {:?}", nombre)),
         );
     }
 
