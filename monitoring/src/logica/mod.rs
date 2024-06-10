@@ -7,6 +7,7 @@ use std::{
 use lib::{
     camara::Camara,
     configuracion::Configuracion,
+    dron::Dron,
     incidente::Incidente,
     serializables::{
         deserializar_vec,
@@ -28,6 +29,7 @@ pub struct Sistema {
     recibir_comando: Receiver<Comando>,
     enviar_estado: Sender<Estado>,
     proximo_id_incidente: u64,
+    ultimo_ciclo: i64,
 }
 
 /// Crea un nuevo sistema e intenta iniciarlo.
@@ -58,6 +60,7 @@ impl Sistema {
             recibir_comando,
             enviar_estado,
             proximo_id_incidente: 0,
+            ultimo_ciclo: 0,
         }
     }
 
@@ -123,12 +126,31 @@ impl Sistema {
 
         let suscripcion_comandos = cliente.suscribirse("comandos.monitoreo", None)?;
 
+        let suscripcion_estado_drone = cliente.suscribirse("drones.*", None)?;
+
+        let suscripcion_incidentes_drones_disponibles =
+            cliente.suscribirse("incidentes.*.dron", None)?;
+
         self.actualizar_estado_ui()?;
 
         self.solicitar_actualizacion_camaras(&cliente)?;
 
         loop {
-            self.ciclo(&cliente, &suscripcion_camaras, &suscripcion_comandos)?;
+            self.ciclo(
+                &cliente,
+                &suscripcion_camaras,
+                &suscripcion_comandos,
+                &suscripcion_estado_drone,
+                &suscripcion_incidentes_drones_disponibles,
+            )?;
+
+            self.ciclo_cada_un_segundo(
+                &cliente,
+                &suscripcion_camaras,
+                &suscripcion_comandos,
+                &suscripcion_estado_drone,
+                &suscripcion_incidentes_drones_disponibles,
+            )?;
         }
     }
 
@@ -208,12 +230,77 @@ impl Sistema {
         cliente: &Cliente,
         suscripcion_camaras: &Suscripcion,
         suscripcion_comandos: &Suscripcion,
+        suscripcion_estado_drone: &Suscripcion,
+        suscripcion_incidentes_drones_disponibles: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
         self.leer_comandos_remotos(cliente, suscripcion_comandos)?;
+        self.leer_estado_drones(cliente, suscripcion_estado_drone)?;
+        self.leer_incidentes_drones_disponibles(
+            cliente,
+            suscripcion_incidentes_drones_disponibles,
+        )?;
 
         std::thread::sleep(std::time::Duration::from_millis(5));
+
+        Ok(())
+    }
+
+    fn ciclo_cada_un_segundo(
+        &mut self,
+        cliente: &Cliente,
+        _suscripcion_camaras: &Suscripcion,
+        _suscripcion_comandos: &Suscripcion,
+        _suscripcion_estado_drone: &Suscripcion,
+        _suscripcion_incidentes_drones_disponibles: &Suscripcion,
+    ) -> io::Result<()> {
+        let ahora = chrono::offset::Local::now().timestamp_millis();
+
+        if self.ultimo_ciclo + 1000 < ahora {
+            self.ultimo_ciclo = ahora;
+        } else {
+            return Ok(());
+        }
+
+        for mut incidente in self.estado.incidentes() {
+            if incidente.inicio + 20 * 60 * 1000 < ahora as u64 {
+                if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
+                    self.guardar_incidentes()?;
+                    self.publicar_incidente_finalizado(cliente, &incidente)?;
+                    self.actualizar_estado_ui()?;
+                }
+                continue;
+            }
+
+            let drones_incidente = self.estado.drones_incidente(&incidente.id);
+
+            if drones_incidente.len() >= 2 {
+                incidente.tiempo_atendido += 1000;
+                self.estado.cargar_incidente(incidente.clone());
+            }
+        }
+
+        for incidente in self.estado.incidentes() {
+            if incidente.tiempo_atendido > 300000 {
+                if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
+                    self.guardar_incidentes()?;
+                    self.publicar_incidente_finalizado(cliente, &incidente)?;
+                    self.actualizar_estado_ui()?;
+                }
+            }
+        }
+
+        // Eliminar drones que no aparecen hace más de 10 segundos
+        self.estado.limpiar_drones();
+
+        for incidente in self.estado.incidentes() {
+            let drones_incidente = self.estado.drones_incidente(&incidente.id);
+
+            if drones_incidente.len() < 2 {
+                self.pedir_drone_para_incidente(cliente, &incidente)?;
+            }
+        }
 
         Ok(())
     }
@@ -296,7 +383,6 @@ impl Sistema {
                         format!("conectar {} {} {}", lat, lon, rango).as_bytes(),
                         None,
                     )?;
-                    //self.estado.conectar_camara(camara);
                     self.actualizar_estado_ui()?;
                 }
                 Comando::DesconectarCamara(id) => {
@@ -334,10 +420,85 @@ impl Sistema {
         Ok(())
     }
 
+    fn leer_estado_drones(
+        &mut self,
+        _cliente: &Cliente,
+        suscripcion_estado_drone: &Suscripcion,
+    ) -> io::Result<()> {
+        if let Some(mensaje) = suscripcion_estado_drone.intentar_leer()? {
+            if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
+                self.estado.cargar_dron(drone);
+                self.actualizar_estado_ui()?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn leer_incidentes_drones_disponibles(
+        &mut self,
+        cliente: &Cliente,
+        suscripcion_incidentes_drones_disponibles: &Suscripcion,
+    ) -> io::Result<()> {
+        if let Some(mensaje) = suscripcion_incidentes_drones_disponibles.intentar_leer()? {
+            let segmentos_topico = mensaje.subject.split('.').collect::<Vec<&str>>();
+
+            if segmentos_topico.len() != 3 {
+                return Ok(());
+            }
+
+            if let Ok(id_incidente) = segmentos_topico[1].parse::<u64>() {
+                let drones_incidente = self.estado.drones_incidente(&id_incidente);
+
+                if drones_incidente.len() >= 2 {
+                    return Ok(());
+                }
+
+                if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
+                    self.asignar_incidente_a_dron(cliente, id_incidente, drone)?;
+                    self.actualizar_estado_ui()?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn asignar_incidente_a_dron(
+        &mut self,
+        cliente: &Cliente,
+        id_incidente: u64,
+        drone: Dron,
+    ) -> io::Result<()> {
+        if let Some(incidente) = self.estado.incidente(id_incidente) {
+            cliente.publicar(
+                &format!("drones.{}.comandos", drone.id),
+                format!("atender_incidente {}", incidente.serializar_string()).as_bytes(),
+                None,
+            )?;
+        }
+
+        Ok(())
+    }
+
     /// Publica un nuevo incidente en el servidor de NATS.
     fn publicar_nuevo_incidente(&self, cliente: &Cliente, incidente: &Incidente) -> io::Result<()> {
         let bytes = incidente.serializar();
         let topico = format!("incidentes.{}.creado", incidente.id);
+        cliente.publicar(&topico, &bytes, None)?;
+
+        // TODO: Limpiar drones si en realidad no es un nuevo incidente
+
+        self.pedir_drone_para_incidente(cliente, incidente)
+    }
+
+    fn pedir_drone_para_incidente(
+        &self,
+        cliente: &Cliente,
+        incidente: &Incidente,
+    ) -> io::Result<()> {
+        let bytes = incidente.serializar();
+        let topico = format!("incidentes.{}.pedir_dron", incidente.id);
         cliente.publicar(&topico, &bytes, None)
     }
 

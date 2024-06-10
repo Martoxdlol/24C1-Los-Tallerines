@@ -2,8 +2,10 @@ use std::collections::HashSet;
 
 use crate::{
     coordenadas::Coordenadas,
-    csv::{csv_encodear_linea, csv_parsear_linea},
-    serializables::{error::DeserializationError, Serializable},
+    serializables::{
+        deserializador::Deserializador, error::DeserializationError, serializador::Serializador,
+        Serializable,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,52 +43,27 @@ impl Camara {
 
 impl Serializable for Camara {
     fn serializar(&self) -> Vec<u8> {
-        let mut parametros: Vec<String> = Vec::new();
-        parametros.push(format!("{}", self.id));
-        parametros.push(format!("{}", self.lat));
-        parametros.push(format!("{}", self.lon));
-        parametros.push(format!("{}", self.rango));
-        parametros.push(serializar_vector_incidentes(&self.incidentes_primarios).to_string());
-        parametros.push(serializar_vector_incidentes(&self.incidentes_secundarios).to_string());
-        csv_encodear_linea(&parametros).into_bytes()
+        let mut serializador = Serializador::new();
+
+        serializador.agregar_elemento(&self.id);
+        serializador.agregar_elemento(&self.lat);
+        serializador.agregar_elemento(&self.lon);
+        serializador.agregar_elemento(&self.rango);
+        serializador.agregar_elemento_serializable(&self.incidentes_primarios);
+        serializador.agregar_elemento_serializable(&self.incidentes_secundarios);
+
+        serializador.bytes
     }
 
     fn deserializar(data: &[u8]) -> Result<Self, DeserializationError> {
-        let linea =
-            String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
-        let mut parametros = csv_parsear_linea(linea.as_str()).into_iter();
+        let mut deserializador = Deserializador::new(data.to_vec());
 
-        let id = parametros
-            .next()
-            .ok_or(DeserializationError::MissingField)?
-            .parse()
-            .map_err(|_| DeserializationError::InvalidData)?;
-        let lat = parametros
-            .next()
-            .ok_or(DeserializationError::MissingField)?
-            .parse()
-            .map_err(|_| DeserializationError::InvalidData)?;
-        let lon = parametros
-            .next()
-            .ok_or(DeserializationError::MissingField)?
-            .parse()
-            .map_err(|_| DeserializationError::InvalidData)?;
-        let rango = parametros
-            .next()
-            .ok_or(DeserializationError::MissingField)?
-            .parse()
-            .map_err(|_| DeserializationError::InvalidData)?;
-
-        let incidentes_primarios = deserialize_vector_incidentes(
-            &parametros
-                .next()
-                .ok_or(DeserializationError::MissingField)?,
-        )?;
-        let incidentes_secundarios = deserialize_vector_incidentes(
-            &parametros
-                .next()
-                .ok_or(DeserializationError::MissingField)?,
-        )?;
+        let id = deserializador.sacar_elemento()?;
+        let lat = deserializador.sacar_elemento()?;
+        let lon = deserializador.sacar_elemento()?;
+        let rango = deserializador.sacar_elemento()?;
+        let incidentes_primarios = deserializador.sacar_elemento_serializable()?;
+        let incidentes_secundarios = deserializador.sacar_elemento_serializable()?;
 
         Ok(Camara {
             id,
@@ -98,25 +75,6 @@ impl Serializable for Camara {
         })
     }
 }
-
-fn serializar_vector_incidentes(incidentes: &HashSet<u64>) -> String {
-    incidentes
-        .iter()
-        .map(|id| id.to_string())
-        .collect::<Vec<String>>()
-        .join(";")
-}
-
-fn deserialize_vector_incidentes(data: &str) -> Result<HashSet<u64>, DeserializationError> {
-    if data.trim().is_empty() {
-        return Ok(HashSet::new());
-    }
-
-    data.split(';')
-        .map(|id| id.parse().map_err(|_| DeserializationError::InvalidData))
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

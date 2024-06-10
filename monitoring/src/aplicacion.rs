@@ -25,6 +25,7 @@ fn mostrado_incidentes_y_camaras<'a>(
     mapa_a_mostrar
         .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
         .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
+        .with_plugin(plugins::mostrar_drones(&estado.drones()))
         .with_plugin(plugins::SombreadoCircular {
             posiciones: estado
                 .camaras()

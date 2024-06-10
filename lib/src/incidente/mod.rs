@@ -1,4 +1,7 @@
-use crate::{coordenadas::Coordenadas, csv::csv_encodear_linea, serializables::Serializable};
+use crate::{
+    coordenadas::Coordenadas,
+    serializables::{deserializador::Deserializador, serializador::Serializador, Serializable},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Incidente {
@@ -7,6 +10,7 @@ pub struct Incidente {
     pub lat: f64,
     pub lon: f64,
     pub inicio: u64,
+    pub tiempo_atendido: i64,
 }
 
 impl Incidente {
@@ -17,6 +21,7 @@ impl Incidente {
             lat,
             lon,
             inicio,
+            tiempo_atendido: 0,
         }
     }
 
@@ -27,46 +32,30 @@ impl Incidente {
 
 impl Serializable for Incidente {
     fn serializar(&self) -> Vec<u8> {
-        let mut parametros: Vec<String> = Vec::new();
-        parametros.push(format!("{}", self.id));
-        parametros.push(self.detalle.clone());
-        parametros.push(format!("{}", self.lat));
-        parametros.push(format!("{}", self.lon));
-        parametros.push(format!("{}", self.inicio));
-        csv_encodear_linea(&parametros).into_bytes()
+        let mut serializador = Serializador::new();
+
+        serializador.agregar_elemento(&self.id);
+        serializador.agregar_elemento(&self.detalle);
+        serializador.agregar_elemento(&self.lat);
+        serializador.agregar_elemento(&self.lon);
+        serializador.agregar_elemento(&self.inicio);
+        serializador.agregar_elemento(&self.tiempo_atendido);
+
+        serializador.bytes
     }
 
     fn deserializar(data: &[u8]) -> Result<Self, crate::serializables::error::DeserializationError>
     where
         Self: Sized,
     {
-        let linea = String::from_utf8(data.to_vec())
-            .map_err(|_| crate::serializables::error::DeserializationError::InvalidData)?;
-        let mut parametros = crate::csv::csv_parsear_linea(linea.as_str()).into_iter();
+        let mut deserializador = Deserializador::new(data.to_vec());
 
-        let id = parametros
-            .next()
-            .ok_or(crate::serializables::error::DeserializationError::InvalidData)?
-            .parse()
-            .map_err(|_| crate::serializables::error::DeserializationError::InvalidData)?;
-        let detalle = parametros
-            .next()
-            .ok_or(crate::serializables::error::DeserializationError::InvalidData)?;
-        let lat = parametros
-            .next()
-            .ok_or(crate::serializables::error::DeserializationError::InvalidData)?
-            .parse()
-            .map_err(|_| crate::serializables::error::DeserializationError::InvalidData)?;
-        let lon = parametros
-            .next()
-            .ok_or(crate::serializables::error::DeserializationError::InvalidData)?
-            .parse()
-            .map_err(|_| crate::serializables::error::DeserializationError::InvalidData)?;
-        let inicio = parametros
-            .next()
-            .ok_or(crate::serializables::error::DeserializationError::InvalidData)?
-            .parse()
-            .map_err(|_| crate::serializables::error::DeserializationError::InvalidData)?;
+        let id = deserializador.sacar_elemento()?;
+        let detalle = deserializador.sacar_elemento()?;
+        let lat = deserializador.sacar_elemento()?;
+        let lon = deserializador.sacar_elemento()?;
+        let inicio = deserializador.sacar_elemento()?;
+        let tiempo_atendido = deserializador.sacar_elemento()?;
 
         Ok(Incidente {
             id,
@@ -74,6 +63,7 @@ impl Serializable for Incidente {
             lat,
             lon,
             inicio,
+            tiempo_atendido,
         })
     }
 }

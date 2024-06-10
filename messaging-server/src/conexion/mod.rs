@@ -270,6 +270,7 @@ impl Conexion {
                 Mensaje::Ping() => {
                     self.escribir_respuesta(&Respuesta::Pong());
                 }
+                Mensaje::Pong() => {}
                 _ => {
                     self.escribir_respuesta(&Respuesta::Err(Some(
                         "Mensaje no reconocido".to_string(),
