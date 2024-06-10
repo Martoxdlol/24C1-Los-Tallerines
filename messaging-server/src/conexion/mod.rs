@@ -30,14 +30,14 @@ pub struct Conexion {
     /// Tiempo del ultimo PING
     tiempo_ultimo_ping: DateTime<Local>,
 
-    pub desconectado: bool,
+    desconectado: bool,
 
     /// Indica si la conexión está autenticada.
     /// Es decir, si ya se envió un mensaje de conexión (`CONNECT {...}`)
-    pub autenticado: bool,
+    autenticado: bool,
 
     /// Cuentas de usuario
-    pub cuentas: Option<Arc<Vec<Cuenta>>>,
+    cuentas: Option<Arc<Vec<Cuenta>>>,
 }
 
 impl Conexion {
@@ -104,7 +104,7 @@ impl Conexion {
     }
 
     /// Lee los bytes del stream y los envía al parser
-    pub fn leer_bytes(&mut self) {
+    fn leer_bytes(&mut self) {
         let mut buffer = [0; 1024]; // 1kb
                                     // 1. Leer una vez
         match self.stream.read(&mut buffer) {
@@ -131,7 +131,7 @@ impl Conexion {
     }
 
     /// Escribir al stream
-    pub fn escribir_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
+    fn escribir_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
         if let Err(e) = self.stream.write_all(bytes) {
             self.registrador
                 .advertencia(&format!("Error al escribir al stream {}", e), Some(self.id));
@@ -142,7 +142,7 @@ impl Conexion {
         Ok(())
     }
 
-    pub fn escribir_respuesta(&mut self, respuesta: &Respuesta) {
+    fn escribir_respuesta(&mut self, respuesta: &Respuesta) {
         let bytes = &respuesta.serializar();
         if self.escribir_bytes(bytes).is_err() {
             self.registrador
@@ -150,22 +150,22 @@ impl Conexion {
         }
     }
 
-    pub fn escribir_ok(&mut self, msg: Option<String>) {
+    fn escribir_ok(&mut self, msg: Option<String>) {
         self.escribir_respuesta(&Respuesta::Ok(msg));
     }
 
-    pub fn escribir_err(&mut self, msg: Option<String>) {
+    fn escribir_err(&mut self, msg: Option<String>) {
         self.escribir_respuesta(&Respuesta::Err(msg));
     }
 
-    pub fn enviar_info(&mut self) {
+    fn enviar_info(&mut self) {
         let require_auth = self.cuentas.is_some();
         self.escribir_respuesta(&Respuesta::Info(ParametrosInfo {
             auth_required: Some(require_auth),
         }));
     }
 
-    pub fn leer_mensajes(&mut self, contexto: &mut TickContexto) {
+    fn leer_mensajes(&mut self, contexto: &mut TickContexto) {
         while let Some(mensaje) = self.parser.proximo_mensaje() {
             self.registrador.info(
                 &format!("Mensaje recibido: {:?}", formatear_mensaje_debug(&mensaje)),
