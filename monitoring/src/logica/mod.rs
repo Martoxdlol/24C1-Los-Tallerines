@@ -246,6 +246,9 @@ impl Sistema {
         Ok(())
     }
 
+    /// Ciclo que se ejecuta cada segundo
+    ///
+    /// Se encarga de finalizar los incidentes que cumplieron su tiempo de vida
     fn ciclo_cada_un_segundo(
         &mut self,
         cliente: &Cliente,
@@ -414,6 +417,7 @@ impl Sistema {
         Ok(())
     }
 
+    /// Lee el estado de los drones desde el servidor de NATS y los procesa.
     fn leer_estado_drones(
         &mut self,
         _cliente: &Cliente,
@@ -478,6 +482,9 @@ impl Sistema {
         Ok(())
     }
 
+    /// Asigna un incidente a un dron
+    ///
+    /// envia un mensaje de NATS al dron para que atienda el incidente
     fn asignar_incidente_a_dron(
         &self,
         cliente: &Cliente,

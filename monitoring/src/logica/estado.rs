@@ -69,10 +69,12 @@ impl Estado {
         self.camaras.values().cloned().collect()
     }
 
+    /// Muestra todos los drones.
     pub fn drones(&self) -> Vec<Dron> {
         self.drones.values().cloned().collect()
     }
 
+    /// Devuelve un dron especifico segun su id.
     pub fn dron(&self, id: u64) -> Option<Dron> {
         self.drones.get(&id).cloned()
     }
@@ -91,10 +93,12 @@ impl Estado {
         self.camaras.clear();
     }
 
+    /// Agrega un dron en el estado.
     pub fn cargar_dron(&mut self, dron: Dron) {
         self.drones.insert(dron.id, dron);
     }
 
+    /// Limpia los drones que no enviaron estado en los últimos 10 segundos.
     pub fn limpiar_drones(&mut self) {
         let ahora = chrono::offset::Local::now().timestamp_millis();
         // Eliminar si pasaron más de 10 segundos
@@ -124,6 +128,7 @@ impl Estado {
             .collect()
     }
 
+    /// Devuelve los incidentes que no tienen 2 drones asignados.
     pub fn incidentes_sin_asignar(&self) -> Vec<(&Incidente, usize)> {
         self.incidentes
             .values()
