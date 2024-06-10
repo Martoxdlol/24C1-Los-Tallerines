@@ -3,12 +3,14 @@ use lib::dron::{accion::Accion, Dron};
 
 use crate::{accion::AccionAplicacion, aplicacion::Aplicacion};
 
+/// Acciones que se pueden realizar con un dron.
 pub enum AccionDron {
-    Mostrar,
-    VerDetalles(u64),
+    Mostrar,          //Por defecto
+    VerDetalles(u64), //Mostrar el detalle arriba a la izquierda del dron
 }
 
 impl AccionDron {
+    /// Ventana para ver los detalles de un dron.
     pub fn ver_detalles_dron(ui: &mut Ui, dron: &Dron, aplicacion: &mut Aplicacion) {
         egui::Window::new("Detalles Dron")
             .collapsible(false)
@@ -28,11 +30,15 @@ impl AccionDron {
                 ui.label(format!("Velocidad: {} m/s", dron.velocidad_actual));
 
                 if ui.button("Volver").clicked() {
+                    // Cerrar la ventana de detalles.
                     aplicacion.accion = AccionAplicacion::Dron(AccionDron::Mostrar);
                 }
             });
     }
 }
+/// Convierte la acción de un dron a un string.
+///
+/// Se va a mostrar en la ventana de detalles de un dron.
 fn accion_dron_a_string(dron: &Dron) -> String {
     match dron.accion() {
         Accion::Incidente(incidente) => format!("Atendiendo incidente: {}", incidente.detalle),

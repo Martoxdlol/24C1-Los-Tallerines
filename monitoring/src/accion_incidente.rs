@@ -5,7 +5,7 @@ use chrono::DateTime;
 use egui::Ui;
 use lib::incidente::Incidente;
 
-/// Enum para la ventana de la esquina superior izquierda.
+/// Acciones que podes hacer con un incidente.
 pub enum AccionIncidente {
     Crear,
     Modificar(u64),
@@ -99,7 +99,7 @@ impl AccionIncidente {
                     (ahora - incidente.inicio) / 1000
                 ));
 
-                // Botones para finalizar, modificar detalle, cambiar ubicación y cancelar.
+                // Botones para modificar el incidente.
                 botones_modificar_inicidente(ui, incidente, aplicacion);
             });
     }
@@ -135,6 +135,7 @@ impl AccionIncidente {
                     aplicacion.input_usuario.clear();
                     aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::Crear);
 
+                    // Envio el comando
                     Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
                 }
             });
@@ -172,12 +173,16 @@ impl AccionIncidente {
                     aplicacion.input_usuario.clear();
                     aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::Crear);
 
+                    // Piso el incidente anterior con el nuevo (tienen la ubicación diferente)
                     Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
                 }
             });
     }
 }
 
+/// Botones para modificar un incidente.
+///
+/// Se muestra en la ventana de modificar incidente.
 fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: &mut Aplicacion) {
     egui::Grid::new("some_unique_id").show(ui, |ui| {
         if ui.button("Finalizar incidente").clicked() {
@@ -187,12 +192,15 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
         }
         if ui.button("Modificar detalle").clicked() {
             aplicacion.input_usuario.clone_from(&incidente.detalle);
-            aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
+            aplicacion.accion =
+                AccionAplicacion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
         }
+        // Para que aparezcan en dos filas
         ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
-            aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
+            aplicacion.accion =
+                AccionAplicacion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
         }
         if ui.button("Cancelar").clicked() {
             aplicacion.input_usuario.clear();
