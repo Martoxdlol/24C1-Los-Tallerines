@@ -15,4 +15,4 @@ Cargo.lock
 .cache
 
 # Archivos csv
-*.csv
+_*.csv
