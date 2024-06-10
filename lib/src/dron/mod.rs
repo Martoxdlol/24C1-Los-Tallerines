@@ -91,9 +91,9 @@ impl Dron {
         }
 
         let direccion = self.posicion.direccion(&destino);
-        let nueva_posicion = self.posicion.mover_en_direccion(distancia, direccion);
+        
 
-        nueva_posicion
+        self.posicion.mover_en_direccion(distancia, direccion)
     }
 }
 

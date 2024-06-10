@@ -36,7 +36,7 @@ impl Grupo {
     }
 
     pub fn suscripcion_random(&self) -> Option<&Suscripcion> {
-        if self.suscripciones.len() == 0 {
+        if self.suscripciones.is_empty() {
             return None;
         }
 

@@ -10,13 +10,13 @@ use crate::logica::estado::Estado;
 use crate::plugins;
 use crate::provider::estilo_mapa;
 use crate::provider::Provider;
-use egui::ahash::HashSet;
+
 use egui::Context;
 use egui::Ui;
 use lib::configuracion::Configuracion;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
-use walkers::extras::Places;
+
 use walkers::{Map, MapMemory, TilesManager};
 
 /// Muestra los incidentes y las cámaras en el mapa.

@@ -1,7 +1,6 @@
 use egui::Ui;
 use lib::{
     dron::{accion::Accion, Dron},
-    incidente,
 };
 
 use crate::{accion::AccionAplicacion, aplicacion::Aplicacion};
