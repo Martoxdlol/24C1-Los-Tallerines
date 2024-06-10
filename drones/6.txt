@@ -1,0 +1,5 @@
+central_de_carga.lat=-34.617637
+central_de_carga.lon=-58.367949
+punto_de_espera.lat=-34.61325
+punto_de_espera.lon=58.395394
+velocidad_maxima=35

@@ -34,7 +34,7 @@ impl Sistema {
         loop {
             self.ciclo();
             self.ms_ultima_iteracion = chrono::offset::Local::now().timestamp_millis();
-            std::thread::sleep(std::time::Duration::from_millis(25));
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
 

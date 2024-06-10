@@ -91,7 +91,6 @@ impl Dron {
         }
 
         let direccion = self.posicion.direccion(&destino);
-        
 
         self.posicion.mover_en_direccion(distancia, direccion)
     }
