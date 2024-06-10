@@ -6,10 +6,7 @@ use std::io;
 use comando::Comando;
 use contexto::Contexto;
 use lib::{
-    configuracion::Configuracion,
-    dron::{accion::Accion, Dron},
-    incidente::Incidente,
-    serializables::Serializable,
+    configuracion::Configuracion, dron::Dron, incidente::Incidente, serializables::Serializable,
 };
 use messaging_client::cliente::Cliente;
 
@@ -42,8 +39,6 @@ impl Comunicacion {
                 self.pass.clone(),
             )?;
 
-            let suscripcion_incidentes_creados =
-                cliente.suscribirse("incidentes.*.pedir_dron", None)?;
             let suscripcion_incidentes_finalizados =
                 cliente.suscribirse("incidentes.*.finalizado", None)?;
             let suscripcion_comandos =
@@ -51,7 +46,6 @@ impl Comunicacion {
 
             self.contexto = Some(Contexto {
                 cliente,
-                suscripcion_incidentes_creados,
                 suscripcion_incidentes_finalizados,
                 suscripcion_comandos,
             });
@@ -78,7 +72,6 @@ impl Comunicacion {
             self.enviar_estado(dron)?;
         }
 
-        self.recibir_incidentes(dron)?;
         self.recibir_comandos(dron)?;
         self.recibir_incidentes_finalizados(dron)?;
 
@@ -137,27 +130,6 @@ impl Comunicacion {
 
         if enviar_estado {
             self.enviar_estado(dron)?;
-        }
-
-        Ok(())
-    }
-
-    fn recibir_incidentes(&mut self, dron: &mut Dron) -> io::Result<()> {
-        let contexto = self.usar_contexto(dron)?;
-
-        while let Some(publicacion) = contexto.suscripcion_incidentes_creados.intentar_leer()? {
-            if let Accion::Espera = dron.accion() {
-                if let Ok(incidente) = Incidente::deserializar(&publicacion.payload) {
-                    if incidente.posicion().distancia(&dron.posicion) < dron.rango {
-                        // EL dron publica que es capaz de atender al incidente
-                        contexto.cliente.publicar(
-                            &format!("incidentes.{}.dron", incidente.id),
-                            &dron.serializar(),
-                            None,
-                        )?;
-                    }
-                }
-            }
         }
 
         Ok(())

@@ -160,7 +160,7 @@ impl Servidor {
                         }
                     }
 
-                    thread::sleep(std::time::Duration::from_micros(500));
+                    std::thread::sleep(std::time::Duration::from_millis(5));
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     // No hay conexiones nuevas

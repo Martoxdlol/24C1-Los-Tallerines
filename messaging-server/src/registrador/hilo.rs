@@ -11,7 +11,7 @@ pub fn hilo_registrador(rx: Receiver<Registro>) {
                     eprintln!("{}", registro)
                 }
                 _ => {
-                    println!("{}", registro)
+                    // println!("{}", registro)
                 }
             }
         }

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     io,
     sync::mpsc::{Receiver, Sender},
     time::Duration,
@@ -128,9 +129,6 @@ impl Sistema {
 
         let suscripcion_estado_drone = cliente.suscribirse("drones.*", None)?;
 
-        let suscripcion_incidentes_drones_disponibles =
-            cliente.suscribirse("incidentes.*.dron", None)?;
-
         self.actualizar_estado_ui()?;
 
         self.solicitar_actualizacion_camaras(&cliente)?;
@@ -141,7 +139,6 @@ impl Sistema {
                 &suscripcion_camaras,
                 &suscripcion_comandos,
                 &suscripcion_estado_drone,
-                &suscripcion_incidentes_drones_disponibles,
             )?;
 
             self.ciclo_cada_un_segundo(
@@ -149,7 +146,6 @@ impl Sistema {
                 &suscripcion_camaras,
                 &suscripcion_comandos,
                 &suscripcion_estado_drone,
-                &suscripcion_incidentes_drones_disponibles,
             )?;
         }
     }
@@ -231,18 +227,13 @@ impl Sistema {
         suscripcion_camaras: &Suscripcion,
         suscripcion_comandos: &Suscripcion,
         suscripcion_estado_drone: &Suscripcion,
-        suscripcion_incidentes_drones_disponibles: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
         self.leer_comandos_remotos(cliente, suscripcion_comandos)?;
         self.leer_estado_drones(cliente, suscripcion_estado_drone)?;
-        self.leer_incidentes_drones_disponibles(
-            cliente,
-            suscripcion_incidentes_drones_disponibles,
-        )?;
 
-        std::thread::sleep(std::time::Duration::from_millis(5));
+        std::thread::sleep(std::time::Duration::from_millis(10));
 
         Ok(())
     }
@@ -253,7 +244,6 @@ impl Sistema {
         _suscripcion_camaras: &Suscripcion,
         _suscripcion_comandos: &Suscripcion,
         _suscripcion_estado_drone: &Suscripcion,
-        _suscripcion_incidentes_drones_disponibles: &Suscripcion,
     ) -> io::Result<()> {
         let ahora = chrono::offset::Local::now().timestamp_millis();
 
@@ -294,13 +284,7 @@ impl Sistema {
         // Eliminar drones que no aparecen hace más de 10 segundos
         self.estado.limpiar_drones();
 
-        for incidente in self.estado.incidentes() {
-            let drones_incidente = self.estado.drones_incidente(&incidente.id);
-
-            if drones_incidente.len() < 2 {
-                self.pedir_drone_para_incidente(cliente, &incidente)?;
-            }
-        }
+        self.asignar_incidentes_sin_asignar(cliente)?;
 
         Ok(())
     }
@@ -339,12 +323,14 @@ impl Sistema {
                     self.guardar_incidentes()?;
                     self.publicar_nuevo_incidente(cliente, &incidente)?;
                     self.actualizar_estado_ui()?;
+                    self.asignar_incidentes_sin_asignar(cliente)?;
                 }
                 Comando::ModificarIncidente(incidente) => {
                     self.estado.cargar_incidente(incidente.clone());
                     self.guardar_incidentes()?;
                     self.publicar_nuevo_incidente(cliente, &incidente)?;
                     self.actualizar_estado_ui()?;
+                    self.asignar_incidentes_sin_asignar(cliente)?;
                 }
                 Comando::IncidenteFinalizado(id) => {
                     if let Some(incidente) = self.estado.finalizar_incidente(&id) {
@@ -435,29 +421,49 @@ impl Sistema {
         Ok(())
     }
 
-    fn leer_incidentes_drones_disponibles(
-        &mut self,
-        cliente: &Cliente,
-        suscripcion_incidentes_drones_disponibles: &Suscripcion,
-    ) -> io::Result<()> {
-        if let Some(mensaje) = suscripcion_incidentes_drones_disponibles.intentar_leer()? {
-            let segmentos_topico = mensaje.subject.split('.').collect::<Vec<&str>>();
+    /// En base a los incidentes conocidos sin asignar y todos los drones conocidos,
+    /// Busca asignar a cada incidente los dron más cercanos que necesite.
+    fn asignar_incidentes_sin_asignar(&mut self, cliente: &Cliente) -> io::Result<()> {
+        // Drones disponibles que no están atendiendo un incidente
+        let mut drones = self.estado.drones_disponibles();
 
-            if segmentos_topico.len() != 3 {
-                return Ok(());
+        // De los disponibles, lo que ya usé en esta llamada de la función
+        let mut drones_usados = HashSet::new();
+
+        // Recorrer por cada incidente sin asignar al 100%
+        // Incidente, cuantos drones faltan por ser asignados a ese incidente
+        for (incidente, drones_restantes) in self.estado.incidentes_sin_asignar() {
+            // Si no hay drone F
+            if drones.is_empty() {
+                break;
             }
 
-            if let Ok(id_incidente) = segmentos_topico[1].parse::<u64>() {
-                let drones_incidente = self.estado.drones_incidente(&id_incidente);
+            // Ordenar los drones por distancia al incidente
+            drones.sort_by(|a, b| {
+                let distancia_a = a.posicion.distancia(&incidente.posicion());
+                let distancia_b = b.posicion.distancia(&incidente.posicion());
 
-                if drones_incidente.len() >= 2 {
-                    return Ok(());
+                distancia_a.partial_cmp(&distancia_b).unwrap()
+            });
+
+            // Cuantos drones ya asigné a este incidente
+            let mut asignados = 0;
+
+            for dron in drones.iter() {
+                // Si ya usé este dron, no lo puedo volver a usar
+                if drones_usados.contains(&dron.id) {
+                    continue;
                 }
 
-                if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
-                    self.asignar_incidente_a_dron(cliente, id_incidente, drone)?;
-                    self.actualizar_estado_ui()?;
+                // Si ya asigné todos los drones que necesito, salgo del ciclo
+                if asignados == drones_restantes {
+                    break;
                 }
+
+                asignados += 1;
+
+                self.asignar_incidente_a_dron(cliente, incidente.id, dron)?;
+                drones_usados.insert(dron.id);
             }
         }
 
@@ -465,10 +471,10 @@ impl Sistema {
     }
 
     fn asignar_incidente_a_dron(
-        &mut self,
+        &self,
         cliente: &Cliente,
         id_incidente: u64,
-        drone: Dron,
+        drone: &Dron,
     ) -> io::Result<()> {
         if let Some(incidente) = self.estado.incidente(id_incidente) {
             cliente.publicar(
@@ -487,19 +493,7 @@ impl Sistema {
         let topico = format!("incidentes.{}.creado", incidente.id);
         cliente.publicar(&topico, &bytes, None)?;
 
-        // TODO: Limpiar drones si en realidad no es un nuevo incidente
-
-        self.pedir_drone_para_incidente(cliente, incidente)
-    }
-
-    fn pedir_drone_para_incidente(
-        &self,
-        cliente: &Cliente,
-        incidente: &Incidente,
-    ) -> io::Result<()> {
-        let bytes = incidente.serializar();
-        let topico = format!("incidentes.{}.pedir_dron", incidente.id);
-        cliente.publicar(&topico, &bytes, None)
+        Ok(())
     }
 
     /// Publica un incidente finalizado en el servidor de NATS.
