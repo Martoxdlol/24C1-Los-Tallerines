@@ -11,11 +11,19 @@ use std::{
 
 use lib::configuracion::Configuracion;
 
-use crate::{conexion::id::IdConexion, cuenta::Cuenta, hilo::id::IdHilo, registrador::Registrador};
+use crate::{
+    conexion::{id::IdConexion, r#trait::Conexion},
+    cuenta::Cuenta,
+    hilo::id::IdHilo,
+    registrador::Registrador,
+};
 
-use super::{conexion::Conexion, hilo::Hilo};
+use super::{conexion::ConexionDeCliente, hilo::Hilo};
 
-type InfoHilo = (Sender<(IdConexion, Conexion)>, JoinHandle<()>);
+type InfoHilo = (
+    Sender<(IdConexion, Box<dyn Conexion + Send>)>,
+    JoinHandle<()>,
+);
 
 pub struct Servidor {
     pub configuracion: Configuracion,
@@ -142,7 +150,7 @@ impl Servidor {
                     // Generamos un nuevo id único para la nueva conexión
                     let id_conexion = self.nuevo_id_conexion();
 
-                    let conexion = Conexion::new(
+                    let conexion = ConexionDeCliente::new(
                         id_conexion,
                         Box::new(stream),
                         registrador_para_nueva_conexion,
@@ -150,7 +158,7 @@ impl Servidor {
                     );
 
                     let (tx, _) = &self.hilos[self.proximo_id_hilo];
-                    match tx.send((id_conexion, conexion)) {
+                    match tx.send((id_conexion, Box::new(conexion))) {
                         // Envio la conexion al hilo
                         Ok(_) => {
                             self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();

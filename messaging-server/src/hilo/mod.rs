@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    conexion::{id::IdConexion, tick_contexto::TickContexto, Conexion},
+    conexion::{id::IdConexion, r#trait::Conexion, tick_contexto::TickContexto},
     publicacion::Publicacion,
     registrador::Registrador,
     suscripciones::{suscripcion::Suscripcion, Suscripciones},
@@ -19,7 +19,7 @@ use self::{id::IdHilo, instruccion::Instruccion};
 pub struct Hilo {
     id: u64,
     /// Canal para **recibir** instrucciones de otros procesos
-    canal_recibir_conexiones: Receiver<(IdConexion, Conexion)>,
+    canal_recibir_conexiones: Receiver<(IdConexion, Box<dyn Conexion + Send>)>,
     /// Canales a otros hilos para **enviar** instrucciones (ejemplo: publicar, suscribir, desuscribir, etc.)
     canales_enviar_instrucciones: HashMap<IdHilo, Sender<Instruccion>>,
     /// Canal para **recibir** instrucciones de otros procesos
@@ -29,13 +29,13 @@ pub struct Hilo {
     /// Registrador de eventos
     registrador: Registrador,
     /// Conexiones de este hilo
-    conexiones: HashMap<IdConexion, Conexion>,
+    conexiones: HashMap<IdConexion, Box<dyn Conexion + Send>>,
 }
 
 impl Hilo {
     pub fn new(
         id: u64,
-        canal_recibir_conexiones: Receiver<(IdConexion, Conexion)>,
+        canal_recibir_conexiones: Receiver<(IdConexion, Box<dyn Conexion + Send>)>,
         canales_enviar_instrucciones: HashMap<IdHilo, Sender<Instruccion>>,
         canal_recibir_instrucciones: Receiver<Instruccion>,
         registrador: Registrador,

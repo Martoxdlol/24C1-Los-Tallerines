@@ -1,10 +1,12 @@
 pub mod id;
 pub mod respuesta;
 pub mod tick_contexto;
+pub mod r#trait;
 use lib::parseador::mensaje::{formatear_mensaje_debug, formatear_payload_debug};
 use lib::parseador::parametros_info::ParametrosInfo;
 use lib::parseador::Parseador;
 use lib::{parseador::mensaje::Mensaje, stream::Stream};
+use r#trait::Conexion;
 use std::sync::Arc;
 use std::{fmt::Debug, io};
 
@@ -18,7 +20,7 @@ use crate::{
 };
 
 use self::{id::IdConexion, respuesta::Respuesta, tick_contexto::TickContexto};
-pub struct Conexion {
+pub struct ConexionDeCliente {
     /// El identificador de la conexión. Global y único0
     id: IdConexion,
     /// El stream de la conexión
@@ -40,7 +42,7 @@ pub struct Conexion {
     cuentas: Option<Arc<Vec<Cuenta>>>,
 }
 
-impl Conexion {
+impl ConexionDeCliente {
     pub fn new(
         id: IdConexion,
         stream: Box<dyn Stream>,
@@ -63,22 +65,6 @@ impl Conexion {
         con
     }
 
-    pub fn tick(&mut self, salida: &mut TickContexto) {
-        if self.desconectado {
-            return;
-        }
-        // Si hace falta enviar un PING o no
-        if self.enviar_ping() {
-            _ = self.escribir_bytes(b"PING\r\n");
-        }
-
-        // Lee los bytes del stream y los envía al parser
-        self.leer_bytes();
-
-        // Lee mensaje y actua en consecuencia
-        self.leer_mensajes(salida);
-    }
-
     /// Chequea si pasaron 20 segundos desde el ultimo PING enviado
     fn enviar_ping(&mut self) -> bool {
         let tiempo_actual = Local::now();
@@ -89,17 +75,6 @@ impl Conexion {
             true
         } else {
             false
-        }
-    }
-
-    /// Este método lo envia el Hilo cuando recibe un mensaje
-    pub fn escribir_publicacion_mensaje(&mut self, mensaje: &PublicacionMensaje) {
-        self.registrador
-            .info(&format!("MSG: {:?}", mensaje), Some(self.id));
-
-        if self.escribir_bytes(&mensaje.serializar_msg()).is_err() {
-            self.registrador
-                .advertencia("Error al enviar mensaje", Some(self.id));
         }
     }
 
@@ -279,13 +254,42 @@ impl Conexion {
             }
         }
     }
+}
 
-    pub fn esta_conectado(&self) -> bool {
+impl Conexion for ConexionDeCliente {
+    fn tick(&mut self, salida: &mut TickContexto) {
+        if self.desconectado {
+            return;
+        }
+        // Si hace falta enviar un PING o no
+        if self.enviar_ping() {
+            _ = self.escribir_bytes(b"PING\r\n");
+        }
+
+        // Lee los bytes del stream y los envía al parser
+        self.leer_bytes();
+
+        // Lee mensaje y actua en consecuencia
+        self.leer_mensajes(salida);
+    }
+
+    /// Este método lo envia el Hilo cuando recibe un mensaje
+    fn escribir_publicacion_mensaje(&mut self, mensaje: &PublicacionMensaje) {
+        self.registrador
+            .info(&format!("MSG: {:?}", mensaje), Some(self.id));
+
+        if self.escribir_bytes(&mensaje.serializar_msg()).is_err() {
+            self.registrador
+                .advertencia("Error al enviar mensaje", Some(self.id));
+        }
+    }
+
+    fn esta_conectado(&self) -> bool {
         !self.desconectado
     }
 }
 
-impl Debug for Conexion {
+impl Debug for ConexionDeCliente {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Conexion")
             .field("id", &self.id)
@@ -301,9 +305,9 @@ mod tests {
 
     use lib::{serializables::deserializar_vec, stream::mock_handler::MockHandler};
 
-    use crate::registrador::Registrador;
+    use crate::{conexion::r#trait::Conexion, registrador::Registrador};
 
-    use super::{tick_contexto::TickContexto, Conexion};
+    use super::{tick_contexto::TickContexto, ConexionDeCliente};
 
     #[test]
     fn probar_info() {
@@ -312,7 +316,7 @@ mod tests {
         let registrador = Registrador::new();
 
         // Conexion representa el cliente del lado del servidor
-        Conexion::new(1, Box::new(stream), registrador, None);
+        ConexionDeCliente::new(1, Box::new(stream), registrador, None);
 
         assert!(control
             .intentar_recibir_string()
@@ -326,7 +330,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
+        let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
 
         mock.escribir_bytes(b"CONNECT {}\r\n");
 
@@ -343,7 +347,8 @@ mod tests {
 
         let cuentas = deserializar_vec("1,admin,1234".as_bytes()).unwrap();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador, Some(Arc::new(cuentas)));
+        let mut con =
+            ConexionDeCliente::new(1, Box::new(stream), registrador, Some(Arc::new(cuentas)));
 
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"1234\"}\r\n");
 
@@ -358,7 +363,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
+        let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
@@ -379,7 +384,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
+        let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
@@ -402,7 +407,7 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new();
 
-        let mut con = Conexion::new(1, Box::new(stream), registrador, None);
+        let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
 
         let mut contexto = TickContexto::new(0, 1);
