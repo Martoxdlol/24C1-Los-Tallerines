@@ -239,7 +239,7 @@ impl Sistema {
         self.leer_comandos_remotos(cliente, suscripcion_comandos)?;
         self.leer_estado_drones(cliente, suscripcion_estado_drone)?;
 
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::thread::sleep(std::time::Duration::from_millis(30));
 
         Ok(())
     }
