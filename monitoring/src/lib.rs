@@ -1,5 +1,6 @@
 pub mod accion;
 pub mod accion_camara;
+pub mod accion_dron;
 pub mod accion_incidente;
 pub mod aplicacion;
 pub mod botones_mover_mapa;

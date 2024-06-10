@@ -1,4 +1,5 @@
 use crate::accion::Accion;
+use crate::accion_dron::AccionDron;
 use crate::aplicacion::Aplicacion;
 use crate::logica::comando::Comando;
 use crate::{accion_camara::AccionCamara, accion_incidente::AccionIncidente};
@@ -11,6 +12,7 @@ use walkers::Position;
 pub enum Listar {
     Incidentes,
     Camaras,
+    Drones,
 }
 
 impl Listar {
@@ -39,6 +41,13 @@ impl Listar {
                     {
                         aplicacion.listar = Listar::Camaras;
                         aplicacion.accion = Accion::Camara(AccionCamara::Conectar);
+                    }
+                    if ui
+                        .add_sized([100., 20.], egui::Button::new("Drones"))
+                        .clicked()
+                    {
+                        aplicacion.listar = Listar::Drones;
+                        aplicacion.accion = Accion::Dron(AccionDron::Mostrar);
                     }
                     if ui
                         .add_sized([100., 20.], egui::Button::new("Salir"))
@@ -125,6 +134,42 @@ impl Listar {
                                     // Cambia la AccionIncidente a Modificar.
                                     aplicacion.accion =
                                         Accion::Incidente(AccionIncidente::Modificar(incidente.id));
+                                }
+                            });
+                        }
+                    });
+                });
+        }
+    }
+
+    pub fn listar_drones(ui: &mut Ui, drones: &[lib::dron::Dron], aplicacion: &mut Aplicacion) {
+        if !drones.is_empty() {
+            egui::Window::new("Lista de drones")
+                .collapsible(false)
+                .movable(true)
+                .resizable(true)
+                .collapsible(true)
+                .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
+                .show(ui.ctx(), |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        for dron in drones {
+                            let id = dron.id.to_string();
+
+                            ui.scope(|ui| {
+                                ui.style_mut().visuals.widgets.inactive.weak_bg_fill =
+                                    Color32::TRANSPARENT;
+                                if ui
+                                    .add_sized([350., 40.], |ui: &mut Ui| ui.button(id))
+                                    .clicked()
+                                {
+                                    // Si clickeas el incidente te lleva a esa posición.
+                                    aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
+                                        dron.posicion.lat,
+                                        dron.posicion.lon,
+                                    ));
+                                    // Cambia la AccionIncidente a VerDetalle.
+                                    //aplicacion.accion =
+                                    //    Accion::Dron(AccionDron::VerDetalles(dron.id));
                                 }
                             });
                         }

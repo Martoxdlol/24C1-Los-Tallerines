@@ -1,5 +1,6 @@
 use crate::accion::Accion;
 use crate::accion_camara::AccionCamara;
+use crate::accion_dron::AccionDron;
 use crate::accion_incidente::AccionIncidente;
 use crate::botones_mover_mapa;
 use crate::iconos;
@@ -160,6 +161,16 @@ impl Aplicacion {
                     AccionCamara::conectar_camara(ui, clicked_at, self);
                 }
             }
+            Accion::Dron(AccionDron::Mostrar) => {
+                if let Some(clicked_at) = self.clicks.clicked_at {
+                    AccionIncidente::agregar_incidente(ui, clicked_at, self);
+                }
+            }
+            Accion::Dron(AccionDron::VerDetalles(id)) => {
+                //if let Some(dron) = self.estado.dron(id) {
+                //    AccionDron::ver_detalles_dron(ui, &dron, self);
+                //}
+            }
         }
     }
 
@@ -168,6 +179,7 @@ impl Aplicacion {
         match self.listar {
             Listar::Incidentes => Listar::listar_incidentes(ui, &self.estado.incidentes(), self),
             Listar::Camaras => Listar::listar_camaras(ui, &self.estado.camaras(), self),
+            Listar::Drones => Listar::listar_drones(ui, &self.estado.drones(), self),
         }
     }
 
