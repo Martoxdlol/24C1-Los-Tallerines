@@ -22,9 +22,9 @@ impl Comunicacion {
     pub fn new(config: &Configuracion) -> Self {
         Self {
             direccion_server: config
-                .obtener::<String>("direccion_server")
+                .obtener::<String>("direccion")
                 .unwrap_or("127.0.0.1".to_string()),
-            puerto_server: config.obtener::<u16>("puerto_server").unwrap_or(4222),
+            puerto_server: config.obtener::<u16>("puerto").unwrap_or(4222),
             user: config.obtener::<String>("user"),
             pass: config.obtener::<String>("pass"),
             contexto: None,
