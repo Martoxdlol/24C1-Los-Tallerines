@@ -58,6 +58,9 @@ pub fn mostrar_camaras(camaras: &[Camara]) -> impl Plugin {
     Places::new(lugares)
 }
 
+/// Define el Style de los drones.
+///
+/// Si esta en un incidente, el color del dron cambia.
 fn estilo_dron(dron: &Dron) -> Style {
     let mut stroke = Stroke::new(16., Color32::from_rgb(255, 51, 236));
     if let Accion::Incidente(_incidente) = dron.accion() {
@@ -72,6 +75,7 @@ fn estilo_dron(dron: &Dron) -> Style {
     }
 }
 
+/// Muestra los drones en el mapa.
 pub fn mostrar_drones(drones: &[Dron]) -> impl Plugin {
     let mut lugares = Vec::new();
 
@@ -90,6 +94,7 @@ pub fn mostrar_drones(drones: &[Dron]) -> impl Plugin {
     Places::new(lugares)
 }
 
+/// Muestra los centros de carga en el mapa.
 pub fn mostrar_centros_carga(drones: &[Dron]) -> impl Plugin {
     let mut lugares = Vec::new();
 
@@ -104,6 +109,7 @@ pub fn mostrar_centros_carga(drones: &[Dron]) -> impl Plugin {
     Places::new(lugares)
 }
 
+/// Estilo especial para los centros de carga.
 fn estilo_centro_de_carga() -> Style {
     Style {
         symbol_font: FontId::proportional(20.),
