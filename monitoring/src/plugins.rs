@@ -1,3 +1,5 @@
+use std::{collections::HashSet, hash::Hash};
+
 use crate::coordenadas::{self, metros_a_pixeles_en_mapa};
 use egui::{Color32, FontId, Painter, Response, Stroke, Ui};
 use lib::{camara::Camara, coordenadas::Coordenadas, dron::Dron, incidente::Incidente};
@@ -80,6 +82,29 @@ pub fn mostrar_drones(drones: &[Dron]) -> impl Plugin {
         });
     }
     Places::new(lugares)
+}
+
+pub fn mostrar_centros_carga(drones: &[Dron]) -> impl Plugin {
+    let mut lugares = Vec::new();
+
+    for dron in drones.iter() {
+        lugares.push(Place {
+            position: Position::from_lat_lon(dron.central_de_carga.lat, dron.central_de_carga.lon),
+            label: "Centro de carga".to_string(),
+            symbol: '🔋',
+            style: estilo_centro_de_carga(),
+        });
+    }
+    Places::new(lugares)
+}
+
+fn estilo_centro_de_carga() -> Style {
+    Style {
+        symbol_font: FontId::proportional(20.),
+        symbol_color: Color32::WHITE,
+        symbol_background: Color32::from_rgb(4, 246, 4),
+        ..Default::default()
+    }
 }
 
 /// Sombreado circular en el mapa. Sirve para marcar el rango de las cámaras.
