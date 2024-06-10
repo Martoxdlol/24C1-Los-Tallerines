@@ -74,6 +74,8 @@ impl Sistema {
         self.cargar_incidentes()?;
 
         loop {
+            self.actualizar_estado_ui()?;
+
             if !self.estado.conectado {
                 if let Ok(Comando::Configurar(config)) = self.recibir_comando.try_recv() {
                     self.configuracion = config;
@@ -81,7 +83,7 @@ impl Sistema {
                     if let Err(e) = self.inicio() {
                         eprintln!("Error al conectar al sistema: {}", e);
                         self.estado.mensaje_error = Some(format!("{}", e));
-                        self.requerir_actualizar_estado_ui();
+                        self.actualizar_estado_ui()?;
                         std::thread::sleep(std::time::Duration::from_secs(1));
                     }
                 }
