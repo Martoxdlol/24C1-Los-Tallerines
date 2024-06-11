@@ -20,6 +20,7 @@ use crate::{
     interfaz::{comando::Comando, interpretar_comando, respuesta::Respuesta},
 };
 
+/// Sistema central de camaras
 pub struct Sistema {
     pub estado: Estado,
     pub configuracion: Configuracion,
@@ -104,6 +105,7 @@ impl Sistema {
         }
     }
 
+    /// Publica el estado general de las cámaras y lo guarda en un archivo
     fn publicar_y_guardar_estado_general(&mut self, cliente: &Cliente) -> io::Result<()> {
         let camaras = self.estado.camaras().into_iter().cloned().collect();
         let bytes = serializar_vec(&camaras);
@@ -111,10 +113,12 @@ impl Sistema {
         cliente.publicar("camaras", &bytes, None)
     }
 
+    /// Solicita al servidor de NATS la actualización de los incidentes
     fn solicitar_actualizacion_incidentes(&self, cliente: &Cliente) -> io::Result<()> {
         cliente.publicar("comandos.monitoreo", b"actualizar", None)
     }
 
+    /// Guarda las cámaras en un archivo
     fn guardar_camaras(&self) -> io::Result<()> {
         let ruta_archivo_camaras = self
             .configuracion
@@ -125,6 +129,9 @@ impl Sistema {
         guardar_serializable(&camaras, &ruta_archivo_camaras)
     }
 
+    /// carga las camaras desde un archivo
+    ///
+    /// Si el archivo no existe, lo crea
     fn cargar_camaras(&mut self) -> io::Result<()> {
         let ruta_archivo_camaras = self
             .configuracion
@@ -232,6 +239,7 @@ impl Sistema {
         Ok(())
     }
 
+    /// Procesa los comandos recibidos desde la interfaz
     fn matchear_comandos(&mut self, cliente: &Cliente, comando: Comando) -> io::Result<()> {
         match comando {
             Comando::Conectar(id, lat, lon, rango) => {
@@ -256,6 +264,9 @@ impl Sistema {
         Ok(())
     }
 
+    /// Devuelve un ID
+    ///
+    /// Es para el comando ConectarSinId
     fn buscar_id_camara(&self) -> u64 {
         let mut max_id = 1;
         for camara in self.estado.camaras() {
@@ -266,6 +277,9 @@ impl Sistema {
         max_id + 1
     }
 
+    /// Lee comandos remotos desde el servidor de NATS
+    ///
+    /// Lo que se le pide desde la aplicación de monitoreo.
     fn leer_comandos_remotos(
         &mut self,
         cliente: &Cliente,
@@ -282,6 +296,7 @@ impl Sistema {
         Ok(())
     }
 
+    /// Conecta una camara, siempre que el ID dado no tenga una camara conectada
     fn comando_conectar_camara(
         &mut self,
         cliente: &Cliente,
@@ -301,6 +316,7 @@ impl Sistema {
         self.responder_ok()
     }
 
+    /// Desconecta una cámara, siempre que exista
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
         if self.estado.desconectar_camara(id).is_some() {
             self.publicar_y_guardar_estado_general(cliente)?;
@@ -312,6 +328,7 @@ impl Sistema {
         }
     }
 
+    /// Devuelve una lista con todas las cámaras conectadas
     fn comando_listar_camaras(&mut self) -> io::Result<()> {
         let camaras: Vec<Camara> = self.estado.camaras().into_iter().cloned().collect();
         if camaras.is_empty() {
@@ -321,6 +338,7 @@ impl Sistema {
         }
     }
 
+    /// Modifica el rango de una cámara, siempre que exista
     fn comando_modificar_rango(
         &mut self,
         cliente: &Cliente,
@@ -338,6 +356,7 @@ impl Sistema {
         self.responder_ok()
     }
 
+    /// Modifica la ubicación de una cámara, siempre que exista
     fn comando_modificar_ubicacion(
         &mut self,
         cliente: &Cliente,
@@ -356,6 +375,7 @@ impl Sistema {
         self.responder_ok()
     }
 
+    /// Devuelve una cámara según su ID, si es que existe
     fn comando_mostrar_camara(&mut self, id: u64) -> io::Result<()> {
         if let Some(camara) = self.estado.camara(id) {
             self.responder(Respuesta::Camara(camara.clone()))
@@ -366,14 +386,17 @@ impl Sistema {
         }
     }
 
+    /// Llama a la respuesta ayuda
     fn comando_ayuda(&mut self) -> io::Result<()> {
         self.responder(Respuesta::Ayuda)
     }
 
+    /// Llama a la respuesta Ok
     fn responder_ok(&self) -> io::Result<()> {
         self.responder(Respuesta::Ok)
     }
 
+    /// Envia una respuesta al hilo de la interfaz
     fn responder(&self, respuesta: Respuesta) -> io::Result<()> {
         self.enviar_respuesta
             .send(respuesta)
