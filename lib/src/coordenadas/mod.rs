@@ -1,13 +1,14 @@
 use crate::serializables::Serializable;
 
 #[derive(Debug, Clone, Copy)]
+/// Representa un par de coordenadas geográficas.
 pub struct Coordenadas {
     pub lat: f64,
     pub lon: f64,
 }
 
 impl Coordenadas {
-    // En metros
+    /// En metros
     pub fn distancia(&self, other: &Self) -> f64 {
         let d_lat = (self.lat - other.lat).to_radians();
         let d_lon = (self.lon - other.lon).to_radians();
@@ -20,10 +21,14 @@ impl Coordenadas {
         6_371_000. * c
     }
 
+    /// El new, es la forma de crear coordenadas
     pub fn from_lat_lon(lat: f64, lon: f64) -> Self {
         Coordenadas { lat, lon }
     }
 
+    /// Devuelve la dirección en grados de la coordenada `other` respecto a la coordenada actual.
+    ///
+    /// Sirve para definir la dirección del dron.
     pub fn direccion(&self, other: &Self) -> f64 {
         let diff_lat = other.lat - self.lat;
         let diff_lon = other.lon - self.lon;
@@ -37,6 +42,7 @@ impl Coordenadas {
         }
     }
 
+    /// Mueve la coordenada en una dirección y distancia dada.
     pub fn mover_en_direccion(&self, distancia: f64, direccion: f64) -> Self {
         let metros_lat = distancia * ((direccion).to_radians()).cos();
         let metros_lon = distancia * ((direccion).to_radians()).sin();
@@ -44,6 +50,7 @@ impl Coordenadas {
         self.mover(metros_lat, metros_lon)
     }
 
+    /// Mueve la coordenada en una cantidad de metros dada en latitud y longitud.
     pub fn mover(&self, metros_lat: f64, metros_lon: f64) -> Self {
         let metros_por_grado = self.distancia(&Self::from_lat_lon(self.lat + 1., self.lon));
         let grados_por_metro = 1. / metros_por_grado;
@@ -56,6 +63,7 @@ impl Coordenadas {
 }
 
 impl Serializable for Coordenadas {
+    /// Serializa las coordenadas.
     fn serializar(&self) -> Vec<u8> {
         let mut serializador = crate::serializables::serializador::Serializador::new();
         serializador.agregar_elemento(&self.lat);
@@ -63,6 +71,7 @@ impl Serializable for Coordenadas {
         serializador.bytes
     }
 
+    /// Deserializa las coordenadas.
     fn deserializar(data: &[u8]) -> Result<Self, crate::serializables::error::DeserializationError>
     where
         Self: Sized,

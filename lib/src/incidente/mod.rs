@@ -4,6 +4,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
+/// Representa un incidente.
 pub struct Incidente {
     pub id: u64,
     pub detalle: String,
@@ -25,12 +26,14 @@ impl Incidente {
         }
     }
 
+    /// Devuelve la posición del incidente.
     pub fn posicion(&self) -> Coordenadas {
         Coordenadas::from_lat_lon(self.lat, self.lon)
     }
 }
 
 impl Serializable for Incidente {
+    /// Serializa el incidente.
     fn serializar(&self) -> Vec<u8> {
         let mut serializador = Serializador::new();
 
@@ -44,6 +47,7 @@ impl Serializable for Incidente {
         serializador.bytes
     }
 
+    /// Deserializa el incidente.
     fn deserializar(data: &[u8]) -> Result<Self, crate::serializables::error::DeserializationError>
     where
         Self: Sized,
