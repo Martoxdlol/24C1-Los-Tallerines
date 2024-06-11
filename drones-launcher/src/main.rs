@@ -4,6 +4,8 @@ use std::{fs::read_dir, thread}; // 0.8.5
 use drone::{comunicacion::Comunicacion, sistema::Sistema};
 use lib::{configuracion::Configuracion, dron::Dron};
 
+/// Programa que carga varios drones con sus respectivas configuraciones y los lanza en paralelo.
+
 fn main() {
     let config = Configuracion::desde_argv().expect("Error al cargar configuración");
 
