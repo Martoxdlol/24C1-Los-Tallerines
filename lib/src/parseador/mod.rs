@@ -81,6 +81,9 @@ impl Parseador {
         None
     }
 
+    /// Devuelve el próximo mensaje que se encuentra en los bytes que se le pasaron
+    ///
+    /// Para cada caso, avanza en la lectura de los bytes y devuelve el mensaje correspondiente
     pub fn proximo_mensaje(&mut self) -> Option<Mensaje> {
         // Si actualmente se está parseando un PUB buscamos el payload
         if let Some(ResultadoLinea::Pub(topic, reply_to, total_bytes)) = &self.actual {
@@ -278,6 +281,7 @@ impl Parseador {
         None
     }
 
+    /// Parsea una línea y devuelve el tipo de mensaje que es
     fn parsear_linea(&self, linea: &str) -> ResultadoLinea {
         let palabras = linea
             .split(' ')
@@ -346,6 +350,9 @@ impl Parseador {
         ResultadoLinea::MensajeIncorrecto
     }
 
+    /// Devuelve si la publicación tiene reply_to o no.
+    ///
+    /// Tambien podría ser un mensaje de error si no se pudo parsear
     fn linea_pub(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 2 o 3 para saber si tiene reply_to
         if palabras.len() == 2 {
@@ -373,6 +380,9 @@ impl Parseador {
         ResultadoLinea::MensajeIncorrecto
     }
 
+    /// Devuelve si la hpublicación tiene reply_to o no.
+    ///
+    /// Devuelve error si no se pudo parsear
     fn linea_hpub(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 3 o 4 para saber si tiene reply_to
         if palabras.len() == 3 {
@@ -409,6 +419,9 @@ impl Parseador {
         ResultadoLinea::MensajeIncorrecto
     }
 
+    /// Ve si la subscripción tiene queue group o no.
+    ///
+    /// Devuelve error si no se pudo parsear
     fn linea_sub(palabras: &[String]) -> ResultadoLinea {
         if palabras.len() == 2 {
             let subject = &palabras[0];
@@ -431,6 +444,7 @@ impl Parseador {
         ResultadoLinea::MensajeIncorrecto
     }
 
+    /// Verifica que el unsub este correcto, si no devuelve error
     fn linea_unsub(palabras: &[String]) -> ResultadoLinea {
         if palabras.len() != 1 {
             return ResultadoLinea::MensajeIncorrecto;
@@ -442,6 +456,9 @@ impl Parseador {
         ResultadoLinea::Unsub(sid.to_string(), max_msgs)
     }
 
+    /// Devuelve si el mensaje tiene reply_to o no.
+    ///
+    /// Devuelve error si no se pudo parsear
     fn linea_msg(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 3 o 4 para saber si tiene reply_to
         if palabras.len() == 3 {
@@ -475,6 +492,9 @@ impl Parseador {
         ResultadoLinea::MensajeIncorrecto
     }
 
+    /// Devuelve si el hmensaje tiene reply_to o no.
+    ///
+    /// Devuelve error si no se pudo parsear
     fn linea_hmsg(palabras: &[String]) -> ResultadoLinea {
         // Buscamos si es de 4 o 5 para saber si tiene reply_to
         if palabras.len() == 4 {
@@ -529,6 +549,7 @@ impl Parseador {
         self.continuar_en_indice = 0;
     }
 
+    /// Resetea el estado del parser
     fn resetear_todo(&mut self) {
         self.resetear_bytes();
         self.actual = None;

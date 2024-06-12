@@ -1,6 +1,8 @@
 use super::{parametros_conectar::ParametrosConectar, parametros_info::ParametrosInfo};
 
 #[derive(Debug)]
+
+/// Los diferentes mensajes que se pueden parsear
 pub enum Mensaje {
     // 'topico', 'replay_to' payload
     Publicar(String, Option<String>, Vec<u8>),
@@ -26,6 +28,7 @@ pub enum Mensaje {
     PublicacionConHeader(String, String, Option<String>, Vec<u8>, Vec<u8>),
 }
 
+/// Formatea el payload de la publicación
 pub fn formatear_payload_debug(payload: &[u8]) -> String {
     let mut str = String::from_utf8_lossy(payload).to_string();
 
@@ -36,7 +39,7 @@ pub fn formatear_payload_debug(payload: &[u8]) -> String {
 
     str
 }
-
+/// Formatea los mensajes de publicación
 pub fn formatear_mensaje_debug(mensaje: &Mensaje) -> String {
     if let Mensaje::Publicar(topico, reply_to, payload) = mensaje {
         return format!(
