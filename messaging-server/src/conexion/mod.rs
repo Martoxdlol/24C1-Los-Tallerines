@@ -257,6 +257,10 @@ impl ConexionDeCliente {
 }
 
 impl Conexion for ConexionDeCliente {
+    fn obtener_id(&self) -> u64 {
+        self.id
+    }
+
     fn tick(&mut self, salida: &mut TickContexto) {
         if self.desconectado {
             return;

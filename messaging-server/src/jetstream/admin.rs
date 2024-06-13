@@ -28,19 +28,22 @@ impl JestStreamAdminConexion {
 }
 
 impl Conexion for JestStreamAdminConexion {
+    fn obtener_id(&self) -> u64 {
+        self.id
+    }
+
     fn tick(&mut self, contexto: &mut TickContexto) {
         if !self.preparado {
             contexto.suscribir(Suscripcion::new(
                 contexto.id_hilo,
                 self.id,
+                // $JS.API.STREAM.CREATE.incidentes
                 Topico::new("$JS.API.STREAM.CREATE.*".to_string()).unwrap(),
                 "stream.crear".to_string(),
                 None,
             ));
             self.preparado = true;
         }
-
-        println!("JestStreamHilo::tick");
     }
 
     fn escribir_publicacion_mensaje(
@@ -56,7 +59,6 @@ impl Conexion for JestStreamAdminConexion {
     }
 
     fn esta_conectado(&self) -> bool {
-        println!("JestStreamHilo::esta_conectado");
         true
     }
 }

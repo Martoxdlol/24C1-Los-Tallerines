@@ -188,11 +188,9 @@ impl Servidor {
             }
 
             while let Ok(conexion) = rx_conexiones.try_recv() {
-                let id_conexion = self.nuevo_id_conexion();
-
                 let (tx, _) = &self.hilos[self.proximo_id_hilo];
 
-                match tx.send((id_conexion, conexion)) {
+                match tx.send((conexion.obtener_id(), conexion)) {
                     Ok(_) => {
                         self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();
                     }
