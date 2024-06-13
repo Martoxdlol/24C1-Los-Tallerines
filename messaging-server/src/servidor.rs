@@ -3,7 +3,7 @@ use std::{
     io,
     net::TcpListener,
     sync::{
-        mpsc::{self, Sender},
+        mpsc::{self, channel, Sender},
         Arc,
     },
     thread::{self, JoinHandle},
@@ -15,6 +15,7 @@ use crate::{
     conexion::{id::IdConexion, r#trait::Conexion},
     cuenta::Cuenta,
     hilo::id::IdHilo,
+    jetstream::admin::JestStreamAdminConexion,
     registrador::Registrador,
 };
 
@@ -136,6 +137,14 @@ impl Servidor {
             .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
             .expect("No se pudo poner el listener en modo no bloqueante");
 
+        let (tx_conexiones, rx_conexiones) = channel::<Box<dyn Conexion + Send>>();
+
+        let id_conexion = self.nuevo_id_conexion();
+        let _ = tx_conexiones.send(Box::new(JestStreamAdminConexion::new(
+            id_conexion,
+            tx_conexiones.clone(),
+        )));
+
         loop {
             match listener.accept() {
                 // Si escucho algo, genero una nueva conexion
@@ -175,6 +184,21 @@ impl Servidor {
                 }
                 Err(e) => {
                     panic!("Error: {}", e);
+                }
+            }
+
+            while let Ok(conexion) = rx_conexiones.try_recv() {
+                let id_conexion = self.nuevo_id_conexion();
+
+                let (tx, _) = &self.hilos[self.proximo_id_hilo];
+
+                match tx.send((id_conexion, conexion)) {
+                    Ok(_) => {
+                        self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();
+                    }
+                    Err(e) => {
+                        panic!("Error: {}", e);
+                    }
                 }
             }
         }
