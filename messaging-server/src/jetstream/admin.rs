@@ -1,4 +1,9 @@
-use std::sync::mpsc::Sender;
+use std::{
+    collections::HashMap,
+    sync::mpsc::{channel, Receiver, Sender},
+};
+
+use lib::jet_stream::{stream_config::StreamConfig, stream_info::StreamInfo};
 
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
@@ -6,11 +11,16 @@ use crate::{
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
+use super::{actualizacion::ActualizacionJS, stream::JetStreamStream};
+
 pub struct JestStreamAdminConexion {
     id: u64,
     preparado: bool,
     tx_conexiones: Sender<Box<dyn Conexion + Send>>,
     respuestas: Vec<Publicacion>,
+    streams: HashMap<String, StreamInfo>,
+    rx_datos_js: Receiver<ActualizacionJS>,
+    tx_datos_js: Sender<ActualizacionJS>,
 }
 
 impl JestStreamAdminConexion {
@@ -18,11 +28,16 @@ impl JestStreamAdminConexion {
         id: u64,
         tx_conexiones: Sender<Box<dyn Conexion + Send>>,
     ) -> JestStreamAdminConexion {
+        let (tx_datos_js, rx_datos_js) = channel();
+
         JestStreamAdminConexion {
             preparado: false,
             id,
             tx_conexiones,
             respuestas: Vec::new(),
+            streams: HashMap::new(),
+            rx_datos_js,
+            tx_datos_js,
         }
     }
 
@@ -31,9 +46,28 @@ impl JestStreamAdminConexion {
             contexto.id_hilo,
             self.id,
             Topico::new(topico.to_string()).unwrap(),
-            "".to_string(),
+            sid.to_string(),
             None,
         ));
+    }
+
+    fn recibir_actualizaciones_js(&mut self) {
+        while let Ok(actualizacion) = self.rx_datos_js.try_recv() {
+            match actualizacion {
+                ActualizacionJS::Stream(stream_info) => {
+                    self.streams
+                        .insert(stream_info.config.name.clone(), stream_info);
+                }
+                ActualizacionJS::StreamEliminado(nombre) => {
+                    self.streams.remove(&nombre);
+                }
+            }
+        }
+    }
+
+    fn crear_stream(&self, config: StreamConfig) {
+        let stream = JetStreamStream::new(config, self.tx_datos_js.clone());
+        let _ = self.tx_conexiones.send(Box::new(stream));
     }
 }
 
@@ -42,19 +76,23 @@ impl Conexion for JestStreamAdminConexion {
         self.id
     }
 
+    fn setear_id_conexion(&mut self, id_conexion: u64) {
+        self.id = id_conexion;
+    }
+
     fn tick(&mut self, contexto: &mut TickContexto) {
         if !self.preparado {
             self.suscribir(contexto, "$JS.API.STREAM.CREATE.*", "stream.crear");
             self.suscribir(contexto, "$JS.API.STREAM.LIST", "stream.listar");
             self.suscribir(contexto, "$JS.API.STREAM.NAMES", "stream.nombres");
-
-            // SE SUSCRIBE EL STREAM QUE CORRESPONA
-            // self.suscribir(contexto, "$JS.API.STREAM.INFO.<nombre stream>", "stream.info");
-            // self.suscribir(contexto, "$JS.API.STREAM.DELETE.<nombre stream>", "stream.eliminar");
-            // self.suscribir(contexto, "$JS.API.STREAM.UPDATE.<nombre stream>", "stream.actualizar");
-            // self.suscribir(contexto, "$JS.API.STREAM.PURGE.<nombre stream>", "stream.purgar");
             self.preparado = true;
         }
+
+        for respuesta in self.respuestas.drain(..) {
+            contexto.publicar(respuesta);
+        }
+
+        self.recibir_actualizaciones_js();
     }
 
     fn escribir_publicacion_mensaje(
@@ -63,9 +101,11 @@ impl Conexion for JestStreamAdminConexion {
     ) {
         match mensaje.sid.as_str() {
             "stream.crear" => {
-                println!("JestStreamHilo::escribir_publicacion_mensaje: stream.crear");
-
-                // self.tx_conexiones.send(JetStreamStream::new(nombre))
+                if let Ok(config) =
+                    StreamConfig::from_json(&String::from_utf8_lossy(&mensaje.payload))
+                {
+                    self.crear_stream(config);
+                }
             }
             "stream.listar" => {
                 println!("JestStreamHilo::escribir_publicacion_mensaje: stream.listar");

@@ -187,8 +187,12 @@ impl Servidor {
                 }
             }
 
-            while let Ok(conexion) = rx_conexiones.try_recv() {
+            while let Ok(mut conexion) = rx_conexiones.try_recv() {
+                let id_conexion = self.nuevo_id_conexion();
+
                 let (tx, _) = &self.hilos[self.proximo_id_hilo];
+
+                conexion.setear_id_conexion(id_conexion);
 
                 match tx.send((conexion.obtener_id(), conexion)) {
                     Ok(_) => {

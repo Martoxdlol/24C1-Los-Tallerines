@@ -276,6 +276,10 @@ impl Conexion for ConexionDeCliente {
         self.id
     }
 
+    fn setear_id_conexion(&mut self, id_conexion: u64) {
+        self.id = id_conexion;
+    }
+
     fn tick(&mut self, salida: &mut TickContexto) {
         if self.desconectado {
             return;
