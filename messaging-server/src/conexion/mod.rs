@@ -203,31 +203,10 @@ impl ConexionDeCliente {
             // proximo mensaje va a leer los bytes nuevos y devuelve si es una accion valida
             match mensaje {
                 Mensaje::Publicar(subject, replay_to, payload) => {
-                    self.registrador.info(
-                        &format!(
-                            "Publicación: {:?} {:?} {:?}",
-                            subject,
-                            replay_to,
-                            formatear_payload_debug(&payload)
-                        ),
-                        Some(self.id),
-                    );
-
                     contexto.publicar(Publicacion::new(subject, payload, None, replay_to));
                     self.escribir_ok(Some("pub".to_string()));
                 }
                 Mensaje::PublicarConHeader(subject, replay_to, headers, payload) => {
-                    self.registrador.info(
-                        &format!(
-                            "Publicación con header: {:?} {:?} {:?} {:?}",
-                            subject,
-                            headers,
-                            replay_to,
-                            formatear_payload_debug(&payload)
-                        ),
-                        Some(self.id),
-                    );
-
                     contexto.publicar(Publicacion::new(subject, payload, Some(headers), replay_to));
                     self.escribir_ok(Some("hpub".to_string()));
                 }
@@ -397,9 +376,9 @@ mod tests {
         let mut contexto = TickContexto::new(0, 1);
         con.tick(&mut contexto);
 
-        assert_eq!(contexto.suscripciones.len(), 1);
-        assert_eq!(contexto.suscripciones[0].id(), "1");
-        assert_eq!(contexto.suscripciones[0].topico().a_texto(), "x");
+        assert_eq!(contexto.suscripciones().len(), 1);
+        assert_eq!(contexto.suscripciones()[0].id(), "1");
+        assert_eq!(contexto.suscripciones()[0].topico().a_texto(), "x");
     }
 
     #[test]
@@ -420,9 +399,9 @@ mod tests {
 
         println!("{:?}", contexto);
 
-        assert_eq!(contexto.publicaciones.len(), 1);
-        assert_eq!(contexto.publicaciones[0].topico, "x");
-        assert_eq!(contexto.publicaciones[0].payload, b"hola");
+        assert_eq!(contexto.publicaciones().len(), 1);
+        assert_eq!(contexto.publicaciones()[0].topico, "x");
+        assert_eq!(contexto.publicaciones()[0].payload, b"hola");
     }
 
     #[test]
@@ -441,7 +420,7 @@ mod tests {
         let mut contexto = TickContexto::new(0, 1);
         con.tick(&mut contexto);
 
-        assert_eq!(contexto.desuscripciones.len(), 1);
-        assert_eq!(contexto.desuscripciones[0], "1");
+        assert_eq!(contexto.desuscripciones().len(), 1);
+        assert_eq!(contexto.desuscripciones()[0], "1");
     }
 }

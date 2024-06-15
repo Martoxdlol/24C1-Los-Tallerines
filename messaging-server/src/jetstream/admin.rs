@@ -3,7 +3,10 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender},
 };
 
-use lib::jet_stream::{stream_config::StreamConfig, stream_info::StreamInfo};
+use lib::jet_stream::{
+    admin_nombres_streams_respuesta::JSNombresStreamsRespuesta,
+    api_info_response::JSApiInfoResponse, stream_config::StreamConfig, stream_info::StreamInfo,
+};
 
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
@@ -82,6 +85,7 @@ impl Conexion for JestStreamAdminConexion {
 
     fn tick(&mut self, contexto: &mut TickContexto) {
         if !self.preparado {
+            self.suscribir(contexto, "$JS.API.INFO", "info");
             self.suscribir(contexto, "$JS.API.STREAM.CREATE.*", "stream.crear");
             self.suscribir(contexto, "$JS.API.STREAM.LIST", "stream.listar");
             self.suscribir(contexto, "$JS.API.STREAM.NAMES", "stream.nombres");
@@ -100,6 +104,21 @@ impl Conexion for JestStreamAdminConexion {
         mensaje: &crate::publicacion::mensaje::PublicacionMensaje,
     ) {
         match mensaje.sid.as_str() {
+            "info" => {
+                // Si hay reply_to, es una respuesta a una petición
+                if let Some(reply_to) = &mensaje.replay_to {
+                    if let Ok(info) =
+                        JSApiInfoResponse::new(self.streams.values().len() as i32, 0).to_json()
+                    {
+                        self.respuestas.push(Publicacion::new(
+                            reply_to.to_string(),
+                            info.as_bytes().to_owned(),
+                            None,
+                            None,
+                        ))
+                    }
+                }
+            }
             "stream.crear" => {
                 if let Ok(config) =
                     StreamConfig::from_json(&String::from_utf8_lossy(&mensaje.payload))
@@ -111,7 +130,22 @@ impl Conexion for JestStreamAdminConexion {
                 println!("JestStreamHilo::escribir_publicacion_mensaje: stream.listar");
             }
             "stream.nombres" => {
-                println!("JestStreamHilo::escribir_publicacion_mensaje: stream.nombres");
+                let nombres_streams = self
+                    .streams
+                    .keys()
+                    .map(|k| k.to_string())
+                    .collect::<Vec<String>>();
+                if let Some(reply_to) = &mensaje.replay_to {
+                    if let Ok(respuesta) = JSNombresStreamsRespuesta::new(nombres_streams).to_json()
+                    {
+                        self.respuestas.push(Publicacion::new(
+                            reply_to.to_string(),
+                            respuesta.as_bytes().to_owned(),
+                            None,
+                            None,
+                        ));
+                    }
+                }
             }
             _ => {}
         }
