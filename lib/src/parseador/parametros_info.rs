@@ -4,6 +4,7 @@ use serde_json::Result;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ParametrosInfo {
     pub auth_required: Option<bool>,
+    pub max_payload: Option<u64>,
 }
 
 impl ParametrosInfo {

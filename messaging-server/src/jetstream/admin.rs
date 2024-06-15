@@ -25,6 +25,16 @@ impl JestStreamAdminConexion {
             respuestas: Vec::new(),
         }
     }
+
+    fn suscribir(&self, contexto: &mut TickContexto, topico: &str, sid: &str) {
+        contexto.suscribir(Suscripcion::new(
+            contexto.id_hilo,
+            self.id,
+            Topico::new(topico.to_string()).unwrap(),
+            "".to_string(),
+            None,
+        ));
+    }
 }
 
 impl Conexion for JestStreamAdminConexion {
@@ -34,14 +44,15 @@ impl Conexion for JestStreamAdminConexion {
 
     fn tick(&mut self, contexto: &mut TickContexto) {
         if !self.preparado {
-            contexto.suscribir(Suscripcion::new(
-                contexto.id_hilo,
-                self.id,
-                // $JS.API.STREAM.CREATE.incidentes
-                Topico::new("$JS.API.STREAM.CREATE.*".to_string()).unwrap(),
-                "stream.crear".to_string(),
-                None,
-            ));
+            self.suscribir(contexto, "$JS.API.STREAM.CREATE.*", "stream.crear");
+            self.suscribir(contexto, "$JS.API.STREAM.LIST", "stream.listar");
+            self.suscribir(contexto, "$JS.API.STREAM.NAMES", "stream.nombres");
+
+            // SE SUSCRIBE EL STREAM QUE CORRESPONA
+            // self.suscribir(contexto, "$JS.API.STREAM.INFO.<nombre stream>", "stream.info");
+            // self.suscribir(contexto, "$JS.API.STREAM.DELETE.<nombre stream>", "stream.eliminar");
+            // self.suscribir(contexto, "$JS.API.STREAM.UPDATE.<nombre stream>", "stream.actualizar");
+            // self.suscribir(contexto, "$JS.API.STREAM.PURGE.<nombre stream>", "stream.purgar");
             self.preparado = true;
         }
     }
@@ -53,6 +64,14 @@ impl Conexion for JestStreamAdminConexion {
         match mensaje.sid.as_str() {
             "stream.crear" => {
                 println!("JestStreamHilo::escribir_publicacion_mensaje: stream.crear");
+
+                // self.tx_conexiones.send(JetStreamStream::new(nombre))
+            }
+            "stream.listar" => {
+                println!("JestStreamHilo::escribir_publicacion_mensaje: stream.listar");
+            }
+            "stream.nombres" => {
+                println!("JestStreamHilo::escribir_publicacion_mensaje: stream.nombres");
             }
             _ => {}
         }

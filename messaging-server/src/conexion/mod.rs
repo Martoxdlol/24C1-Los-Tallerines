@@ -40,6 +40,9 @@ pub struct ConexionDeCliente {
 
     /// Cuentas de usuario
     cuentas: Option<Arc<Vec<Cuenta>>>,
+
+    /// Muestra o no +Ok y -ERR
+    verbose: bool,
 }
 
 impl ConexionDeCliente {
@@ -58,6 +61,7 @@ impl ConexionDeCliente {
             desconectado: false,
             autenticado: false,
             cuentas,
+            verbose: false,
         };
 
         con.enviar_info();
@@ -126,10 +130,18 @@ impl ConexionDeCliente {
     }
 
     fn escribir_ok(&mut self, msg: Option<String>) {
+        if !self.verbose {
+            return;
+        }
+
         self.escribir_respuesta(&Respuesta::Ok(msg));
     }
 
     fn escribir_err(&mut self, msg: Option<String>) {
+        if !self.verbose {
+            return;
+        }
+
         self.escribir_respuesta(&Respuesta::Err(msg));
     }
 
@@ -137,6 +149,7 @@ impl ConexionDeCliente {
         let require_auth = self.cuentas.is_some();
         self.escribir_respuesta(&Respuesta::Info(ParametrosInfo {
             auth_required: Some(require_auth),
+            max_payload: Some(1048576),
         }));
     }
 
@@ -150,6 +163,10 @@ impl ConexionDeCliente {
             if !self.autenticado {
                 match mensaje {
                     Mensaje::Conectar(parametros) => {
+                        if let Some(verbose) = parametros.verbose {
+                            self.verbose = verbose;
+                        }
+
                         if let Some(cuentas) = &self.cuentas {
                             for cuenta in cuentas.iter() {
                                 if cuenta.matches(&parametros.user_str(), &parametros.pass_str()) {
@@ -159,9 +176,7 @@ impl ConexionDeCliente {
                                     );
 
                                     self.autenticado = true;
-                                    self.escribir_respuesta(&Respuesta::Ok(Some(
-                                        "connect".to_string(),
-                                    )));
+                                    self.escribir_ok(Some("connect".to_string()));
                                     return;
                                 }
                             }
@@ -172,7 +187,7 @@ impl ConexionDeCliente {
                         }
 
                         self.autenticado = true;
-                        self.escribir_respuesta(&Respuesta::Ok(Some("connect".to_string())));
+                        self.escribir_ok(Some("connect".to_string()));
                     }
                     _ => {
                         self.escribir_err(Some(
