@@ -85,6 +85,9 @@ impl JetStreamStream {
                     self.consumers
                         .insert(consumer_info.config.durable_name.clone(), consumer_info);
                 }
+                ActualizacionJS::ConsumerEliminado(durable_name) => {
+                    self.consumers.remove(&durable_name);
+                }
                 _ => {}
             }
         }
