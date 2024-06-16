@@ -98,6 +98,11 @@ impl Parseador {
                 self.bytes_pendientes[..*total_bytes].to_vec(),
             ));
 
+            println!(
+                "{}\n\n",
+                String::from_utf8_lossy(&self.bytes_pendientes[..*total_bytes])
+            );
+
             self.resetear_todo();
 
             return resultado;
@@ -209,7 +214,7 @@ impl Parseador {
         // Si actualmente no se está parseando nada, buscamos la próxima línea
         if self.actual.is_none() {
             let linea = self.proxima_linea()?;
-
+            println!("\n{}\n", linea);
             match self.parsear_linea(&linea) {
                 ResultadoLinea::Hpub(subject, reply_to, header_bytes, total_bytes) => {
                     self.actual = Some(ResultadoLinea::Hpub(

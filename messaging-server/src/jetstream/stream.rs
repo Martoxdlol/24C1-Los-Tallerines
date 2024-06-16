@@ -1,6 +1,13 @@
 use std::sync::mpsc::Sender;
 
-use lib::jet_stream::stream_config::StreamConfig;
+use chrono::Utc;
+use lib::{
+    jet_stream::{
+        stream_config::StreamConfig, stream_info::StreamInfo,
+        stream_info_respuesta::JSStreamInfoRespuesta, stream_state::JetStreamStreamState,
+    },
+    parseador::mensaje,
+};
 
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
@@ -40,6 +47,17 @@ impl JetStreamStream {
             None,
         ));
     }
+
+    fn enviar_actualizacion_de_estado(&self) {
+        let _ = self
+            .tx_actualizaciones_js
+            .send(ActualizacionJS::Stream(StreamInfo {
+                config: self.config.clone(),
+                created: Utc::now().to_rfc3339(),
+                state: JetStreamStreamState::new(),
+                ts: Utc::now().to_rfc3339(),
+            }));
+    }
 }
 
 impl Conexion for JetStreamStream {
@@ -73,6 +91,9 @@ impl Conexion for JetStreamStream {
                 &format!("$JS.API.STREAM.PURGE.{}", self.config.name),
                 "purgar",
             );
+
+            self.enviar_actualizacion_de_estado();
+
             self.preparado = true;
         }
 
@@ -86,7 +107,21 @@ impl Conexion for JetStreamStream {
         mensaje: &crate::publicacion::mensaje::PublicacionMensaje,
     ) {
         match mensaje.sid.as_str() {
-            "info" => {}
+            "info" => {
+                if let Some(reply_to) = &mensaje.replay_to {
+                    if let Ok(respuesta) =
+                        JSStreamInfoRespuesta::new(self.config.clone(), JetStreamStreamState::new())
+                            .to_json()
+                    {
+                        self.respuestas.push(Publicacion::new(
+                            reply_to.to_string(),
+                            respuesta.as_bytes().to_owned(),
+                            None,
+                            None,
+                        ));
+                    }
+                }
+            }
             "eliminar" => {
                 self.eliminado = true;
                 let _ = self

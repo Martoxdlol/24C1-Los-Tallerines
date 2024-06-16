@@ -5,7 +5,9 @@ use std::{
 
 use lib::jet_stream::{
     admin_nombres_streams_respuesta::JSNombresStreamsRespuesta,
-    api_info_response::JSApiInfoResponse, stream_config::StreamConfig, stream_info::StreamInfo,
+    api_info_response::JSApiInfoResponse, crear_stream_respuesta::JSCrearStreamRespuesta,
+    stream_config::StreamConfig, stream_info::StreamInfo,
+    stream_list_response::JetStreamStreamListResponse,
 };
 
 use crate::{
@@ -56,6 +58,10 @@ impl JestStreamAdminConexion {
 
     fn recibir_actualizaciones_js(&mut self) {
         while let Ok(actualizacion) = self.rx_datos_js.try_recv() {
+            println!(
+                "JestStreamAdminConexion::recibir_actualizaciones_js: {:?}",
+                actualizacion
+            );
             match actualizacion {
                 ActualizacionJS::Stream(stream_info) => {
                     self.streams
@@ -123,11 +129,45 @@ impl Conexion for JestStreamAdminConexion {
                 if let Ok(config) =
                     StreamConfig::from_json(&String::from_utf8_lossy(&mensaje.payload))
                 {
-                    self.crear_stream(config);
+                    self.crear_stream(config.clone());
+
+                    if let Some(reply_to) = &mensaje.replay_to {
+                        if let Ok(respuesta) = JSCrearStreamRespuesta::new(config, true).to_json() {
+                            self.respuestas.push(Publicacion::new(
+                                reply_to.to_string(),
+                                respuesta.as_bytes().to_owned(),
+                                None,
+                                None,
+                            ));
+                        }
+                    }
                 }
             }
             "stream.listar" => {
                 println!("JestStreamHilo::escribir_publicacion_mensaje: stream.listar");
+                if let Some(reply_to) = &mensaje.replay_to {
+                    let streams_info = self
+                        .streams
+                        .values()
+                        .map(|s| s.clone())
+                        .collect::<Vec<StreamInfo>>();
+
+                    let r = JetStreamStreamListResponse {
+                        limit: (streams_info.len() + 1) as i32,
+                        total: streams_info.len() as i32,
+                        streams: streams_info,
+                        r#type: "io.nats.jetstream.api.v1.stream_list_response".to_string(),
+                    };
+
+                    if let Ok(respuesta) = r.to_json() {
+                        self.respuestas.push(Publicacion::new(
+                            reply_to.to_string(),
+                            respuesta.as_bytes().to_owned(),
+                            None,
+                            None,
+                        ));
+                    }
+                }
             }
             "stream.nombres" => {
                 let nombres_streams = self

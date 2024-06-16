@@ -21,6 +21,8 @@ pub struct StreamConfig {
     pub max_age: Duration,
     /// El mensaje más grande que será aceptado por el Stream
     pub max_msg_size: i32,
+    /// No me importa, per el CLI de nats lo requiere
+    pub num_replicas: i32,
 }
 
 impl StreamConfig {
