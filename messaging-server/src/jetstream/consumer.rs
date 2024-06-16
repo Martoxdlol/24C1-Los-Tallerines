@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Receiver, Sender};
 
 use chrono::Utc;
 use lib::jet_stream::{
@@ -22,6 +22,9 @@ pub struct JetStreamConsumer {
     preparado: bool,
     tx_actualizaciones_js: Sender<ActualizacionJS>,
     respuestas: Vec<Publicacion>,
+    mensaje_pendiente: Option<Publicacion>,
+    rx_mensajes: Receiver<Publicacion>,
+    topico_ack_mensaje_pendiente: String,
 }
 
 impl JetStreamConsumer {
@@ -29,6 +32,7 @@ impl JetStreamConsumer {
         config: ConsumerConfig,
         nombre_stream: String,
         tx_actualizaciones_js: Sender<ActualizacionJS>,
+        rx_mensajes: Receiver<Publicacion>,
     ) -> Self {
         JetStreamConsumer {
             nombre_stream,
@@ -38,6 +42,9 @@ impl JetStreamConsumer {
             preparado: false,
             tx_actualizaciones_js,
             respuestas: Vec::new(),
+            mensaje_pendiente: None,
+            rx_mensajes,
+            topico_ack_mensaje_pendiente: "".to_string(),
         }
     }
 
@@ -59,6 +66,25 @@ impl JetStreamConsumer {
                 created: Utc::now().to_rfc3339(),
                 ts: Utc::now().to_rfc3339(),
             }));
+    }
+
+    fn responder_mensaje_pendiente(&mut self) {
+        let ack_topico = format!(
+            "$JS.ACK.{}.{}.{}",
+            self.nombre_stream,
+            self.config.durable_name,
+            nuid::next()
+        );
+
+        if let Some(mensaje) = &self.mensaje_pendiente {
+            self.topico_ack_mensaje_pendiente = ack_topico.clone();
+            self.respuestas.push(Publicacion::new(
+                mensaje.topico.clone(),
+                mensaje.payload.clone(),
+                mensaje.header.clone(),
+                Some(ack_topico),
+            ));
+        }
     }
 }
 
@@ -97,6 +123,14 @@ impl Conexion for JetStreamConsumer {
                 ),
                 "mensaje_siguiente",
             );
+            self.suscribir(
+                contexto,
+                &format!(
+                    "$JS.ACK.{}.{}.*",
+                    self.nombre_stream, self.config.durable_name
+                ),
+                "ack",
+            );
 
             self.enviar_actualizacion_de_estado();
 
@@ -134,6 +168,23 @@ impl Conexion for JetStreamConsumer {
                     .send(ActualizacionJS::ConsumerEliminado(
                         self.config.durable_name.clone(),
                     ));
+            }
+            "mensaje_siguiente" => {
+                if self.mensaje_pendiente.is_none() {
+                    if let Ok(mensaje) = self.rx_mensajes.try_recv() {
+                        self.mensaje_pendiente = Some(mensaje);
+                    }
+                }
+
+                self.responder_mensaje_pendiente();
+            }
+            "ack" => {
+                if let Some(mensaje) = &self.mensaje_pendiente {
+                    if self.topico_ack_mensaje_pendiente.eq(&mensaje.topico) {
+                        self.mensaje_pendiente = None;
+                        self.topico_ack_mensaje_pendiente = "".to_string();
+                    }
+                }
             }
             _ => {}
         }

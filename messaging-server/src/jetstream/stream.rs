@@ -33,6 +33,7 @@ pub struct JetStreamStream {
     tx_actualizaciones_js_consumers: Sender<ActualizacionJS>,
     respuestas: Vec<Publicacion>,
     consumers: HashMap<String, ConsumerInfo>,
+    consumers_transmisores: HashMap<String, Sender<Publicacion>>,
 }
 
 impl JetStreamStream {
@@ -54,6 +55,7 @@ impl JetStreamStream {
             rx_actualizaciones_js_consumers,
             tx_actualizaciones_js_consumers,
             consumers: HashMap::new(),
+            consumers_transmisores: HashMap::new(),
         }
     }
 
@@ -87,17 +89,24 @@ impl JetStreamStream {
                 }
                 ActualizacionJS::ConsumerEliminado(durable_name) => {
                     self.consumers.remove(&durable_name);
+                    self.consumers_transmisores.remove(&durable_name);
                 }
                 _ => {}
             }
         }
     }
 
-    fn crear_consumer(&self, config: ConsumerConfig) {
+    fn crear_consumer(&mut self, config: ConsumerConfig) {
+        let (tx, rx) = channel();
+
+        self.consumers_transmisores
+            .insert(config.durable_name.clone(), tx);
+
         let stream = JetStreamConsumer::new(
             config,
             self.config.name.clone(),
             self.tx_actualizaciones_js_consumers.clone(),
+            rx,
         );
         let _ = self.tx_conexiones.send(Box::new(stream));
     }
@@ -149,6 +158,10 @@ impl Conexion for JetStreamStream {
                 &format!("$JS.API.CONSUMER.NAMES.{}", self.config.name),
                 "nombres_consumer",
             );
+
+            for topico in self.config.subjects.iter() {
+                self.suscribir(contexto, topico, &format!("mensaje|{}", topico));
+            }
 
             self.enviar_actualizacion_de_estado();
 
@@ -255,6 +268,17 @@ impl Conexion for JetStreamStream {
                 }
             }
             _ => {}
+        }
+
+        if mensaje.sid.starts_with("mensaje|") {
+            for tx_consumer in self.consumers_transmisores.values() {
+                let _ = tx_consumer.send(Publicacion::new(
+                    mensaje.topico.clone(),
+                    mensaje.payload.clone(),
+                    mensaje.header.clone(),
+                    mensaje.replay_to.clone(),
+                ));
+            }
         }
     }
 
