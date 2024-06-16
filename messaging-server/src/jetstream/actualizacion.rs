@@ -1,7 +1,9 @@
-use lib::jet_stream::stream_info::StreamInfo;
+use lib::jet_stream::{consumer_info::ConsumerInfo, stream_info::StreamInfo};
 
 #[derive(Debug)]
 pub enum ActualizacionJS {
     Stream(StreamInfo),
+    Consumer(ConsumerInfo),
     StreamEliminado(String),
+    ConsumerEliminado(String),
 }

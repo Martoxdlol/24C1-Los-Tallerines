@@ -1,11 +1,17 @@
 use serde::{Deserialize, Serialize};
 
+use super::consumer_config::ConsumerConfig;
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct ConsumerConfig {
-    pub durable_name: String,
+pub struct JSPeticionCrearConsumer {
+    pub config: ConsumerConfig,
 }
 
-impl ConsumerConfig {
+impl JSPeticionCrearConsumer {
+    pub fn new(config: ConsumerConfig) -> Self {
+        Self { config }
+    }
+
     pub fn from_json(json: &str) -> serde_json::Result<Self> {
         serde_json::from_str(json)
     }

@@ -70,12 +70,15 @@ impl JestStreamAdminConexion {
                 ActualizacionJS::StreamEliminado(nombre) => {
                     self.streams.remove(&nombre);
                 }
+                ActualizacionJS::Consumer(_) => {}
+                ActualizacionJS::ConsumerEliminado(_) => {}
             }
         }
     }
 
     fn crear_stream(&self, config: StreamConfig) {
-        let stream = JetStreamStream::new(config, self.tx_datos_js.clone());
+        let stream =
+            JetStreamStream::new(config, self.tx_datos_js.clone(), self.tx_conexiones.clone());
         let _ = self.tx_conexiones.send(Box::new(stream));
     }
 }
@@ -144,7 +147,6 @@ impl Conexion for JestStreamAdminConexion {
                 }
             }
             "stream.listar" => {
-                println!("JestStreamHilo::escribir_publicacion_mensaje: stream.listar");
                 if let Some(reply_to) = &mensaje.replay_to {
                     let streams_info = self
                         .streams
