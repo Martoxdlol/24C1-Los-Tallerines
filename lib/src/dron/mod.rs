@@ -9,7 +9,7 @@ use crate::{
     serializables::{deserializador::Deserializador, serializador::Serializador, Serializable},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Dron {
     pub id: u64,
     pub rango: f64,
@@ -163,5 +163,137 @@ impl Serializable for Dron {
         serializador.agregar_elemento(&self.envio_ultimo_estado);
 
         serializador.bytes
+    }
+}
+
+#[cfg(test)]
+
+mod tests {
+    use crate::{coordenadas::Coordenadas, incidente::Incidente, serializables::Serializable};
+
+    use super::Dron;
+
+    #[test]
+    fn serializar_dron_con_incidente() {
+        let incidente = Incidente {
+            id: 1,
+            detalle: "Incidente de prueba".to_string(),
+            lat: 1.0,
+            lon: 1.0,
+            inicio: 0,
+            tiempo_atendido: 0,
+        };
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(1.0, 1.0),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(1.0, 1.0),
+            direccion_actual: 0.0,
+            bateria_actual: 100.0,
+            velocidad_actual: 0.0,
+            incidente_actual: Some(incidente),
+            envio_ultimo_estado: 0,
+        };
+
+        let serializado = dron.serializar();
+        let deserializado = Dron::deserializar(&serializado).unwrap();
+
+        assert_eq!(dron, deserializado);
+    }
+
+    #[test]
+    fn serializar_dron_sin_incidente() {
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(1.0, 1.0),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(1.0, 1.0),
+            direccion_actual: 0.0,
+            bateria_actual: 100.0,
+            velocidad_actual: 0.0,
+            incidente_actual: None,
+            envio_ultimo_estado: 0,
+        };
+
+        let serializado = dron.serializar();
+        let deserializado = Dron::deserializar(&serializado).unwrap();
+
+        assert_eq!(dron, deserializado);
+    }
+
+    #[test]
+    fn accion_cargar() {
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(1.0, 1.0),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(1.0, 1.0),
+            direccion_actual: 0.0,
+            bateria_actual: 5.0,
+            velocidad_actual: 0.0,
+            incidente_actual: None,
+            envio_ultimo_estado: 0,
+        };
+
+        assert_eq!(dron.accion(), crate::dron::accion::Accion::Cargar);
+        assert_eq!(dron.destino(), dron.central_de_carga);
+    }
+
+    #[test]
+    fn accion_incidente() {
+        let incidente = Incidente {
+            id: 1,
+            detalle: "Incidente de prueba".to_string(),
+            lat: 1.0,
+            lon: 1.0,
+            inicio: 0,
+            tiempo_atendido: 0,
+        };
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(1.0, 1.0),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(1.0, 1.0),
+            direccion_actual: 0.0,
+            bateria_actual: 100.0,
+            velocidad_actual: 0.0,
+            incidente_actual: Some(incidente),
+            envio_ultimo_estado: 0,
+        };
+
+        assert_eq!(dron.destino(), Coordenadas::from_lat_lon(1.0, 1.0));
+    }
+
+    #[test]
+    fn accion_espera() {
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(1.0, 1.0),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(1.0, 1.0),
+            direccion_actual: 0.0,
+            bateria_actual: 100.0,
+            velocidad_actual: 0.0,
+            incidente_actual: None,
+            envio_ultimo_estado: 0,
+        };
+
+        assert_eq!(dron.accion(), crate::dron::accion::Accion::Espera);
+        assert_eq!(dron.destino(), dron.punto_de_espera);
     }
 }
