@@ -118,7 +118,6 @@ impl Aplicacion {
 
     /// Que mostrar en la esquina superior izquierda.
     fn mostrar_esquina_superior_derecha(&mut self, ui: &mut egui::Ui) {
-        //TODO: Separar por botones de incidentes y cámaras.
         match self.accion {
             AccionAplicacion::Incidente(AccionIncidente::Crear) => {
                 if let Some(clicked_at) = self.clicks.clicked_at {
@@ -186,6 +185,9 @@ impl Aplicacion {
         }
     }
 
+    /// Pantalla de autenticación
+    ///
+    /// Aparece siempre cuando inicias el programa
     fn mostrar_autenticacion(&mut self, ui: &mut egui::Ui) {
         egui::Window::new("Iniciar sesión")
             .collapsible(false)

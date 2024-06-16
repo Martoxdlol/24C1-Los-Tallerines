@@ -5,6 +5,9 @@ use lib::{
 
 use crate::comunicacion::Comunicacion;
 
+/// Sistema interno del dron
+///
+/// Se encarga de mover el dron, mantener la batería y comunicarse con el servidor
 pub struct Sistema {
     dron: Dron,
     ms_ultima_iteracion: i64,
@@ -29,6 +32,7 @@ impl Sistema {
         self.diferencial_tiempo = (diferencial_tiempo as f64) / 1000.;
     }
 
+    /// Inicia el sistema del dron
     pub fn iniciar(&mut self) {
         self.ms_ultima_iteracion = chrono::offset::Local::now().timestamp_millis();
         loop {
@@ -38,16 +42,21 @@ impl Sistema {
         }
     }
 
+    /// Ciclo del dron. Cambia la velocidad o la bateria de ser necesario.
     fn ciclo(&mut self) {
         self.establecer_diferencial_tiempo();
         self.descarga_bateria();
         self.mover();
 
+        // Si el dron llego, frena (velocidad = 0)
         if self.en_destino() {
             self.dron.velocidad_actual = 0.;
 
+            // Si el dron esta en el centro de carga, se recarga
             if let Accion::Cargar = self.dron.accion() {
-                self.dron.bateria_actual = 100.;
+                if self.en_destino() {
+                    self.dron.bateria_actual = 100.;
+                }
             }
         } else {
             self.establecer_velocidad();
@@ -57,14 +66,17 @@ impl Sistema {
         self.comunicacion.ciclo(&mut self.dron);
     }
 
+    /// Devuelve a donde tiene que ir el dron.
     fn destino(&self) -> Coordenadas {
         self.dron.destino()
     }
 
+    /// Devuelve si el dron esta en su destino.
     fn en_destino(&self) -> bool {
         self.destino().distancia(&self.dron.posicion) < 1.
     }
 
+    /// Establece la dirección del dron
     fn establecer_direccion(&mut self) {
         let diff_lat = self.destino().lat - self.dron.posicion.lat;
         let diff_lon = self.destino().lon - self.dron.posicion.lon;
@@ -78,6 +90,10 @@ impl Sistema {
         }
     }
 
+    /// Establece la velocidad del dron.
+    ///
+    /// Esta varía según la distancia al destino. A medida que llega disminuye la velocidad
+    /// (Disimular que esta frenando)
     fn establecer_velocidad(&mut self) {
         let distancia = self.destino().distancia(&self.dron.posicion);
         if distancia > 20. {
@@ -87,10 +103,12 @@ impl Sistema {
         }
     }
 
+    /// Descarga la batería del dron
     fn descarga_bateria(&mut self) {
         self.dron.bateria_actual -= self.dron.velocidad_descarga_bateria * self.diferencial_tiempo;
     }
 
+    /// Mueve el dron
     fn mover(&mut self) {
         self.dron.posicion = self.dron.posicion.mover_en_direccion(
             self.diferencial_tiempo * self.dron.velocidad_actual,

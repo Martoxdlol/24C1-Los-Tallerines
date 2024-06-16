@@ -8,7 +8,7 @@ use lib::camara::Camara;
 use lib::{camara, incidente::Incidente};
 use walkers::Position;
 
-/// Enum para saber si se listan incidentes o cámaras.
+/// Enum para saber si se listan incidentes, cámaras o drones.
 pub enum Listar {
     Incidentes,
     Camaras,
@@ -16,9 +16,10 @@ pub enum Listar {
 }
 
 impl Listar {
-    /// Ventana para elegir si listar incidentes o cámaras.
+    /// Ventana para elegir si listar incidentes, cámaras o drones.
     ///
     /// Aparece en la esquina  inferior derecha.
+    /// Tambien te permite salir y cerrar la aplicación.
     pub fn listar(ui: &mut Ui, aplicacion: &mut Aplicacion) {
         egui::Window::new("📝")
             .collapsible(false)
@@ -87,11 +88,11 @@ impl Listar {
                                     .add_sized([350., 40.], |ui: &mut Ui| ui.button(nombre))
                                     .clicked()
                                 {
-                                    // Si clickeas el incidente te lleva a esa posición.
+                                    // Si clickeas la cámara te lleva a esa posición.
                                     aplicacion
                                         .memoria_mapa
                                         .center_at(Position::from_lat_lon(camara.lat, camara.lon));
-                                    // Cambia la AccionIncidente a Modificar.
+                                    // Cambia la AccionCamara a Modificar.
                                     aplicacion.accion = AccionAplicacion::Camara(
                                         AccionCamara::Modificar(camara.id),
                                     );
@@ -144,6 +145,10 @@ impl Listar {
         }
     }
 
+    /// Lista de drones en la esquina superior derecha.
+    ///
+    /// Muestra el id del dron.
+    /// Listar tiene que estar en Drones.
     pub fn listar_drones(ui: &mut Ui, drones: &[lib::dron::Dron], aplicacion: &mut Aplicacion) {
         if !drones.is_empty() {
             egui::Window::new("Lista de drones")
@@ -164,12 +169,12 @@ impl Listar {
                                     .add_sized([350., 40.], |ui: &mut Ui| ui.button(id))
                                     .clicked()
                                 {
-                                    // Si clickeas el incidente te lleva a esa posición.
+                                    // Si clickeas el dron te lleva a esa posición.
                                     aplicacion.memoria_mapa.center_at(Position::from_lat_lon(
                                         dron.posicion.lat,
                                         dron.posicion.lon,
                                     ));
-                                    // Cambia la AccionIncidente a VerDetalle.
+                                    // Cambia la AccionDron a VerDetalle.
                                     aplicacion.accion =
                                         AccionAplicacion::Dron(AccionDron::VerDetalles(dron.id));
                                 }

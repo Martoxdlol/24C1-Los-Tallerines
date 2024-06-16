@@ -26,6 +26,9 @@ pub struct Dron {
 }
 
 impl Dron {
+    /// Crea un dron a partir de una configuración.
+    ///
+    /// El new, es la forma de crear un dron.
     pub fn crear(config: &Configuracion) -> Option<Self> {
         let central_de_carga_lat = config.obtener("central_de_carga.lat")?;
         let central_de_carga_lon = config.obtener("central_de_carga.lon")?;
@@ -58,9 +61,12 @@ impl Dron {
             envio_ultimo_estado: 0,
         })
     }
-}
 
-impl Dron {
+    /// Determina la acción del dron.
+    ///
+    /// Si la batería del dron es menor a 10, tiene que cargar la batería.
+    /// Si el dron tiene un incidente asignado, tiene que ir a atenderlo.
+    /// Sino esta esperando.
     pub fn accion(&self) -> Accion {
         if self.bateria_actual < 10. {
             return Accion::Cargar;
@@ -73,6 +79,9 @@ impl Dron {
         Accion::Espera
     }
 
+    /// Determina a donde tiene que ir el dron.
+    ///
+    /// Esto depende de la acción del mismo.
     pub fn destino(&self) -> Coordenadas {
         match self.accion() {
             Accion::Incidente(incidente) => incidente.posicion(),
@@ -81,6 +90,9 @@ impl Dron {
         }
     }
 
+    /// Predice la ubicación del dron. El dron manda su estado (con su ubicación) de forma periódica.
+    ///
+    /// Para que el movimiento se vea suave en la ui, se predice la ubicación del dron en el tiempo cuando no tenemos su estado.
     pub fn predecir_posicion(&self, tiempo: f64) -> Coordenadas {
         let distancia = self.velocidad_actual * tiempo;
         let destino = self.destino();
@@ -97,6 +109,7 @@ impl Dron {
 }
 
 impl Serializable for Dron {
+    /// Deserializa un dron.
     fn deserializar(data: &[u8]) -> Result<Self, crate::serializables::error::DeserializationError>
     where
         Self: Sized,
@@ -132,6 +145,7 @@ impl Serializable for Dron {
         })
     }
 
+    /// Serializa un dron.
     fn serializar(&self) -> Vec<u8> {
         let mut serializador = Serializador::new();
 

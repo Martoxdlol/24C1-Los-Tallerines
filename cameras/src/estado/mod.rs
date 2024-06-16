@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 use lib::{camara::Camara, incidente::Incidente};
 
 /// Estado del sistema de camaras.
-/// TODO: Estado de incidentes y de drones
 pub struct Estado {
     /// Camaras conectadas al sistema.
     pub camaras: HashMap<u64, Camara>,
@@ -28,6 +27,10 @@ impl Estado {
         }
     }
 
+    /// Conecta una camara al sistema.
+    ///
+    /// Busca si tiene incidentes primarios o secundarios
+    /// para ya conectarla en su estado correcto.
     pub fn conectar_camara(&mut self, mut camara: Camara) {
         // La cámara ya existe
         if self.camara(camara.id).is_some() {
@@ -61,6 +64,7 @@ impl Estado {
         self.camaras.insert(camara.id, camara);
     }
 
+    /// Desconecta una camara del sistema.
     pub fn desconectar_camara(&mut self, id: u64) -> Option<Camara> {
         if let Some(mut camara) = self.camaras.remove(&id) {
             self.restablecer_camaras_lindantes(id);
@@ -72,6 +76,8 @@ impl Estado {
         }
     }
 
+    /// Carga un incidente en el sistema.
+    /// Se lo agrega a las camaras que lo pueden ver.
     pub fn cargar_incidente(&mut self, incidente: Incidente) {
         self.finalizar_incidente(incidente.id);
 
@@ -94,6 +100,7 @@ impl Estado {
         }
     }
 
+    /// Finaliza todos los incidentes activos.
     pub fn finalizar_todos_los_incidentes(&mut self) {
         let incidentes: Vec<u64> = self.incidentes.keys().copied().collect();
         for id in incidentes {
@@ -101,6 +108,9 @@ impl Estado {
         }
     }
 
+    /// Finaliza un incidente activo.
+    ///
+    /// Lo elimina de los hashset de las cámaras
     pub fn finalizar_incidente(&mut self, id: u64) -> Option<Incidente> {
         if let Some(incidente) = self.incidentes.remove(&id) {
             for id_camara in self.camaras_en_rango(&incidente) {
@@ -125,6 +135,7 @@ impl Estado {
         }
     }
 
+    /// Desconecta una cámara para conectarla con una ubicación diferente
     pub fn modificar_ubicacion_camara(&mut self, id: u64, lat: f64, lon: f64) {
         // Hasta aca borramos la camara, y re acomodamos las lindantes
         if let Some(mut camara) = self.desconectar_camara(id) {
@@ -134,6 +145,7 @@ impl Estado {
         }
     }
 
+    /// Desconecta una cámara para conectarla con un rango diferente
     pub fn modificar_rango_camara(&mut self, id: u64, rango: f64) {
         if let Some(mut camara) = self.desconectar_camara(id) {
             camara.rango = rango;
@@ -141,6 +153,7 @@ impl Estado {
         }
     }
 
+    /// Establece las camaras lindantes a la camara dada
     fn establecer_camaras_lindantes(&mut self, camara: &Camara) {
         // Calcula las camaras lindantes a la camara dada
         let camaras_lindantes: HashSet<u64> = self
@@ -165,6 +178,7 @@ impl Estado {
         self.camaras_lindantes.insert(camara.id, camaras_lindantes);
     }
 
+    /// Restablece las camaras lindantes de la camara con el id dado
     fn restablecer_camaras_lindantes(&mut self, id: u64) {
         if let Some(camaras_lindantes) = self.camaras_lindantes.remove(&id) {
             for id_lindante in camaras_lindantes.iter() {
@@ -188,6 +202,7 @@ impl Estado {
         incidentes
     }
 
+    /// Devuelve las cámaras cuyo rango abarca la ubicación del incidente
     pub fn camaras_en_rango(&self, incidente: &Incidente) -> HashSet<u64> {
         let mut camaras: HashSet<u64> = HashSet::new();
         for camara in self.camaras.values() {

@@ -1,6 +1,7 @@
 use super::{parametros_conectar::ParametrosConectar, parametros_info::ParametrosInfo};
 
 #[derive(Debug, PartialEq)]
+/// Los diferentes mensajes que se pueden parsear
 pub enum ResultadoLinea {
     StringVacio,
     MensajeIncorrecto,

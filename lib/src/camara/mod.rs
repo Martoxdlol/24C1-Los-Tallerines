@@ -9,6 +9,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
+/// Representa una cámara de seguridad.
 pub struct Camara {
     pub id: u64,
     pub lat: f64,
@@ -32,16 +33,19 @@ impl Camara {
         }
     }
 
+    /// Devuelve si la cámara está activa.
     pub fn activa(&self) -> bool {
         !self.incidentes_primarios.is_empty() || !self.incidentes_secundarios.is_empty()
     }
 
+    /// Devuelve la posición de la cámara.
     pub fn posicion(&self) -> Coordenadas {
         Coordenadas::from_lat_lon(self.lat, self.lon)
     }
 }
 
 impl Serializable for Camara {
+    /// Serializa la cámara.
     fn serializar(&self) -> Vec<u8> {
         let mut serializador = Serializador::new();
 
@@ -55,6 +59,7 @@ impl Serializable for Camara {
         serializador.bytes
     }
 
+    /// Deserializa la cámara.
     fn deserializar(data: &[u8]) -> Result<Self, DeserializationError> {
         let mut deserializador = Deserializador::new(data.to_vec());
 

@@ -1,12 +1,15 @@
 use lib::{incidente::Incidente, serializables::Serializable};
 
 #[derive(Clone, Debug)]
+
+/// Comandos que el dron puede recibir desde la aplicación de monitoreo.
 pub enum Comando {
     AtenderIncidente(Incidente),
     DesatenderIncidente(Incidente),
 }
 
 impl Serializable for Comando {
+    /// Serializa un comando en un vector de bytes.
     fn serializar(&self) -> Vec<u8> {
         match self {
             Comando::AtenderIncidente(incidente) => format!(
@@ -24,6 +27,7 @@ impl Serializable for Comando {
         }
     }
 
+    /// Deserializa un vector de bytes en un comando.
     fn deserializar(data: &[u8]) -> Result<Self, lib::serializables::error::DeserializationError>
     where
         Self: Sized,

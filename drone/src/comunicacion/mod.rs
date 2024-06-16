@@ -10,6 +10,7 @@ use lib::{
 };
 use messaging_client::cliente::Cliente;
 
+/// Comunicación desde el dron con el servidor de mensajería.
 pub struct Comunicacion {
     direccion_server: String,
     puerto_server: u16,
@@ -31,6 +32,7 @@ impl Comunicacion {
         }
     }
 
+    /// Intenta usar el contexto actual, si no existe, crea uno nuevo.
     pub fn usar_contexto(&mut self, dron: &Dron) -> io::Result<&Contexto> {
         if self.contexto.is_none() {
             let mut cliente = Cliente::conectar_user_pass(
@@ -54,6 +56,7 @@ impl Comunicacion {
         Ok(self.contexto.as_mut().unwrap())
     }
 
+    /// Ciclo de comunicación del dron con el servidor de mensajería.
     pub fn ciclo(&mut self, drone: &mut Dron) {
         if let Err(e) = self.ciclo_interno(drone) {
             eprintln!("Error en ciclo interno: {}", e);
@@ -61,6 +64,9 @@ impl Comunicacion {
         }
     }
 
+    /// Ciclo interno de comunicación del dron con el servidor de mensajería.
+    ///
+    /// Se encarga de enviar el estado del dron, recibir comandos y recibir incidentes finalizados.
     fn ciclo_interno(&mut self, dron: &mut Dron) -> io::Result<()> {
         let mut tiempo = 1500;
 
@@ -78,6 +84,7 @@ impl Comunicacion {
         Ok(())
     }
 
+    /// envia el estado del dron al servidor de mensajería.
     fn enviar_estado(&mut self, dron: &mut Dron) -> io::Result<()> {
         println!(
             "{:?} bateria: {}, velocidad: {}, destino: {:?}, acción: {:?}",
@@ -98,6 +105,9 @@ impl Comunicacion {
         Ok(())
     }
 
+    /// Recibe comandos del servidor de mensajería.
+    ///
+    /// Estos pueden ser llamados a atender incidentes o desatender incidentes.
     fn recibir_comandos(&mut self, dron: &mut Dron) -> io::Result<()> {
         let contexto = self.usar_contexto(dron)?;
 
@@ -135,6 +145,9 @@ impl Comunicacion {
         Ok(())
     }
 
+    /// Se encarga de recibir los incidentes finalizados.
+    ///
+    /// Si el incidente finalizado es el mismo que el incidente actual del dron, se desasigna el incidente actual.
     fn recibir_incidentes_finalizados(&mut self, dron: &mut Dron) -> io::Result<()> {
         let contexto = self.usar_contexto(dron)?;
         while let Some(publicacion) = contexto

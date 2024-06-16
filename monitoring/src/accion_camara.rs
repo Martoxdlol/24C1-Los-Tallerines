@@ -7,7 +7,7 @@ use crate::{
     listar::estado_camara_a_string,
     logica::{comando::Comando, estado::Estado},
 };
-
+/// Acciones que podes hacer con una cámara
 pub enum AccionCamara {
     Conectar,
     Modificar(u64),
@@ -42,6 +42,9 @@ impl AccionCamara {
             });
     }
 
+    /// Ventana para modificar una cámara.
+    ///
+    /// Accion_camara debe ser CambiarUbicacion.
     pub fn modificar_ubicacion_camara(
         ui: &mut Ui,
         camara: &Camara,
@@ -64,6 +67,7 @@ impl AccionCamara {
                     .add_sized([350., 40.], egui::Button::new("Confirmar"))
                     .clicked()
                 {
+                    // Mandar comando para cambiar ubicación.
                     Comando::camara_nueva_ubicacion(
                         &aplicacion.enviar_comando,
                         camara.id,
@@ -71,11 +75,15 @@ impl AccionCamara {
                         clicked_at.lon(),
                     );
 
+                    // Cambiar la accion para cambiar la ventana de arriba a la izquierda.
                     aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
                 }
             });
     }
 
+    /// Ventana para modificar el rango de una cámara.
+    ///
+    /// Accion_camara debe ser CambiarRango.
     pub fn modificar_rango_camara(ui: &mut Ui, camara: &Camara, aplicacion: &mut Aplicacion) {
         egui::Window::new("Modificar rango")
             .collapsible(false)
@@ -92,8 +100,10 @@ impl AccionCamara {
                         .add_sized([350., 40.], egui::Button::new("Confirmar"))
                         .clicked()
                     {
+                        // Mandar comando para cambiar rango.
                         Comando::camara_nuevo_rango(&aplicacion.enviar_comando, camara.id, rango);
 
+                        // Cambiar la accion para cambiar la ventana de arriba a la izquierda.
                         aplicacion.input_usuario.clear();
                         aplicacion.accion = AccionAplicacion::Camara(AccionCamara::Conectar);
                     }
@@ -101,6 +111,9 @@ impl AccionCamara {
             });
     }
 
+    /// Ventana para conectar una cámara.
+    ///
+    /// Accion_camara debe ser Conectar.
     pub fn conectar_camara(
         ui: &mut Ui,
         clicked_at: walkers::Position,
@@ -141,6 +154,9 @@ impl AccionCamara {
     }
 }
 
+/// Devuelve los incidentes que esta atendiendo una cámara.
+///
+/// Se va a mostrar en la ventana de modificar cámara.
 fn mostrar_incidentes_camara(camara: &Camara, estado: &mut Estado) -> String {
     let mut incidentes = String::new();
     for incidente in camara.incidentes_primarios.iter() {
@@ -153,6 +169,9 @@ fn mostrar_incidentes_camara(camara: &Camara, estado: &mut Estado) -> String {
     incidentes
 }
 
+/// Botones para modificar una cámara.
+///
+/// Son los que aparecen en la ventana de modificar cámara.
 fn botones_modificar_camara(ui: &mut Ui, camara: &Camara, aplicacion: &mut Aplicacion) {
     egui::Grid::new("some_unique_id").show(ui, |ui| {
         if ui.button("Desconectar cámara").clicked() {
@@ -162,6 +181,7 @@ fn botones_modificar_camara(ui: &mut Ui, camara: &Camara, aplicacion: &mut Aplic
             //aplicacion.detalle_incidente.clone_from(&incidente.detalle);
             aplicacion.accion = AccionAplicacion::Camara(AccionCamara::CambiarRango(camara.id));
         }
+        // Para que aparezcan en dos filas
         ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
