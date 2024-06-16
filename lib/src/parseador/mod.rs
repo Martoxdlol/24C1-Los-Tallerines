@@ -280,7 +280,7 @@ impl Parseador {
 
     fn parsear_linea(&self, linea: &str) -> ResultadoLinea {
         let palabras = linea
-            .split(' ')
+            .split_whitespace()
             .map(|s| s.to_string())
             .collect::<Vec<String>>();
         let palabra_vacia = "".to_string();
