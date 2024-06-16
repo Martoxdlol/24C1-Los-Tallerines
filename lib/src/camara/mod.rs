@@ -82,6 +82,7 @@ impl Serializable for Camara {
 }
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -116,5 +117,48 @@ mod tests {
         let deserializado = Camara::deserializar(&serializado).unwrap();
 
         assert_eq!(camara, deserializado);
+    }
+
+    #[test]
+    fn camara_activa() {
+        let camara = Camara {
+            id: 1,
+            lat: -34.6079162126949,
+            lon: -58.40631119706255,
+            rango: 200.,
+            incidentes_primarios: vec![1].into_iter().collect(),
+            incidentes_secundarios: vec![].into_iter().collect(),
+        };
+
+        assert_eq!(camara.activa(), true);
+    }
+
+    #[test]
+    fn camara_inactiva() {
+        let camara = Camara {
+            id: 1,
+            lat: -34.6079162126949,
+            lon: -58.40631119706255,
+            rango: 200.,
+            incidentes_primarios: HashSet::new(),
+            incidentes_secundarios: HashSet::new(),
+        };
+
+        assert_eq!(camara.activa(), false);
+    }
+
+    #[test]
+    fn posicion() {
+        let camara = Camara {
+            id: 1,
+            lat: -34.6079162126949,
+            lon: -58.40631119706255,
+            rango: 200.,
+            incidentes_primarios: HashSet::new(),
+            incidentes_secundarios: HashSet::new(),
+        };
+
+        assert_eq!(camara.posicion().lat, -34.6079162126949);
+        assert_eq!(camara.posicion().lon, -58.40631119706255);
     }
 }
