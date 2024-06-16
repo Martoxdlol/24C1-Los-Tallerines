@@ -47,3 +47,39 @@ impl ParametrosConectar {
         }
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    use super::ParametrosConectar;
+
+    #[test]
+    fn crear_parametros() {
+        let parametros = ParametrosConectar::user_pass("usuario", "contraseña");
+        assert_eq!(parametros.user_str(), "usuario");
+        assert_eq!(parametros.pass_str(), "contraseña");
+    }
+
+    #[test]
+    fn generar_json() {
+        let parametros = ParametrosConectar::user_pass("usuario", "contraseña");
+        let json = parametros.to_json();
+        assert_eq!(json, "{\"user\":\"usuario\",\"pass\":\"contraseña\"}");
+    }
+
+    #[test]
+    fn conseguir_parametros_por_json() {
+        let json = "{\"user\":\"usuario\",\"pass\":\"contraseña\"}";
+        let parametros = ParametrosConectar::from_json(json).unwrap();
+        assert_eq!(parametros.user_str(), "usuario");
+        assert_eq!(parametros.pass_str(), "contraseña");
+    }
+
+    #[test]
+    fn conseguir_parametros_por_json_vacio() {
+        let json = "{}";
+        let parametros = ParametrosConectar::from_json(json).unwrap();
+        assert_eq!(parametros.user_str(), "");
+        assert_eq!(parametros.pass_str(), "");
+    }
+}
