@@ -3,3 +3,4 @@ central_de_carga.lon=-58.3861
 punto_de_espera.lat=-34.6140
 punto_de_espera.lon=-58.3866
 velocidad_maxima=15
+rango=2

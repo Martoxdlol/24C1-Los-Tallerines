@@ -79,6 +79,10 @@ impl Dron {
         Accion::Espera
     }
 
+    pub fn incidente_en_rango(&self, incidente: &Incidente) -> bool {
+        self.posicion.distancia(&incidente.posicion()) <= self.rango
+    }
+
     /// Determina a donde tiene que ir el dron.
     ///
     /// Esto depende de la acción del mismo.

@@ -472,6 +472,11 @@ impl Sistema {
                     break;
                 }
 
+                //TODO: Verificar si el incidente está en el rango del dron
+                if !dron.incidente_en_rango(incidente) {
+                    continue;
+                }
+
                 asignados += 1;
 
                 self.asignar_incidente_a_dron(cliente, incidente.id, dron)?;
