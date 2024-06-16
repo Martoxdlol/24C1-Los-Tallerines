@@ -126,6 +126,11 @@ impl Hilo {
                 conexion.escribir_publicacion_mensaje(
                     &publicacion.mensaje(suscripcion.id().to_owned()),
                 );
+            } else {
+                self.registrador.error(
+                    "No se encontró una conexión que debería existir",
+                    Some(*suscripcion.id_conexion()),
+                )
             }
         }
     }

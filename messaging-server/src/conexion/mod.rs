@@ -2,7 +2,7 @@ pub mod id;
 pub mod respuesta;
 pub mod tick_contexto;
 pub mod r#trait;
-use lib::parseador::mensaje::{formatear_mensaje_debug, formatear_payload_debug};
+use lib::parseador::mensaje::formatear_mensaje_debug;
 use lib::parseador::parametros_info::ParametrosInfo;
 use lib::parseador::Parseador;
 use lib::{parseador::mensaje::Mensaje, stream::Stream};
@@ -61,7 +61,7 @@ impl ConexionDeCliente {
             desconectado: false,
             autenticado: false,
             cuentas,
-            verbose: false,
+            verbose: true,
         };
 
         con.enviar_info();
