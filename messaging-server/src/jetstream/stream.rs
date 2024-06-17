@@ -3,7 +3,7 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender},
 };
 
-use chrono::{format, Utc};
+use chrono::Utc;
 use lib::jet_stream::{
     consumer_config::ConsumerConfig, consumer_info::ConsumerInfo,
     consumer_list_respuesta::JetStreamConsumerListaRespuesta,
@@ -248,7 +248,7 @@ impl Conexion for JetStreamStream {
                     let consumers_info = self
                         .consumers
                         .values()
-                        .map(|c| c.clone())
+                        .cloned()
                         .collect::<Vec<ConsumerInfo>>();
 
                     let r = JetStreamConsumerListaRespuesta {
@@ -330,5 +330,5 @@ pub fn consumer_aceptar_topico(config: &ConsumerConfig, topico: &str) -> bool {
         return true;
     }
 
-    return false;
+    false
 }

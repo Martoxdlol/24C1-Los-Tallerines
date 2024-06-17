@@ -187,12 +187,14 @@ fn botones_modificar_inicidente(ui: &mut Ui, incidente: &Incidente, aplicacion: 
         }
         if ui.button("Modificar detalle").clicked() {
             aplicacion.input_usuario.clone_from(&incidente.detalle);
-            aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
+            aplicacion.accion =
+                AccionAplicacion::Incidente(AccionIncidente::CambiarDetalle(incidente.id));
         }
         ui.end_row();
 
         if ui.button("Modificar ubicacion").clicked() {
-            aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
+            aplicacion.accion =
+                AccionAplicacion::Incidente(AccionIncidente::CambiarUbicacion(incidente.id));
         }
         if ui.button("Cancelar").clicked() {
             aplicacion.input_usuario.clear();

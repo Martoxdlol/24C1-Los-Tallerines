@@ -9,7 +9,7 @@ use lib::jet_stream::{
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
     publicacion::Publicacion,
-    registrador::{self, Registrador},
+    registrador::Registrador,
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
@@ -81,7 +81,7 @@ impl JetStreamConsumer {
         );
 
         if let Some(mensaje) = &self.mensaje_pendiente {
-            self.topico_ack_mensaje_pendiente = ack_topico.clone();
+            self.topico_ack_mensaje_pendiente.clone_from(&ack_topico);
             self.respuestas.push(Publicacion::new(
                 reply_to.to_string(),
                 mensaje.payload.clone(),
@@ -138,6 +138,11 @@ impl Conexion for JetStreamConsumer {
 
             self.enviar_actualizacion_de_estado();
 
+            self.registrador.info(
+                &format!("JetStreamConsumer {} preparado", self.config.durable_name),
+                Some(self.obtener_id()),
+            );
+
             self.preparado = true;
         }
 
@@ -185,11 +190,11 @@ impl Conexion for JetStreamConsumer {
                 }
             }
             "ack" => {
-                if self.mensaje_pendiente.is_some() {
-                    if self.topico_ack_mensaje_pendiente.eq(&mensaje.topico) {
-                        self.mensaje_pendiente = None;
-                        self.topico_ack_mensaje_pendiente = "".to_string();
-                    }
+                if self.mensaje_pendiente.is_some()
+                    && self.topico_ack_mensaje_pendiente.eq(&mensaje.topico)
+                {
+                    self.mensaje_pendiente = None;
+                    self.topico_ack_mensaje_pendiente = "".to_string();
                 }
             }
             _ => {}

@@ -152,11 +152,7 @@ impl Conexion for JestStreamAdminConexion {
             }
             "stream.listar" => {
                 if let Some(reply_to) = &mensaje.replay_to {
-                    let streams_info = self
-                        .streams
-                        .values()
-                        .map(|s| s.clone())
-                        .collect::<Vec<StreamInfo>>();
+                    let streams_info = self.streams.values().cloned().collect::<Vec<StreamInfo>>();
 
                     let r = JetStreamStreamListResponse {
                         limit: (streams_info.len() + 1) as i32,
