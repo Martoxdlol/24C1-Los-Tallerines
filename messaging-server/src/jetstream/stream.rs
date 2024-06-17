@@ -329,4 +329,6 @@ pub fn consumer_aceptar_topico(config: &ConsumerConfig, topico: &str) -> bool {
     } else {
         return true;
     }
+
+    return false;
 }
