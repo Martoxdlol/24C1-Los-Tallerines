@@ -13,6 +13,7 @@ use lib::jet_stream::{
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
     publicacion::Publicacion,
+    registrador::Registrador,
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
@@ -26,12 +27,14 @@ pub struct JestStreamAdminConexion {
     streams: HashMap<String, StreamInfo>,
     rx_datos_js: Receiver<ActualizacionJS>,
     tx_datos_js: Sender<ActualizacionJS>,
+    registrador: Registrador,
 }
 
 impl JestStreamAdminConexion {
     pub fn new(
         id: u64,
         tx_conexiones: Sender<Box<dyn Conexion + Send>>,
+        registrador: Registrador,
     ) -> JestStreamAdminConexion {
         let (tx_datos_js, rx_datos_js) = channel();
 
@@ -43,6 +46,7 @@ impl JestStreamAdminConexion {
             streams: HashMap::new(),
             rx_datos_js,
             tx_datos_js,
+            registrador,
         }
     }
 
@@ -58,10 +62,6 @@ impl JestStreamAdminConexion {
 
     fn recibir_actualizaciones_js(&mut self) {
         while let Ok(actualizacion) = self.rx_datos_js.try_recv() {
-            println!(
-                "JestStreamAdminConexion::recibir_actualizaciones_js: {:?}",
-                actualizacion
-            );
             match actualizacion {
                 ActualizacionJS::Stream(stream_info) => {
                     self.streams
@@ -77,8 +77,12 @@ impl JestStreamAdminConexion {
     }
 
     fn crear_stream(&self, config: StreamConfig) {
-        let stream =
-            JetStreamStream::new(config, self.tx_datos_js.clone(), self.tx_conexiones.clone());
+        let stream = JetStreamStream::new(
+            config,
+            self.tx_datos_js.clone(),
+            self.tx_conexiones.clone(),
+            self.registrador.clone(),
+        );
         let _ = self.tx_conexiones.send(Box::new(stream));
     }
 }

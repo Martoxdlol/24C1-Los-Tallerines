@@ -143,6 +143,7 @@ impl Servidor {
         let _ = tx_conexiones.send(Box::new(JestStreamAdminConexion::new(
             id_conexion,
             tx_conexiones.clone(),
+            self.registrador.clone(),
         )));
 
         loop {

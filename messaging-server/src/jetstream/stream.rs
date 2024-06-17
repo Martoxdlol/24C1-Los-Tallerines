@@ -3,7 +3,7 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender},
 };
 
-use chrono::Utc;
+use chrono::{format, Utc};
 use lib::jet_stream::{
     consumer_config::ConsumerConfig, consumer_info::ConsumerInfo,
     consumer_list_respuesta::JetStreamConsumerListaRespuesta,
@@ -17,6 +17,7 @@ use lib::jet_stream::{
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
     publicacion::Publicacion,
+    registrador::Registrador,
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
@@ -34,6 +35,7 @@ pub struct JetStreamStream {
     respuestas: Vec<Publicacion>,
     consumers: HashMap<String, ConsumerInfo>,
     consumers_transmisores: HashMap<String, Sender<Publicacion>>,
+    registrador: Registrador,
 }
 
 impl JetStreamStream {
@@ -41,6 +43,7 @@ impl JetStreamStream {
         config: StreamConfig,
         tx_actualizaciones_js: Sender<ActualizacionJS>,
         tx_conexiones: Sender<Box<dyn Conexion + Send>>,
+        registrador: Registrador,
     ) -> Self {
         let (tx_actualizaciones_js_consumers, rx_actualizaciones_js_consumers) = channel();
 
@@ -56,6 +59,7 @@ impl JetStreamStream {
             tx_actualizaciones_js_consumers,
             consumers: HashMap::new(),
             consumers_transmisores: HashMap::new(),
+            registrador,
         }
     }
 
@@ -102,13 +106,20 @@ impl JetStreamStream {
         self.consumers_transmisores
             .insert(config.durable_name.clone(), tx);
 
-        let stream = JetStreamConsumer::new(
+        self.registrador.info(
+            &format!("Consumer creado: {:?}", config),
+            Some(self.obtener_id()),
+        );
+
+        let consumer = JetStreamConsumer::new(
             config,
             self.config.name.clone(),
             self.tx_actualizaciones_js_consumers.clone(),
             rx,
+            self.registrador.clone(),
         );
-        let _ = self.tx_conexiones.send(Box::new(stream));
+
+        let _ = self.tx_conexiones.send(Box::new(consumer));
     }
 }
 
@@ -145,7 +156,7 @@ impl Conexion for JetStreamStream {
             );
             self.suscribir(
                 contexto,
-                &format!("$JS.API.CONSUMER.CREATE.{}.*", self.config.name),
+                &format!("$JS.API.CONSUMER.CREATE.{}.>", self.config.name),
                 "crear_consumer",
             );
             self.suscribir(
@@ -204,6 +215,10 @@ impl Conexion for JetStreamStream {
             "actualizar" => {}
             "purgar" => {}
             "crear_consumer" => {
+                println!(
+                    "Creando consumer {}",
+                    String::from_utf8_lossy(&mensaje.payload)
+                );
                 if let Ok(datos) =
                     JSPeticionCrearConsumer::from_json(&String::from_utf8_lossy(&mensaje.payload))
                 {
@@ -219,6 +234,11 @@ impl Conexion for JetStreamStream {
                                 None,
                                 None,
                             ));
+                        } else {
+                            self.registrador.error(
+                                "Error al serializar respuesta de crear consumer",
+                                Some(self.obtener_id()),
+                            );
                         }
                     }
                 }
@@ -272,17 +292,41 @@ impl Conexion for JetStreamStream {
 
         if mensaje.sid.starts_with("mensaje|") {
             for tx_consumer in self.consumers_transmisores.values() {
-                let _ = tx_consumer.send(Publicacion::new(
-                    mensaje.topico.clone(),
-                    mensaje.payload.clone(),
-                    mensaje.header.clone(),
-                    mensaje.replay_to.clone(),
-                ));
+                if let Some(consumer) = self.consumers.get(&mensaje.sid[8..]) {
+                    if consumer_aceptar_topico(&consumer.config, &mensaje.topico) {
+                        continue;
+                    }
+
+                    let _ = tx_consumer.send(Publicacion::new(
+                        mensaje.topico.clone(),
+                        mensaje.payload.clone(),
+                        mensaje.header.clone(),
+                        mensaje.replay_to.clone(),
+                    ));
+                }
             }
         }
     }
 
     fn esta_conectado(&self) -> bool {
         !self.eliminado
+    }
+}
+
+pub fn consumer_aceptar_topico(config: &ConsumerConfig, topico: &str) -> bool {
+    if let Some(filter_subject) = &config.filter_subject {
+        if let Ok(topico_consumer) = Topico::new(filter_subject.clone()) {
+            return topico_consumer.test(topico);
+        }
+    } else if let Some(filter_subjects) = &config.filter_subjects {
+        for filter_subject in filter_subjects {
+            if let Ok(topico_consumer) = Topico::new(filter_subject.clone()) {
+                if topico_consumer.test(topico) {
+                    return true;
+                }
+            }
+        }
+    } else {
+        return true;
     }
 }

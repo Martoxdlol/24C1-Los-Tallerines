@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct ConsumerConfig {
     pub durable_name: String,
+    pub filter_subject: Option<String>,
+    pub filter_subjects: Option<Vec<String>>,
 }
 
 impl ConsumerConfig {

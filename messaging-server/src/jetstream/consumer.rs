@@ -9,6 +9,7 @@ use lib::jet_stream::{
 use crate::{
     conexion::{r#trait::Conexion, tick_contexto::TickContexto},
     publicacion::Publicacion,
+    registrador::{self, Registrador},
     suscripciones::{suscripcion::Suscripcion, topico::Topico},
 };
 
@@ -25,6 +26,7 @@ pub struct JetStreamConsumer {
     mensaje_pendiente: Option<Publicacion>,
     rx_mensajes: Receiver<Publicacion>,
     topico_ack_mensaje_pendiente: String,
+    registrador: Registrador,
 }
 
 impl JetStreamConsumer {
@@ -33,6 +35,7 @@ impl JetStreamConsumer {
         nombre_stream: String,
         tx_actualizaciones_js: Sender<ActualizacionJS>,
         rx_mensajes: Receiver<Publicacion>,
+        registrador: Registrador,
     ) -> Self {
         JetStreamConsumer {
             nombre_stream,
@@ -45,6 +48,7 @@ impl JetStreamConsumer {
             mensaje_pendiente: None,
             rx_mensajes,
             topico_ack_mensaje_pendiente: "".to_string(),
+            registrador,
         }
     }
 
@@ -68,7 +72,7 @@ impl JetStreamConsumer {
             }));
     }
 
-    fn responder_mensaje_pendiente(&mut self) {
+    fn responder_mensaje_pendiente(&mut self, reply_to: &str) {
         let ack_topico = format!(
             "$JS.ACK.{}.{}.{}",
             self.nombre_stream,
@@ -79,7 +83,7 @@ impl JetStreamConsumer {
         if let Some(mensaje) = &self.mensaje_pendiente {
             self.topico_ack_mensaje_pendiente = ack_topico.clone();
             self.respuestas.push(Publicacion::new(
-                mensaje.topico.clone(),
+                reply_to.to_string(),
                 mensaje.payload.clone(),
                 mensaje.header.clone(),
                 Some(ack_topico),
@@ -176,10 +180,12 @@ impl Conexion for JetStreamConsumer {
                     }
                 }
 
-                self.responder_mensaje_pendiente();
+                if let Some(reply_to) = &mensaje.replay_to {
+                    self.responder_mensaje_pendiente(reply_to);
+                }
             }
             "ack" => {
-                if let Some(mensaje) = &self.mensaje_pendiente {
+                if self.mensaje_pendiente.is_some() {
                     if self.topico_ack_mensaje_pendiente.eq(&mensaje.topico) {
                         self.mensaje_pendiente = None;
                         self.topico_ack_mensaje_pendiente = "".to_string();

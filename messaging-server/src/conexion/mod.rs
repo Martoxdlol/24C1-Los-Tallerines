@@ -397,8 +397,6 @@ mod tests {
         let mut contexto = TickContexto::new(0, 1);
         con.tick(&mut contexto);
 
-        println!("{:?}", contexto);
-
         assert_eq!(contexto.publicaciones().len(), 1);
         assert_eq!(contexto.publicaciones()[0].topico, "x");
         assert_eq!(contexto.publicaciones()[0].payload, b"hola");
