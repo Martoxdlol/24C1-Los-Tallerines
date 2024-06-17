@@ -274,6 +274,14 @@ impl Sistema {
                 continue;
             }
 
+            // Si por alguna razon hay mas de 2 drones, saco uno.
+            let drones_del_incidente = self.estado.drones_incidente(&incidente.id);
+            if drones_del_incidente.len() > 2 {
+                if let Some(ultimo_dron) = drones_del_incidente.last() {
+                    self.desasignar_incidente_al_dron(cliente, incidente.id, ultimo_dron)?;
+                }
+            }
+
             let drones_incidente = self.estado.drones_incidente(&incidente.id);
 
             if drones_incidente.len() >= 2 {
@@ -472,7 +480,6 @@ impl Sistema {
                     break;
                 }
 
-                //TODO: Verificar si el incidente está en el rango del dron
                 if !dron.incidente_en_rango(incidente) {
                     continue;
                 }
@@ -500,6 +507,26 @@ impl Sistema {
             cliente.publicar(
                 &format!("drones.{}.comandos", drone.id),
                 format!("atender_incidente {}", incidente.serializar_string()).as_bytes(),
+                None,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Desasigna un incidente a un dron
+    ///
+    /// envia un mensaje de NATS al dron para que desatienda el incidente
+    fn desasignar_incidente_al_dron(
+        &self,
+        cliente: &Cliente,
+        id_incidente: u64,
+        drone: &Dron,
+    ) -> io::Result<()> {
+        if let Some(incidente) = self.estado.incidente(id_incidente) {
+            cliente.publicar(
+                &format!("drones.{}.comandos", drone.id),
+                format!("desasignar_incidente {}", incidente.serializar_string()).as_bytes(),
                 None,
             )?;
         }
