@@ -71,3 +71,29 @@ impl Serializable for Incidente {
         })
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    use crate::serializables::Serializable;
+
+    use super::Incidente;
+
+    #[test]
+    fn serializar() {
+        let incidente = Incidente::new(1, "Incidente".to_string(), 1.0, 1.0, 1);
+        let serializado = incidente.serializar();
+        let deserializado = Incidente::deserializar(&serializado).unwrap();
+
+        assert_eq!(incidente, deserializado);
+    }
+
+    #[test]
+    fn posicion() {
+        let incidente = Incidente::new(1, "Incidente".to_string(), 1.0, 1.0, 1);
+        let posicion = incidente.posicion();
+
+        assert_eq!(posicion.lat, 1.0);
+        assert_eq!(posicion.lon, 1.0);
+    }
+}

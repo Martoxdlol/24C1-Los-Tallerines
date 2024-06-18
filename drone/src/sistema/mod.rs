@@ -116,3 +116,68 @@ impl Sistema {
         );
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    use lib::{configuracion::Configuracion, coordenadas::Coordenadas, dron::Dron};
+
+    use crate::comunicacion::Comunicacion;
+
+    use super::Sistema;
+
+    #[test]
+    fn esta_en_destino() {
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
+            direccion_actual: 0.0,
+            bateria_actual: 100.0,
+            velocidad_actual: 0.0,
+            incidente_actual: None,
+            envio_ultimo_estado: 0,
+        };
+        let mut configuracion = Configuracion::new();
+        configuracion.setear("user", "user");
+        configuracion.setear("pass", "pass");
+
+        let comunicacion = Comunicacion::new(&configuracion);
+        let mut sistema = Sistema::new(dron, comunicacion);
+
+        sistema.ciclo();
+        assert_eq!(sistema.dron.velocidad_actual, 0.0); // Si la velocidad es 0, esta en destino
+    }
+
+    #[test]
+    fn esta_cargando() {
+        let dron = Dron {
+            id: 1,
+            rango: 1500.0,
+            central_de_carga: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
+            punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
+            velocidad_maxima: 10.0,
+            velocidad_descarga_bateria: 1.0 / 3600.0,
+            posicion: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
+            direccion_actual: 0.0,
+            bateria_actual: 5.0,
+            velocidad_actual: 0.0,
+            incidente_actual: None,
+            envio_ultimo_estado: 0,
+        };
+
+        let mut configuracion = Configuracion::new();
+        configuracion.setear("user", "user");
+        configuracion.setear("pass", "pass");
+
+        let comunicacion = Comunicacion::new(&configuracion);
+        let mut sistema = Sistema::new(dron, comunicacion);
+
+        sistema.ciclo();
+        assert_eq!(sistema.dron.bateria_actual, 100.0); // Si la bateria es 100, la bateria cargo porque esta en su centro de carga
+    }
+}

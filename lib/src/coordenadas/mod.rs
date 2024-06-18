@@ -1,6 +1,6 @@
 use crate::serializables::Serializable;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 /// Representa un par de coordenadas geográficas.
 pub struct Coordenadas {
     pub lat: f64,
