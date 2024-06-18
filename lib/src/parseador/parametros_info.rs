@@ -5,6 +5,7 @@ use serde_json::Result;
 /// Parámetros para la información del servidor NATS
 pub struct ParametrosInfo {
     pub auth_required: Option<bool>,
+    pub max_payload: Option<u64>,
 }
 
 impl ParametrosInfo {

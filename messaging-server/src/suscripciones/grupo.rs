@@ -4,6 +4,7 @@ use rand::{thread_rng, Rng};
 
 use super::{id::IdSuscripcion, suscripcion::Suscripcion, topico::Topico};
 
+#[derive(Debug)]
 pub struct Grupo {
     id: IdSuscripcion,
     topico: Topico,

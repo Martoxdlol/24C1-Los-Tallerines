@@ -41,7 +41,6 @@ impl Respuesta {
 
                 let mut bytes = Vec::new();
                 bytes.extend_from_slice(format!("INFO {}\r\n", json).as_bytes());
-                bytes.extend_from_slice(b"\r\n");
                 bytes
             }
         }

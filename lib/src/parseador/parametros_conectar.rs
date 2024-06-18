@@ -6,6 +6,7 @@ use serde_json::Result;
 pub struct ParametrosConectar {
     pub user: Option<String>,
     pub pass: Option<String>,
+    pub verbose: Option<bool>,
 }
 
 impl ParametrosConectar {
@@ -14,6 +15,7 @@ impl ParametrosConectar {
         Self {
             user: Some(user.to_string()),
             pass: Some(pass.to_string()),
+            verbose: None,
         }
     }
 

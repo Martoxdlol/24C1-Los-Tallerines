@@ -8,6 +8,8 @@ pub mod grupo;
 pub mod id;
 pub mod suscripcion;
 pub mod topico;
+
+#[derive(Debug)]
 pub struct Suscripciones {
     suscripciones: HashSet<Suscripcion>,
     grupos: HashMap<IdSuscripcion, Grupo>,
