@@ -155,7 +155,7 @@ impl Comunicacion {
             .intentar_leer()?
         {
             if let Ok(incidente_finalizado) = Incidente::deserializar(&publicacion.payload) {
-                if let Some(incidente_dron) = dron.incidente_actual.take() {
+                if let Some(incidente_dron) = &dron.incidente_actual {
                     if incidente_finalizado.id.eq(&incidente_dron.id) {
                         dron.incidente_actual = None;
                     }
