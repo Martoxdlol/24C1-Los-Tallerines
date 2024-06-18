@@ -215,10 +215,6 @@ impl Conexion for JetStreamStream {
             "actualizar" => {}
             "purgar" => {}
             "crear_consumer" => {
-                println!(
-                    "Creando consumer {}",
-                    String::from_utf8_lossy(&mensaje.payload)
-                );
                 if let Ok(datos) =
                     JSPeticionCrearConsumer::from_json(&String::from_utf8_lossy(&mensaje.payload))
                 {
@@ -291,18 +287,31 @@ impl Conexion for JetStreamStream {
         }
 
         if mensaje.sid.starts_with("mensaje|") {
-            for tx_consumer in self.consumers_transmisores.values() {
-                if let Some(consumer) = self.consumers.get(&mensaje.sid[8..]) {
-                    if consumer_aceptar_topico(&consumer.config, &mensaje.topico) {
+            for (nombre_consumer, tx_consumer) in self.consumers_transmisores.iter() {
+                if let Some(consumer) = self.consumers.get(nombre_consumer) {
+                    if !consumer_aceptar_topico(&consumer.config, &mensaje.topico) {
                         continue;
                     }
 
-                    let _ = tx_consumer.send(Publicacion::new(
-                        mensaje.topico.clone(),
-                        mensaje.payload.clone(),
-                        mensaje.header.clone(),
-                        mensaje.replay_to.clone(),
-                    ));
+                    if tx_consumer
+                        .send(Publicacion::new(
+                            mensaje.topico.clone(),
+                            mensaje.payload.clone(),
+                            mensaje.header.clone(),
+                            mensaje.replay_to.clone(),
+                        ))
+                        .is_err()
+                    {
+                        self.registrador.error(
+                            &format!("Error al enviar mensaje a consumer {}", nombre_consumer),
+                            Some(self.obtener_id()),
+                        );
+                    }
+                } else {
+                    self.registrador.error(
+                        &format!("Consumer {} no encontrado", nombre_consumer),
+                        Some(self.obtener_id()),
+                    );
                 }
             }
         }
@@ -319,6 +328,9 @@ pub fn consumer_aceptar_topico(config: &ConsumerConfig, topico: &str) -> bool {
             return topico_consumer.test(topico);
         }
     } else if let Some(filter_subjects) = &config.filter_subjects {
+        if filter_subjects.len() == 0 {
+            return true;
+        }
         for filter_subject in filter_subjects {
             if let Ok(topico_consumer) = Topico::new(filter_subject.clone()) {
                 if topico_consumer.test(topico) {
