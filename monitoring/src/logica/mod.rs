@@ -347,6 +347,13 @@ impl Sistema {
                 Comando::ModificarIncidente(incidente) => {
                     self.estado.cargar_incidente(incidente.clone());
                     self.guardar_incidentes()?;
+                    self.publicar_nuevo_incidente(cliente, &incidente)?;
+                    self.requerir_actualizar_estado_ui();
+                    self.asignar_incidentes_sin_asignar(cliente)?;
+                }
+                Comando::ModificarUbicacionIncidente(incidente) => {
+                    self.estado.cargar_incidente(incidente.clone());
+                    self.guardar_incidentes()?;
                     for dron in self.estado.drones_incidente(&incidente.id) {
                         self.desasignar_incidente_al_dron(cliente, incidente.id, dron)?;
                     }

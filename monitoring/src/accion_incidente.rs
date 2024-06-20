@@ -174,7 +174,10 @@ impl AccionIncidente {
                     aplicacion.accion = AccionAplicacion::Incidente(AccionIncidente::Crear);
 
                     // Piso el incidente anterior con el nuevo (tienen la ubicación diferente)
-                    Comando::modificar_incidente(&aplicacion.enviar_comando, incidente_nuevo);
+                    Comando::modificar_ubicacion_incidente(
+                        &aplicacion.enviar_comando,
+                        incidente_nuevo,
+                    );
                 }
             });
     }
