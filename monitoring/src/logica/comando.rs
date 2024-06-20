@@ -8,6 +8,7 @@ pub enum Comando {
     Desconectar,
     NuevoIncidente(Incidente),
     ModificarIncidente(Incidente),
+    ModificarUbicacionIncidente(Incidente),
     IncidenteFinalizado(u64),
     ConectarCamara(f64, f64, f64),
     DesconectarCamara(u64),
@@ -29,6 +30,11 @@ impl Comando {
     /// Envía un incidente modificado al hilo de la lógica
     pub fn modificar_incidente(canal: &Sender<Comando>, incidente: Incidente) {
         Self::enviar(canal, Comando::ModificarIncidente(incidente));
+    }
+
+    /// Envía un incidente con ubicación modificada al hilo de la lógica
+    pub fn modificar_ubicacion_incidente(canal: &Sender<Comando>, incidente: Incidente) {
+        Self::enviar(canal, Comando::ModificarUbicacionIncidente(incidente));
     }
 
     /// Envía un incidente finalizado al hilo de la lógica

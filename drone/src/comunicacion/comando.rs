@@ -42,10 +42,12 @@ impl Serializable for Comando {
             }
         }
 
-        if primera_palabra.eq("desatender_incidente") {
+        if primera_palabra.eq("desasignar_incidente") {
             if let Ok(incidente) = Incidente::deserializar(resto_del_texto.as_bytes()) {
                 return Ok(Comando::DesatenderIncidente(incidente));
             }
+        } else {
+            println!("PRIMERA PALABRA: {}", primera_palabra);
         }
 
         Err(lib::serializables::error::DeserializationError::InvalidData)

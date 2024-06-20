@@ -126,7 +126,7 @@ impl Comunicacion {
                         dron.incidente_actual = Some(incidente);
                     }
                     Comando::DesatenderIncidente(incidente) => {
-                        if let Some(incidente_dron) = dron.incidente_actual.take() {
+                        if let Some(incidente_dron) = &dron.incidente_actual {
                             if incidente_dron.id.eq(&incidente.id) {
                                 dron.incidente_actual = None;
                             }
