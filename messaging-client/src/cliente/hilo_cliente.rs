@@ -64,6 +64,8 @@ impl HiloCliente {
             conectado = self.gestionar_nueva_instruccion(instruccion)?;
         }
 
+        std::thread::sleep(std::time::Duration::from_millis(5));
+
         Ok(conectado)
     }
 
