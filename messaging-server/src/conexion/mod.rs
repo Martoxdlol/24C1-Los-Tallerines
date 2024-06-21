@@ -169,7 +169,7 @@ impl ConexionDeCliente {
 
                         if let Some(cuentas) = &self.cuentas {
                             for cuenta in cuentas.iter() {
-                                if cuenta.matches(&parametros.user_str(), &parametros.pass_str()) {
+                                if cuenta.coincide(&parametros.user_str(), &parametros.pass_str()) {
                                     self.registrador.info(
                                         &format!("Usuario autenticado: {}", cuenta.user),
                                         Some(self.id),
