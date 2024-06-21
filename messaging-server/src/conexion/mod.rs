@@ -306,6 +306,7 @@ mod tests {
     use std::sync::Arc;
 
     use lib::{serializables::deserializar_vec, stream::mock_handler::MockHandler};
+    use sha256::digest;
 
     use crate::{conexion::r#trait::Conexion, registrador::Registrador};
 
@@ -347,7 +348,9 @@ mod tests {
         let (mut mock, stream) = MockHandler::new();
         let registrador = Registrador::new(Some(false));
 
-        let cuentas = deserializar_vec("1,admin,1234".as_bytes()).unwrap();
+        let pass = digest("1234");
+
+        let cuentas = deserializar_vec(format!("1,admin,{}", pass).as_bytes()).unwrap();
 
         let mut con =
             ConexionDeCliente::new(1, Box::new(stream), registrador, Some(Arc::new(cuentas)));
