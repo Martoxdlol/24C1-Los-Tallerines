@@ -1,3 +1,5 @@
+use std::{num::NonZero, thread::available_parallelism};
+
 use lib::configuracion::Configuracion;
 use messaging_server::servidor::Servidor;
 
@@ -14,12 +16,15 @@ fn main() {
             println!("Cuentas cargadas correctamente");
         }
 
+        let cpus = available_parallelism()
+            .unwrap_or(NonZero::new(4).expect("No se pudo obtener el número de hilos"));
+
         println!(
             "Iniciando servidor con {} hilos",
             servidor
                 .configuracion
                 .obtener::<usize>("hilos")
-                .unwrap_or(4)
+                .unwrap_or(cpus.into())
         );
 
         servidor.inicio();

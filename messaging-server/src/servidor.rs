@@ -46,8 +46,10 @@ impl Servidor {
         // Puntas receptoras de los canales para recibir mensajes de los hilos
         let mut canales_recibir = Vec::new();
 
+        let no_registrar_info = configuracion.obtener::<bool>("noinfo").unwrap_or(false);
+
         // `logger`
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(no_registrar_info));
 
         let cantidad = configuracion.obtener::<usize>("hilos").unwrap_or(4);
 

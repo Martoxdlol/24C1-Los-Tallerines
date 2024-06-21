@@ -84,8 +84,8 @@ impl ConexionDeCliente {
 
     /// Lee los bytes del stream y los envía al parser
     fn leer_bytes(&mut self) {
-        let mut buffer = [0; 1024]; // 1kb
-                                    // 1. Leer una vez
+        let mut buffer = [0; 32768]; // 32kib
+                                     // 1. Leer una vez
         match self.stream.read(&mut buffer) {
             Ok(n) => {
                 if n == 0 {
@@ -315,7 +315,7 @@ mod tests {
     fn probar_info() {
         // El MockStream simula ser el stream del cliente, el control permite leer y escribir al stream
         let (mut control, stream) = MockHandler::new();
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(false));
 
         // Conexion representa el cliente del lado del servidor
         ConexionDeCliente::new(1, Box::new(stream), registrador, None);
@@ -330,7 +330,7 @@ mod tests {
     #[test]
     fn probar_autenticacion_sin_cuenta() {
         let (mut mock, stream) = MockHandler::new();
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(false));
 
         let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
 
@@ -345,7 +345,7 @@ mod tests {
     #[test]
     fn probar_autenticacion_con_cuenta() {
         let (mut mock, stream) = MockHandler::new();
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(false));
 
         let cuentas = deserializar_vec("1,admin,1234".as_bytes()).unwrap();
 
@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn probar_suscripcion() {
         let (mut mock, stream) = MockHandler::new();
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(false));
 
         let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
@@ -384,7 +384,7 @@ mod tests {
     #[test]
     fn probar_publicar() {
         let (mut mock, stream) = MockHandler::new();
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(false));
 
         let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");
@@ -405,7 +405,7 @@ mod tests {
     #[test]
     fn probar_desuscripcion() {
         let (mut mock, stream) = MockHandler::new();
-        let registrador = Registrador::new();
+        let registrador = Registrador::new(Some(false));
 
         let mut con = ConexionDeCliente::new(1, Box::new(stream), registrador, None);
         mock.escribir_bytes(b"CONNECT {\"user\": \"admin\", \"pass\": \"admin\"}\r\n");

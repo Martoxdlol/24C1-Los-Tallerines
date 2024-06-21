@@ -64,7 +64,7 @@ impl Hilo {
     pub fn inicio(&mut self) {
         loop {
             self.tick();
-            // wait 100 microseconds
+            // wait 500 microseconds
             thread::sleep(std::time::Duration::from_micros(500));
         }
     }
