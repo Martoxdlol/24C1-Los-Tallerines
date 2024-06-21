@@ -328,7 +328,7 @@ pub fn consumer_aceptar_topico(config: &ConsumerConfig, topico: &str) -> bool {
             return topico_consumer.test(topico);
         }
     } else if let Some(filter_subjects) = &config.filter_subjects {
-        if filter_subjects.len() == 0 {
+        if filter_subjects.is_empty() {
             return true;
         }
         for filter_subject in filter_subjects {

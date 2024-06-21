@@ -64,6 +64,8 @@ impl HiloCliente {
             conectado = self.gestionar_nueva_instruccion(instruccion)?;
         }
 
+        std::thread::sleep(std::time::Duration::from_millis(5));
+
         Ok(conectado)
     }
 
@@ -74,7 +76,7 @@ impl HiloCliente {
                 let publicacion = Publicacion {
                     header: None,
                     payload: contenido,
-                    replay_to: responder_a,
+                    reply_to: responder_a,
                     subject: topico,
                 };
 
@@ -152,7 +154,7 @@ impl HiloCliente {
                     .write_all(format!("UNSUB {}\r\n", id_suscripcion).as_bytes())?;
             }
             Instruccion::Publicar(publicacion) => {
-                if let Some(reply_to) = publicacion.replay_to {
+                if let Some(reply_to) = publicacion.reply_to {
                     if let Some(header) = &publicacion.header {
                         self.stream.write_all(
                             format!(
@@ -292,7 +294,7 @@ mod tests {
 
         tx.send(Instruccion::Publicar(Publicacion {
             header: None,
-            replay_to: None,
+            reply_to: None,
             payload: b"Hola".to_vec(),
             subject: "Saludar".to_string(),
         }))

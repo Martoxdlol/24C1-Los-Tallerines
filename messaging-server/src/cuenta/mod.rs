@@ -2,6 +2,7 @@ use lib::serializables::{
     deserializador::Deserializador, error::DeserializationError, guardar::cargar_serializable,
     serializador::Serializador, Serializable,
 };
+use sha256::digest;
 
 #[derive(Debug, Clone)]
 pub struct Cuenta {
@@ -11,8 +12,10 @@ pub struct Cuenta {
 }
 
 impl Cuenta {
-    pub fn matches(&self, user: &str, pass: &str) -> bool {
-        self.user == user && self.pass == pass
+    pub fn coincide(&self, user: &str, pass: &str) -> bool {
+        let input = String::from(pass);
+        let pass_sha256_hash = digest(input);
+        self.user == user && self.pass == pass_sha256_hash
     }
 
     pub fn cargar(ruta_archivo: &str) -> Result<Vec<Cuenta>, std::io::Error> {

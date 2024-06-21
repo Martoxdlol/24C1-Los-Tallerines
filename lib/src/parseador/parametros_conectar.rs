@@ -66,7 +66,10 @@ mod tests {
     fn generar_json() {
         let parametros = ParametrosConectar::user_pass("usuario", "contraseña");
         let json = parametros.to_json();
-        assert_eq!(json, "{\"user\":\"usuario\",\"pass\":\"contraseña\"}");
+        assert_eq!(
+            json,
+            "{\"user\":\"usuario\",\"pass\":\"contraseña\",\"verbose\":null}"
+        );
     }
 
     #[test]

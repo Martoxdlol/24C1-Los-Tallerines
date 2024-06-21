@@ -1,5 +1,6 @@
 mod hilo_cliente;
 mod instruccion;
+pub mod jetstream;
 pub mod publicacion;
 pub mod suscripcion;
 
@@ -61,7 +62,7 @@ impl Cliente {
         let publicacion = Publicacion {
             header: None,
             payload: body.to_vec(),
-            replay_to: reply_to.map(|s| s.to_owned()),
+            reply_to: reply_to.map(|s| s.to_owned()),
             subject: subject.to_owned(),
         };
 
@@ -85,7 +86,7 @@ impl Cliente {
         let publicacion = Publicacion {
             header: Some(header.to_vec()),
             payload: body.to_vec(),
-            replay_to: reply_to.map(|s| s.to_owned()),
+            reply_to: reply_to.map(|s| s.to_owned()),
             subject: subject.to_owned(),
         };
 

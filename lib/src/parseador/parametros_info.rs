@@ -29,6 +29,7 @@ mod tests {
     fn crear_parametros() {
         let parametros = ParametrosInfo {
             auth_required: Some(true),
+            max_payload: None,
         };
         assert_eq!(parametros.auth_required, Some(true));
     }
@@ -37,9 +38,10 @@ mod tests {
     fn crear_json() {
         let parametros = ParametrosInfo {
             auth_required: Some(true),
+            max_payload: None,
         };
         let json = parametros.to_json().unwrap();
-        assert_eq!(json, "{\"auth_required\":true}");
+        assert_eq!(json, "{\"auth_required\":true,\"max_payload\":null}");
     }
 
     #[test]
