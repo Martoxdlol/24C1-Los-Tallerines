@@ -24,6 +24,10 @@ cargo run --bin messaging-server -- config=config.txt
 cargo run --bin messaging-server -- puerto=4222 config=config.txt
 # No mostrar logs de todo en la consola
 cargo run --bin messaging-server -- noinfo=true
+# Iniciar server con soporte TLS (puerto por defecto: 8222)
+cargo run --bin messaging-server -- cert=fullchain.pem key=privkey.pem
+# Iniciar server con soporte TLS, puerto custom
+cargo run --bin messaging-server -- cert=fullchain.pem key=privkey.pem puerto_tls=4223
 ```
 
 **Configuración: config.txt**
