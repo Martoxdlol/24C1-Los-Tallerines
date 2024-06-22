@@ -10,7 +10,7 @@ use std::{
 };
 
 use lib::{configuracion::Configuracion, stream::Stream};
-use native_tls::{Identity, TlsAcceptor};
+use native_tls::{HandshakeError, Identity, TlsAcceptor};
 
 use crate::{
     conexion::{id::IdConexion, r#trait::Conexion},
@@ -201,14 +201,33 @@ impl Servidor {
                 for conn in listener.incoming() {
                     match conn {
                         Ok(stream) => {
-                            if let Ok(stream_clone) = stream.try_clone() {
+                            if let Ok(()) = stream.set_nonblocking(true) {
+                                let mut handshake_stream = None;
+
                                 match acceptor.accept(stream) {
                                     Ok(stream) => {
-                                        if let Ok(()) = stream_clone.set_nonblocking(true) {
-                                            tx.send(Box::new(stream)).unwrap();
-                                        }
+                                        tx.send(Box::new(stream)).unwrap();
+                                        break;
+                                    }
+                                    Err(HandshakeError::WouldBlock(s)) => {
+                                        handshake_stream = Some(s);
                                     }
                                     Err(e) => eprintln!("Error: {}", e),
+                                }
+
+                                while let Some(s) = handshake_stream.take() {
+                                    match s.handshake() {
+                                        Ok(stream) => {
+                                            println!("TLS handshake completado");
+                                            tx.send(Box::new(stream)).unwrap();
+                                            break;
+                                        }
+                                        Err(HandshakeError::WouldBlock(s)) => {
+                                            handshake_stream = Some(s);
+                                            continue;
+                                        }
+                                        Err(e) => eprintln!("Error: {}", e),
+                                    }
                                 }
                             }
                         }
