@@ -85,7 +85,6 @@ impl ConexionDeCliente {
     /// Lee los bytes del stream y los envía al parser
     fn leer_bytes(&mut self) {
         let mut buffer = [0; 32768]; // 32kib
-                                     // 1. Leer una vez
         match self.stream.read(&mut buffer) {
             Ok(n) => {
                 if n == 0 {

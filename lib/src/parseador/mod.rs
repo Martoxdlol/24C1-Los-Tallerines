@@ -53,17 +53,8 @@ impl Parseador {
     /// Devuelve la próxima línea que se encuentra en los bytes que se le pasaron
     /// O `None` si no se encontró ninguna línea (porque no se recibieron suficientes bytes)
     pub fn proxima_linea(&mut self) -> Option<String> {
-        let mut last_char_cr = false;
-
-        // Pasar por todos los bytes que tenemos que todavía no procesamos
-        // Estamos buscando un salto de linea, este se marca como \r\n
         for i in self.continuar_en_indice..self.bytes_pendientes.len() {
-            // Si encontramos un \r, marcamos que el último caracter fue un \r
-            if self.bytes_pendientes[i] == b'\r' {
-                // La b es para que lo tome como binario
-                last_char_cr = true;
-            // Si encontramos un \n y el último caracter fue un \r, encontramos un mensaje (o al menos la primera linea)
-            } else if last_char_cr && self.bytes_pendientes[i] == b'\n' {
+            if self.bytes_pendientes[i] == b'\n' {
                 self.continuar_en_indice = i + 1;
 
                 let result =
@@ -73,10 +64,10 @@ impl Parseador {
 
                 self.resetear_bytes();
                 return Some(result);
-            } else {
-                last_char_cr = false;
             }
         }
+
+        self.continuar_en_indice = self.bytes_pendientes.len();
 
         None
     }
