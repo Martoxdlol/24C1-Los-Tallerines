@@ -12,6 +12,9 @@ use std::{
     time::Duration,
 };
 
+use lib::stream::Stream;
+use native_tls::TlsConnector;
+
 use self::{
     hilo_cliente::HiloCliente, instruccion::Instruccion, publicacion::Publicacion,
     suscripcion::Suscripcion,
@@ -42,19 +45,65 @@ impl Cliente {
         Self::conectar_user_pass_tls(direccion, user, pass, false)
     }
 
-    fn conectar_user_pass_tls(
+    pub fn conectar_user_pass_tls(
         direccion: &str,
         user: Option<String>,
         pass: Option<String>,
         tls: bool,
     ) -> io::Result<Cliente> {
         let stream = TcpStream::connect(direccion)?;
-        stream.set_nonblocking(true)?;
 
         let (tx, rx) = std::sync::mpsc::channel();
 
-        let hilo_cliente = thread::spawn(move || {
-            let mut hilo_cliente = HiloCliente::new(Box::new(stream), rx);
+        if tls {
+            let connector = TlsConnector::new().map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("Error al crear el conector TLS: {}", e),
+                )
+            })?;
+
+            let stream_clone = stream.try_clone()?;
+
+            let host = direccion.split(':').next().unwrap_or("localhost");
+
+            let stream = connector.connect(host, stream).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("Error al conectar con TLS: {}", e),
+                )
+            })?;
+
+            stream_clone.set_nonblocking(true)?;
+
+            let hilo_cliente = Self::iniciar_hilo_cliente(Box::new(stream), rx, user, pass);
+
+            return Ok(Cliente {
+                _hilo_cliente: hilo_cliente,
+                canal_instrucciones: tx,
+                id: 0,
+            });
+        }
+
+        stream.set_nonblocking(true)?;
+
+        let hilo_cliente = Self::iniciar_hilo_cliente(Box::new(stream), rx, user, pass);
+
+        Ok(Cliente {
+            _hilo_cliente: hilo_cliente,
+            canal_instrucciones: tx,
+            id: 0,
+        })
+    }
+
+    fn iniciar_hilo_cliente(
+        stream: Box<dyn Stream + Send>,
+        rx: std::sync::mpsc::Receiver<Instruccion>,
+        user: Option<String>,
+        pass: Option<String>,
+    ) -> JoinHandle<()> {
+        thread::spawn(move || {
+            let mut hilo_cliente = HiloCliente::new(stream, rx);
             hilo_cliente.user = user;
             hilo_cliente.pass = pass;
             if let Err(e) = hilo_cliente.ejecutar() {
@@ -62,12 +111,6 @@ impl Cliente {
             } else {
                 println!("Hilo cliente finalizado")
             }
-        });
-
-        Ok(Cliente {
-            _hilo_cliente: hilo_cliente,
-            canal_instrucciones: tx,
-            id: 0,
         })
     }
 
