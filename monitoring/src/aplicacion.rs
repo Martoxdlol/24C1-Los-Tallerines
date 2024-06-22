@@ -216,6 +216,8 @@ impl Aplicacion {
                     .obtener::<String>("incidentes")
                     .unwrap_or("incidentes.csv".to_string());
 
+                let mut usar_tls = self.configuracion.obtener::<bool>("tls").unwrap_or(false);
+
                 ui.label("Usuario");
                 ui.add_sized([350., 20.], |ui: &mut Ui| {
                     ui.text_edit_singleline(&mut user)
@@ -241,11 +243,14 @@ impl Aplicacion {
                     ui.text_edit_singleline(&mut archivo)
                 });
 
+                ui.checkbox(&mut usar_tls, "Usar TLS");
+
                 self.configuracion.setear("user", user);
                 self.configuracion.setear("pass", pass);
                 self.configuracion.setear("direccion", direccion);
                 self.configuracion.setear("puerto", puerto);
                 self.configuracion.setear("incidentes", archivo);
+                self.configuracion.setear("tls", usar_tls);
 
                 if let Some(error) = self.estado.mensaje_error.as_ref() {
                     if !error.is_empty() {

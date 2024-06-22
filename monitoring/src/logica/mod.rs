@@ -88,6 +88,7 @@ impl Sistema {
                     }
                 }
 
+                std::thread::sleep(std::time::Duration::from_millis(100));
                 continue;
             }
 
@@ -96,6 +97,8 @@ impl Sistema {
                 self.estado.mensaje_error = Some(format!("{}", e));
                 std::thread::sleep(std::time::Duration::from_secs(1));
             }
+
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
 
@@ -169,9 +172,15 @@ impl Sistema {
 
         let user = self.configuracion.obtener::<String>("user");
         let pass = self.configuracion.obtener::<String>("pass");
+        let usar_tls = self.configuracion.obtener::<bool>("tls").unwrap_or(false);
 
         if user.is_some() || pass.is_some() {
-            Cliente::conectar_user_pass(&format!("{}:{}", direccion, puerto), user, pass)
+            Cliente::conectar_user_pass_tls(
+                &format!("{}:{}", direccion, puerto),
+                user,
+                pass,
+                usar_tls,
+            )
         } else {
             Cliente::conectar(&format!("{}:{}", direccion, puerto))
         }
