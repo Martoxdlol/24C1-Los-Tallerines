@@ -30,10 +30,23 @@ impl Cliente {
         Self::conectar_user_pass(direccion, None, None)
     }
 
+    pub fn conectar_tls(direccion: &str) -> io::Result<Cliente> {
+        Self::conectar_user_pass_tls(direccion, None, None, true)
+    }
+
     pub fn conectar_user_pass(
         direccion: &str,
         user: Option<String>,
         pass: Option<String>,
+    ) -> io::Result<Cliente> {
+        Self::conectar_user_pass_tls(direccion, user, pass, false)
+    }
+
+    fn conectar_user_pass_tls(
+        direccion: &str,
+        user: Option<String>,
+        pass: Option<String>,
+        tls: bool,
     ) -> io::Result<Cliente> {
         let stream = TcpStream::connect(direccion)?;
         stream.set_nonblocking(true)?;
