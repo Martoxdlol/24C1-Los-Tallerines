@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io,
-    net::{TcpListener, TcpStream},
+    net::TcpListener,
     sync::{
         mpsc::{self, channel, Sender},
         Arc,
@@ -148,39 +148,82 @@ impl Servidor {
         Ok(None)
     }
 
-    pub fn stream_box(
-        &self,
-        stream: TcpStream,
-        acceptor: &Option<TlsAcceptor>,
-    ) -> io::Result<Box<dyn Stream>> {
-        stream.set_nonblocking(true)?;
+    pub fn direccion(&self) -> String {
+        self.configuracion
+            .obtener::<String>("direccion")
+            .unwrap_or("127.0.0.1".to_string())
+    }
 
-        match acceptor {
-            Some(acceptor) => {
-                let stream = acceptor
-                    .accept(stream)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-                Ok(Box::new(stream))
+    pub fn puerto(&self) -> u16 {
+        self.configuracion.obtener::<u16>("puerto").unwrap_or(4222)
+    }
+
+    pub fn puerto_tls(&self) -> u16 {
+        self.configuracion
+            .obtener::<u16>("puerto_tls")
+            .unwrap_or(8222)
+    }
+
+    pub fn escuchar_sin_tls(&self, tx: Sender<Box<dyn Stream + Send>>) -> io::Result<()> {
+        let listener = TcpListener::bind(format!("{}:{}", self.direccion(), self.puerto()))?;
+
+        println!("Escuchando en {}:{}", self.direccion(), self.puerto());
+
+        thread::spawn(move || {
+            for conn in listener.incoming() {
+                match conn {
+                    Ok(stream) => {
+                        tx.send(Box::new(stream)).unwrap();
+                    }
+                    Err(e) => {
+                        eprintln!("Error: {}", e);
+                    }
+                }
             }
-            None => Ok(Box::new(stream)),
+        });
+        Ok(())
+    }
+
+    pub fn escuchar_con_tls(&self, tx: Sender<Box<dyn Stream + Send>>) -> io::Result<()> {
+        let acceptor = self.tls_acceptor()?;
+
+        if let Some(acceptor) = acceptor {
+            let listener =
+                TcpListener::bind(format!("{}:{}", self.direccion(), self.puerto_tls()))?;
+
+            println!(
+                "Escuchando TLS en {}:{}",
+                self.direccion(),
+                self.puerto_tls()
+            );
+
+            thread::spawn(move || {
+                for conn in listener.incoming() {
+                    match conn {
+                        Ok(stream) => {
+                            if let Ok(stream_clone) = stream.try_clone() {
+                                match acceptor.accept(stream) {
+                                    Ok(stream) => {
+                                        if let Ok(()) = stream_clone.set_nonblocking(true) {
+                                            tx.send(Box::new(stream)).unwrap();
+                                        }
+                                    }
+                                    Err(e) => eprintln!("Error: {}", e),
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {}", e);
+                        }
+                    }
+                }
+            });
         }
+
+        Ok(())
     }
 
     pub fn inicio(&mut self) {
-        let direccion = self
-            .configuracion
-            .obtener::<String>("direccion")
-            .unwrap_or("127.0.0.1".to_string());
-
-        let puerto = self.configuracion.obtener::<u16>("puerto").unwrap_or(4222);
-
-        let listener = TcpListener::bind(format!("{}:{}", direccion, puerto))
-            .expect("No se pudo bindear el puerto");
-
-        listener
-            .set_nonblocking(true) // Hace que el listener no bloquee el hilo principal
-            .expect("No se pudo poner el listener en modo no bloqueante");
-
         let (tx_conexiones, rx_conexiones) = channel::<Box<dyn Conexion + Send>>();
 
         let id_conexion = self.nuevo_id_conexion();
@@ -190,57 +233,40 @@ impl Servidor {
             self.registrador.clone(),
         )));
 
-        let acceptor = self
-            .tls_acceptor()
-            .expect("No se pudo crear el acceptor TLS");
+        let (tx, rx) = mpsc::channel();
 
-        if acceptor.is_some() {
-            println!("TLS activado");
-        }
+        self.escuchar_sin_tls(tx.clone())
+            .expect("No se pudo iniciar el servidor");
+
+        self.escuchar_con_tls(tx)
+            .expect("No se pudo iniciar el servidor con tls");
 
         loop {
-            match listener.accept() {
-                // Si escucho algo, genero una nueva conexion
-                Ok((stream, _)) => {
-                    if let Ok(stream) = self.stream_box(stream, &acceptor) {
-                        // Creamos una copia del logger para la nueva conexion
-                        let mut registrador_para_nueva_conexion = self.registrador.clone();
-                        // Establecemos el hilo actual para la nueva conexion
-                        registrador_para_nueva_conexion
-                            .establecer_hilo(self.proximo_id_hilo as IdHilo);
+            while let Ok(stream) = rx.try_recv() {
+                // Creamos una copia del logger para la nueva conexion
+                let mut registrador_para_nueva_conexion = self.registrador.clone();
+                // Establecemos el hilo actual para la nueva conexion
+                registrador_para_nueva_conexion.establecer_hilo(self.proximo_id_hilo as IdHilo);
 
-                        // Generamos un nuevo id único para la nueva conexión
-                        let id_conexion = self.nuevo_id_conexion();
+                // Generamos un nuevo id único para la nueva conexión
+                let id_conexion = self.nuevo_id_conexion();
 
-                        let conexion = ConexionDeCliente::new(
-                            id_conexion,
-                            stream,
-                            registrador_para_nueva_conexion,
-                            self.cuentas.clone(),
-                        );
+                let conexion = ConexionDeCliente::new(
+                    id_conexion,
+                    stream,
+                    registrador_para_nueva_conexion,
+                    self.cuentas.clone(),
+                );
 
-                        let (tx, _) = &self.hilos[self.proximo_id_hilo];
-                        match tx.send((id_conexion, Box::new(conexion))) {
-                            // Envio la conexion al hilo
-                            Ok(_) => {
-                                self.proximo_id_hilo =
-                                    (self.proximo_id_hilo + 1) % self.hilos.len();
-                            }
-                            Err(e) => {
-                                panic!("Error: {}", e);
-                            }
-                        }
-
-                        std::thread::sleep(std::time::Duration::from_millis(5));
-                    } else {
-                        println!("Error al aceptar la conexión");
+                let (tx, _) = &self.hilos[self.proximo_id_hilo];
+                match tx.send((id_conexion, Box::new(conexion))) {
+                    // Envio la conexion al hilo
+                    Ok(_) => {
+                        self.proximo_id_hilo = (self.proximo_id_hilo + 1) % self.hilos.len();
                     }
-                }
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    // No hay conexiones nuevas
-                }
-                Err(e) => {
-                    panic!("Error: {}", e);
+                    Err(e) => {
+                        panic!("Error: {}", e);
+                    }
                 }
             }
 
