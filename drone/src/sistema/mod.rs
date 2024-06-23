@@ -48,6 +48,10 @@ impl Sistema {
         self.descarga_bateria();
         self.mover();
 
+        if let Accion::Cargar = self.dron.accion() {
+            self.dron.incidente_actual.take();
+        }
+
         // Si el dron llego, frena (velocidad = 0)
         if self.en_destino() {
             self.dron.velocidad_actual = 0.;
@@ -141,6 +145,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
         let mut configuracion = Configuracion::new();
         configuracion.setear("user", "user");
@@ -168,6 +173,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         let mut configuracion = Configuracion::new();

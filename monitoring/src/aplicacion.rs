@@ -218,6 +218,19 @@ impl Aplicacion {
 
                 let mut usar_tls = self.configuracion.obtener::<bool>("tls").unwrap_or(false);
 
+                let mut limite_tiempo_incidente_atendido = self
+                    .configuracion
+                    .obtener::<String>("limite_tiempo_incidente_atendido")
+                    .unwrap_or("300".to_string());
+                let mut limite_tiempo_incidente_total = self
+                    .configuracion
+                    .obtener::<String>("limite_tiempo_incidente_total")
+                    .unwrap_or("1200".to_string());
+                let mut drones_por_incidente = self
+                    .configuracion
+                    .obtener::<String>("drones_por_incidente")
+                    .unwrap_or("2".to_string());
+
                 ui.label("Usuario");
                 ui.add_sized([350., 20.], |ui: &mut Ui| {
                     ui.text_edit_singleline(&mut user)
@@ -245,12 +258,37 @@ impl Aplicacion {
 
                 ui.checkbox(&mut usar_tls, "Usar TLS");
 
+                ui.label("Limite de tiempo incidente atendido (segundos)");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut limite_tiempo_incidente_atendido)
+                });
+
+                ui.label("Limite de tiempo incidente total (segundos)");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut limite_tiempo_incidente_total)
+                });
+
+                ui.label("Drones necesarios por incidente para ser atendido");
+                ui.add_sized([350., 20.], |ui: &mut Ui| {
+                    ui.text_edit_singleline(&mut drones_por_incidente)
+                });
+
                 self.configuracion.setear("user", user);
                 self.configuracion.setear("pass", pass);
                 self.configuracion.setear("direccion", direccion);
                 self.configuracion.setear("puerto", puerto);
                 self.configuracion.setear("incidentes", archivo);
                 self.configuracion.setear("tls", usar_tls);
+                self.configuracion.setear(
+                    "limite_tiempo_incidente_atendido",
+                    limite_tiempo_incidente_atendido,
+                );
+                self.configuracion.setear(
+                    "limite_tiempo_incidente_total",
+                    limite_tiempo_incidente_total,
+                );
+                self.configuracion
+                    .setear("drones_por_incidente", drones_por_incidente);
 
                 if let Some(error) = self.estado.mensaje_error.as_ref() {
                     if !error.is_empty() {

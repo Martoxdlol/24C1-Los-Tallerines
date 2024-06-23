@@ -88,15 +88,32 @@ impl AccionIncidente {
 
                 let drones = aplicacion.estado.drones_incidente(&incidente.id);
 
-                ui.label(format!("Drones atendiendo: {}/2", drones.len()));
+                let drones_por_incidente = aplicacion
+                    .configuracion
+                    .obtener::<i32>("drones_por_incidente")
+                    .unwrap_or(2);
+
                 ui.label(format!(
-                    "Tiempo atendido: {}/300 segundos",
-                    incidente.tiempo_atendido / 1000
+                    "Drones atendiendo: {}/{}",
+                    drones.len(),
+                    drones_por_incidente
+                ));
+                ui.label(format!(
+                    "Tiempo atendido: {}/{} segundos",
+                    incidente.tiempo_atendido / 1000,
+                    aplicacion
+                        .configuracion
+                        .obtener::<i32>("limite_tiempo_incidente_atendido")
+                        .unwrap_or(600)
                 ));
 
                 ui.label(format!(
-                    "Tiempo maximo de espera: {}/1200 segundos (20 min)",
-                    (ahora - incidente.inicio) / 1000
+                    "Tiempo maximo de espera: {}/{} segundos",
+                    (ahora - incidente.inicio) / 1000,
+                    aplicacion
+                        .configuracion
+                        .obtener::<i32>("limite_tiempo_incidente_total")
+                        .unwrap_or(1200)
                 ));
 
                 // Botones para modificar el incidente.

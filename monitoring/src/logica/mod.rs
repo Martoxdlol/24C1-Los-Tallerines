@@ -255,6 +255,29 @@ impl Sistema {
         Ok(())
     }
 
+    /// El tiempo máximo que dura un incidente atendido
+    fn limite_de_tiempo_incidente_atendidio(&self) -> i64 {
+        self.configuracion
+            .obtener::<i64>("limite_tiempo_incidente_atendido")
+            .unwrap_or(300)
+            * 1000
+    }
+
+    /// El tiempo máximo que puede durar un incidente hasta que venza (sea atendido o no)
+    fn limite_de_tiempo_incidente_total(&self) -> u64 {
+        self.configuracion
+            .obtener::<u64>("limite_tiempo_incidente_total")
+            .unwrap_or(1200)
+            * 1000
+    }
+
+    /// La cantidad de drones que necesita un incidente para ser atendido
+    fn cantidad_de_drones_por_incidente(&self) -> usize {
+        self.configuracion
+            .obtener::<usize>("drones_por_incidente")
+            .unwrap_or(2)
+    }
+
     /// Ciclo que se ejecuta cada segundo
     ///
     /// Se encarga de finalizar los incidentes que cumplieron su tiempo de vida
@@ -274,7 +297,7 @@ impl Sistema {
         }
 
         for mut incidente in self.estado.incidentes() {
-            if incidente.inicio + 20 * 60 * 1000 < ahora as u64 {
+            if incidente.inicio + self.limite_de_tiempo_incidente_total() < ahora as u64 {
                 if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
                     self.guardar_incidentes()?;
                     self.publicar_incidente_finalizado(cliente, &incidente)?;
@@ -283,24 +306,35 @@ impl Sistema {
                 continue;
             }
 
-            // Si por alguna razon hay mas de 2 drones, saco uno.
+            // Si por alguna razon hay mas de 2 (o el valor configurado) drones, saco uno.
             let drones_del_incidente = self.estado.drones_incidente(&incidente.id);
-            if drones_del_incidente.len() > 2 {
+            if drones_del_incidente.len() > self.cantidad_de_drones_por_incidente() {
                 if let Some(ultimo_dron) = drones_del_incidente.last() {
                     self.desasignar_incidente_al_dron(cliente, incidente.id, ultimo_dron)?;
                 }
             }
 
+            // Drones asignados al incidente
             let drones_incidente = self.estado.drones_incidente(&incidente.id);
 
-            if drones_incidente.len() >= 2 {
+            // Drones que están efectivamente cerca del incidente
+            let mut drones_cerca = 0;
+            for dron in drones_incidente.iter() {
+                if dron.posicion.distancia(&incidente.posicion()) < 50. {
+                    drones_cerca += 1;
+                }
+            }
+
+            // Solo contamos el tiempo no solo si los drones etán asignados pero si están cerca
+            if drones_cerca >= self.cantidad_de_drones_por_incidente() {
                 incidente.tiempo_atendido += 1000;
                 self.estado.cargar_incidente(incidente.clone());
             }
         }
 
         for incidente in self.estado.incidentes() {
-            if incidente.tiempo_atendido > 300000 {
+            // Si el incidente ya fue atendido, lo finalizo
+            if incidente.tiempo_atendido > self.limite_de_tiempo_incidente_atendidio() {
                 if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
                     self.guardar_incidentes()?;
                     self.publicar_incidente_finalizado(cliente, &incidente)?;
@@ -471,7 +505,10 @@ impl Sistema {
 
         // Recorrer por cada incidente sin asignar al 100%
         // Incidente, cuantos drones faltan por ser asignados a ese incidente
-        for (incidente, drones_restantes) in self.estado.incidentes_sin_asignar() {
+        for (incidente, drones_restantes) in self
+            .estado
+            .incidentes_sin_asignar(self.cantidad_de_drones_por_incidente())
+        {
             // Si no hay drone F
             if drones.is_empty() {
                 break;

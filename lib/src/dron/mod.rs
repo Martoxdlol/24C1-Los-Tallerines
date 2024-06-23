@@ -23,6 +23,7 @@ pub struct Dron {
     pub velocidad_actual: f64,
     pub incidente_actual: Option<Incidente>,
     pub envio_ultimo_estado: i64,
+    pub bateria_minima: f64,
 }
 
 impl Dron {
@@ -41,6 +42,8 @@ impl Dron {
 
         let punto_de_espera = Coordenadas::from_lat_lon(punto_de_espera_lat, punto_de_espera_lon);
 
+        let bateria_minima = config.obtener("bateria_minima").unwrap_or(10.);
+
         Some(Dron {
             id: config.obtener("id")?,
             rango: config.obtener("rango").unwrap_or(1500.),
@@ -55,20 +58,19 @@ impl Dron {
             punto_de_espera,
             velocidad_maxima: config.obtener("velocidad_maxima").unwrap_or(10.),
             velocidad_actual: config.obtener("velocidad_actual").unwrap_or(0.),
-            velocidad_descarga_bateria: config
-                .obtener("velocidad_descarga_bateria")
-                .unwrap_or(1. / 3600.),
+            velocidad_descarga_bateria: config.obtener("velocidad_descarga_bateria").unwrap_or(0.2),
             envio_ultimo_estado: 0,
+            bateria_minima,
         })
     }
 
     /// Determina la acción del dron.
     ///
-    /// Si la batería del dron es menor a 10, tiene que cargar la batería.
+    /// Si la batería del dron es menor a la bateria mínima, tiene que cargar la batería.
     /// Si el dron tiene un incidente asignado, tiene que ir a atenderlo.
     /// Sino esta esperando.
     pub fn accion(&self) -> Accion {
-        if self.bateria_actual < 10. {
+        if self.bateria_actual < self.bateria_minima {
             return Accion::Cargar;
         }
 
@@ -132,6 +134,7 @@ impl Serializable for Dron {
         let velocidad_actual = deserializador.sacar_elemento()?;
         let incidente_actual = deserializador.sacar_elemento_serializable()?;
         let envio_ultimo_estado = deserializador.sacar_elemento()?;
+        let bateria_minima = deserializador.sacar_elemento()?;
 
         Ok(Dron {
             id,
@@ -146,6 +149,7 @@ impl Serializable for Dron {
             velocidad_actual,
             incidente_actual,
             envio_ultimo_estado,
+            bateria_minima,
         })
     }
 
@@ -165,6 +169,7 @@ impl Serializable for Dron {
         serializador.agregar_elemento(&self.velocidad_actual);
         serializador.agregar_elemento_serializable(&self.incidente_actual);
         serializador.agregar_elemento(&self.envio_ultimo_estado);
+        serializador.agregar_elemento(&self.bateria_minima);
 
         serializador.bytes
     }
@@ -200,6 +205,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: Some(incidente),
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         let serializado = dron.serializar();
@@ -223,6 +229,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         let serializado = dron.serializar();
@@ -246,6 +253,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         assert_eq!(dron.accion(), crate::dron::accion::Accion::Cargar);
@@ -275,6 +283,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: Some(incidente),
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         assert_eq!(dron.destino(), Coordenadas::from_lat_lon(1.0, 1.0));
@@ -295,6 +304,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         assert_eq!(dron.accion(), crate::dron::accion::Accion::Espera);
