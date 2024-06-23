@@ -68,7 +68,7 @@ impl Comunicacion {
     ///
     /// Se encarga de enviar el estado del dron, recibir comandos y recibir incidentes finalizados.
     fn ciclo_interno(&mut self, dron: &mut Dron) -> io::Result<()> {
-        let mut tiempo = 1500;
+        let mut tiempo = 1000;
 
         if dron.velocidad_actual > 0. {
             tiempo = 300

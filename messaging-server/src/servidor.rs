@@ -173,7 +173,10 @@ impl Servidor {
             for conn in listener.incoming() {
                 match conn {
                     Ok(stream) => {
-                        tx.send(Box::new(stream)).unwrap();
+                        if let Ok(()) = stream.set_nonblocking(true) {
+                            println!("Nueva conexión");
+                            tx.send(Box::new(stream)).unwrap();
+                        }
                     }
                     Err(e) => {
                         eprintln!("Error: {}", e);

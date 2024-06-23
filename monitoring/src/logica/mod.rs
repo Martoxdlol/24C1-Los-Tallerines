@@ -255,6 +255,20 @@ impl Sistema {
         Ok(())
     }
 
+    fn limite_de_tiempo_incidente_atendidio(&self) -> i64 {
+        self.configuracion
+            .obtener::<i64>("limite_tiempo_incidente_atendido")
+            .unwrap_or(300)
+            * 1000
+    }
+
+    fn limite_de_tiempo_incidente(&self) -> u64 {
+        self.configuracion
+            .obtener::<u64>("limite_tiempo_incidente")
+            .unwrap_or(1200)
+            * 1000
+    }
+
     /// Ciclo que se ejecuta cada segundo
     ///
     /// Se encarga de finalizar los incidentes que cumplieron su tiempo de vida
@@ -274,7 +288,7 @@ impl Sistema {
         }
 
         for mut incidente in self.estado.incidentes() {
-            if incidente.inicio + 20 * 60 * 1000 < ahora as u64 {
+            if incidente.inicio + self.limite_de_tiempo_incidente() < ahora as u64 {
                 if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
                     self.guardar_incidentes()?;
                     self.publicar_incidente_finalizado(cliente, &incidente)?;
@@ -300,7 +314,7 @@ impl Sistema {
         }
 
         for incidente in self.estado.incidentes() {
-            if incidente.tiempo_atendido > 300000 {
+            if incidente.tiempo_atendido > self.limite_de_tiempo_incidente_atendidio() {
                 if let Some(incidente) = self.estado.finalizar_incidente(&incidente.id) {
                     self.guardar_incidentes()?;
                     self.publicar_incidente_finalizado(cliente, &incidente)?;
