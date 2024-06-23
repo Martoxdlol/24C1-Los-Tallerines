@@ -1,5 +1,9 @@
 use egui::ahash::HashMap;
-use lib::{camara::Camara, dron::Dron, incidente::Incidente};
+use lib::{
+    camara::Camara,
+    dron::{accion::Accion, Dron},
+    incidente::Incidente,
+};
 
 #[derive(Clone, Debug)]
 
@@ -124,7 +128,12 @@ impl Estado {
     pub fn drones_disponibles(&self) -> Vec<&Dron> {
         self.drones
             .values()
-            .filter(|dron| dron.incidente_actual.is_none())
+            .filter(|dron| {
+                if let Accion::Espera = dron.accion() {
+                    return true;
+                }
+                false
+            })
             .collect()
     }
 
