@@ -25,7 +25,7 @@ impl AccionDron {
                     dron.posicion.lat, dron.posicion.lon
                 ));
                 ui.label(format!("Rango: {} m", dron.rango));
-                ui.label(format!("Batería: {}", dron.bateria_actual));
+                ui.label(format!("Batería: {:.1}", dron.bateria_actual));
                 ui.label(accion_dron_a_string(dron));
                 ui.label(format!("Velocidad: {} m/s", dron.velocidad_actual));
 

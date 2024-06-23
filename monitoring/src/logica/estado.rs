@@ -129,17 +129,17 @@ impl Estado {
     }
 
     /// Devuelve los incidentes que no tienen 2 drones asignados.
-    pub fn incidentes_sin_asignar(&self) -> Vec<(&Incidente, usize)> {
+    pub fn incidentes_sin_asignar(&self, cantidad_drones: usize) -> Vec<(&Incidente, usize)> {
         self.incidentes
             .values()
             .filter(|incidente| {
                 let drones_incidente = self.drones_incidente(&incidente.id);
 
-                drones_incidente.len() < 2
+                drones_incidente.len() < cantidad_drones
             })
             .map(|incidente| {
                 let drones_incidente = self.drones_incidente(&incidente.id);
-                (incidente, 2 - drones_incidente.len())
+                (incidente, cantidad_drones - drones_incidente.len())
             })
             .collect()
     }

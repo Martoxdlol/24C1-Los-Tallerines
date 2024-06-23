@@ -3,3 +3,4 @@ central_de_carga.lon=-58.367949
 punto_de_espera.lat=-34.5973
 punto_de_espera.lon=-58.3875
 velocidad_maxima=34
+bateria=45

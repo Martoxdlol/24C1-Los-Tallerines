@@ -48,6 +48,10 @@ impl Sistema {
         self.descarga_bateria();
         self.mover();
 
+        if let Accion::Cargar = self.dron.accion() {
+            self.dron.incidente_actual.take();
+        }
+
         // Si el dron llego, frena (velocidad = 0)
         if self.en_destino() {
             self.dron.velocidad_actual = 0.;
