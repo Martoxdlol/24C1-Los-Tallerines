@@ -145,6 +145,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
         let mut configuracion = Configuracion::new();
         configuracion.setear("user", "user");
@@ -172,6 +173,7 @@ mod tests {
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
+            bateria_minima: 10.0,
         };
 
         let mut configuracion = Configuracion::new();
