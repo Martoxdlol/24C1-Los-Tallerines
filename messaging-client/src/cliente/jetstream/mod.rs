@@ -1,6 +1,7 @@
 use std::{io, time::Duration};
 
-use constantes::{js_api_consumer_next, js_api_stream_create};
+use constantes::{js_api_consumer_create, js_api_consumer_next, js_api_stream_create};
+use js_suscripcion::JSSuscripcion;
 use lib::jet_stream::{
     consumer_config::ConsumerConfig, crear_consumer_peticion::JSPeticionCrearConsumer,
     stream_config::StreamConfig,
@@ -9,7 +10,9 @@ use lib::jet_stream::{
 use super::{publicacion::Publicacion, suscripcion::Suscripcion, Cliente};
 
 pub mod constantes;
+pub mod js_suscripcion;
 
+#[derive(Clone)]
 pub struct JetStream {
     pub cliente: Cliente,
 }
@@ -36,17 +39,22 @@ impl JetStream {
         Ok(())
     }
 
-    pub fn crear_consumer(&mut self, config: ConsumerConfig) -> io::Result<()> {
+    pub fn crear_consumer(
+        &mut self,
+        nombre_stream: &str,
+        config: ConsumerConfig,
+    ) -> io::Result<()> {
         let peticion = JSPeticionCrearConsumer::new(config);
         let body = peticion
             .to_json()
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         self.cliente.peticion_tiempo_limite(
-            &js_api_stream_create(&peticion.config.durable_name),
+            &js_api_consumer_create(nombre_stream),
             body.as_bytes(),
             Duration::from_secs(5),
         )?;
+
         Ok(())
     }
 
@@ -64,6 +72,21 @@ impl JetStream {
         self.cliente.publicar(&topico, b"1", Some(&inbox))?;
 
         Ok(sub)
+    }
+
+    pub fn suscribirse(
+        &mut self,
+        stream_name: &str,
+        consumer_name: &str,
+    ) -> io::Result<JSSuscripcion> {
+        let suscripcion_inicial = self.suscribir_proximo_mensaje(stream_name, consumer_name)?;
+
+        Ok(JSSuscripcion::new(
+            self.clone(),
+            stream_name.to_string(),
+            consumer_name.to_string(),
+            suscripcion_inicial,
+        ))
     }
 
     pub fn ack(&self, publicacion: &Publicacion) -> io::Result<()> {

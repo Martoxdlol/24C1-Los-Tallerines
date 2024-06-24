@@ -6,9 +6,13 @@ use std::io;
 use comando::Comando;
 use contexto::Contexto;
 use lib::{
-    configuracion::Configuracion, dron::Dron, incidente::Incidente, serializables::Serializable,
+    configuracion::Configuracion,
+    dron::Dron,
+    incidente::Incidente,
+    jet_stream::{consumer_config::ConsumerConfig, stream_config::StreamConfig},
+    serializables::Serializable,
 };
-use messaging_client::cliente::Cliente;
+use messaging_client::cliente::{jetstream::JetStream, Cliente};
 
 /// Comunicación desde el dron con el servidor de mensajería.
 pub struct Comunicacion {
@@ -33,7 +37,7 @@ impl Comunicacion {
     }
 
     /// Intenta usar el contexto actual, si no existe, crea uno nuevo.
-    pub fn usar_contexto(&mut self, dron: &Dron) -> io::Result<&Contexto> {
+    pub fn usar_contexto(&mut self, dron: &Dron) -> io::Result<&mut Contexto> {
         if self.contexto.is_none() {
             let mut cliente = Cliente::conectar_user_pass(
                 format!("{}:{}", self.direccion_server, self.puerto_server,).as_str(),
@@ -41,10 +45,29 @@ impl Comunicacion {
                 self.pass.clone(),
             )?;
 
+            let mut jet_stream = JetStream::new(cliente.clone());
+
+            jet_stream.crear_stream(&StreamConfig {
+                name: "drones".to_string(),
+                subjects: vec!["drones.*.comandos".to_string()],
+                ..Default::default()
+            })?;
+
+            let nombre_consumer = format!("drones-{}", dron.id);
+
+            jet_stream.crear_consumer(
+                "drones",
+                ConsumerConfig {
+                    durable_name: nombre_consumer.clone(),
+                    filter_subject: Some(format!("drones.{}.comandos", dron.id)),
+                    ..Default::default()
+                },
+            )?;
+
             let suscripcion_incidentes_finalizados =
                 cliente.suscribirse("incidentes.*.finalizado", None)?;
-            let suscripcion_comandos =
-                cliente.suscribirse(format!("drones.{}.comandos", dron.id).as_str(), None)?;
+
+            let suscripcion_comandos = jet_stream.suscribirse("drones", &nombre_consumer)?;
 
             self.contexto = Some(Contexto {
                 cliente,
@@ -133,6 +156,8 @@ impl Comunicacion {
                         }
                     }
                 }
+
+                contexto.suscripcion_comandos.ack(&publicacion)?;
 
                 enviar_estado = true;
             }

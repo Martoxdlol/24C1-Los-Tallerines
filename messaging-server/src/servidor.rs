@@ -174,7 +174,6 @@ impl Servidor {
                 match conn {
                     Ok(stream) => {
                         if let Ok(()) = stream.set_nonblocking(true) {
-                            println!("Nueva conexión");
                             tx.send(Box::new(stream)).unwrap();
                         }
                     }

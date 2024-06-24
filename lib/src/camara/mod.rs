@@ -130,7 +130,7 @@ mod tests {
             incidentes_secundarios: vec![].into_iter().collect(),
         };
 
-        assert_eq!(camara.activa(), true);
+        assert!(camara.activa());
     }
 
     #[test]
@@ -144,7 +144,7 @@ mod tests {
             incidentes_secundarios: HashSet::new(),
         };
 
-        assert_eq!(camara.activa(), false);
+        assert!(!camara.activa());
     }
 
     #[test]

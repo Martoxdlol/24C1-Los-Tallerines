@@ -31,6 +31,8 @@ impl StreamConfig {
     }
 
     pub fn to_json(&self) -> serde_json::Result<String> {
-        serde_json::to_string(self)
+        let mut clon = self.clone();
+        clon.num_replicas = 1;
+        serde_json::to_string(&clon)
     }
 }

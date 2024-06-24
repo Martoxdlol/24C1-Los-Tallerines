@@ -110,6 +110,10 @@ impl Sistema {
     /// Descarga la batería del dron
     fn descarga_bateria(&mut self) {
         self.dron.bateria_actual -= self.dron.velocidad_descarga_bateria * self.diferencial_tiempo;
+        if self.dron.bateria_actual < 0. {
+            println!("Bateria agotada: {}", self.dron.bateria_actual);
+            panic!("Bateria agotada")
+        }
     }
 
     /// Mueve el dron
@@ -138,10 +142,10 @@ mod tests {
             central_de_carga: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
             punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
             velocidad_maxima: 10.0,
-            velocidad_descarga_bateria: 1.0 / 3600.0,
+            velocidad_descarga_bateria: 0.,
             posicion: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
             direccion_actual: 0.0,
-            bateria_actual: 100.0,
+            bateria_actual: 1.0,
             velocidad_actual: 0.0,
             incidente_actual: None,
             envio_ultimo_estado: 0,
@@ -153,6 +157,7 @@ mod tests {
 
         let comunicacion = Comunicacion::new(&configuracion);
         let mut sistema = Sistema::new(dron, comunicacion);
+        sistema.ms_ultima_iteracion = chrono::offset::Local::now().timestamp_millis();
 
         sistema.ciclo();
         assert_eq!(sistema.dron.velocidad_actual, 0.0); // Si la velocidad es 0, esta en destino
@@ -166,7 +171,7 @@ mod tests {
             central_de_carga: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
             punto_de_espera: Coordenadas::from_lat_lon(1.0, 1.0),
             velocidad_maxima: 10.0,
-            velocidad_descarga_bateria: 1.0 / 3600.0,
+            velocidad_descarga_bateria: 0.,
             posicion: Coordenadas::from_lat_lon(-34.6079162126949, -58.40631119706255),
             direccion_actual: 0.0,
             bateria_actual: 5.0,
@@ -182,6 +187,7 @@ mod tests {
 
         let comunicacion = Comunicacion::new(&configuracion);
         let mut sistema = Sistema::new(dron, comunicacion);
+        sistema.ms_ultima_iteracion = chrono::offset::Local::now().timestamp_millis();
 
         sistema.ciclo();
         assert_eq!(sistema.dron.bateria_actual, 100.0); // Si la bateria es 100, la bateria cargo porque esta en su centro de carga

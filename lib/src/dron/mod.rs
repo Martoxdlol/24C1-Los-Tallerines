@@ -58,7 +58,9 @@ impl Dron {
             punto_de_espera,
             velocidad_maxima: config.obtener("velocidad_maxima").unwrap_or(10.),
             velocidad_actual: config.obtener("velocidad_actual").unwrap_or(0.),
-            velocidad_descarga_bateria: config.obtener("velocidad_descarga_bateria").unwrap_or(0.2),
+            velocidad_descarga_bateria: config
+                .obtener("velocidad_descarga_bateria")
+                .unwrap_or(0.05),
             envio_ultimo_estado: 0,
             bateria_minima,
         })

@@ -66,13 +66,11 @@ fn main() {
         );
     }
 
-    for mut dron in drones {
-        let comunicacion = Comunicacion::new(&config);
+    for dron in drones {
+        let config_clone = config.clone();
 
         thread::spawn(move || {
-            let bateria = rand::thread_rng().gen_range(20..100);
-
-            dron.bateria_actual = bateria as f32 as f64;
+            let comunicacion = Comunicacion::new(&config_clone);
 
             let mut sistema = Sistema::new(dron, comunicacion);
 
