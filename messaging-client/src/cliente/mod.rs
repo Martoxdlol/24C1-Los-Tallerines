@@ -5,8 +5,10 @@ pub mod publicacion;
 pub mod suscripcion;
 
 use std::{
+    cell::RefCell,
     io,
     net::TcpStream,
+    rc::Rc,
     sync::mpsc::{channel, Sender},
     thread::{self, JoinHandle},
     time::Duration,
@@ -23,9 +25,8 @@ use self::{
 /// Cliente tiene su hilo donde se gestionan los mensajes, el canal por el cual
 /// se envían mensajes al servidor, y el id del cliente
 pub struct Cliente {
-    _hilo_cliente: JoinHandle<()>,
     canal_instrucciones: Sender<Instruccion>,
-    id: usize,
+    id: Rc<RefCell<u64>>,
 }
 
 impl Cliente {
@@ -76,23 +77,21 @@ impl Cliente {
 
             stream_clone.set_nonblocking(true)?;
 
-            let hilo_cliente = Self::iniciar_hilo_cliente(Box::new(stream), rx, user, pass);
+            Self::iniciar_hilo_cliente(Box::new(stream), rx, user, pass);
 
             return Ok(Cliente {
-                _hilo_cliente: hilo_cliente,
                 canal_instrucciones: tx,
-                id: 0,
+                id: Rc::new(RefCell::new(0)),
             });
         }
 
         stream.set_nonblocking(true)?;
 
-        let hilo_cliente = Self::iniciar_hilo_cliente(Box::new(stream), rx, user, pass);
+        Self::iniciar_hilo_cliente(Box::new(stream), rx, user, pass);
 
         Ok(Cliente {
-            _hilo_cliente: hilo_cliente,
             canal_instrucciones: tx,
-            id: 0,
+            id: Rc::new(RefCell::new(0)),
         })
     }
 
@@ -240,8 +239,9 @@ impl Cliente {
         subject: &str,
         queue_group: Option<&str>,
     ) -> io::Result<Suscripcion> {
-        self.id += 1;
-        let id: String = format!("{}", self.id);
+        self.id.replace_with(|id| *id + 1);
+
+        let id: String = format!("{}", self.id.borrow());
 
         let canal_instrucciones = self.canal_instrucciones.clone();
 
@@ -262,6 +262,21 @@ impl Cliente {
 
 impl Drop for Cliente {
     fn drop(&mut self) {
+        let id_refs = Rc::strong_count(&self.id);
+
+        if id_refs > 1 {
+            return;
+        }
+
         let _ = self.canal_instrucciones.send(Instruccion::Desconectar);
+    }
+}
+
+impl Clone for Cliente {
+    fn clone(&self) -> Self {
+        Cliente {
+            canal_instrucciones: self.canal_instrucciones.clone(),
+            id: self.id.clone(),
+        }
     }
 }

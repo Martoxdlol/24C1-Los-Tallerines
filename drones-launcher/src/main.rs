@@ -67,9 +67,11 @@ fn main() {
     }
 
     for dron in drones {
-        let comunicacion = Comunicacion::new(&config);
+        let config_clone = config.clone();
 
         thread::spawn(move || {
+            let comunicacion = Comunicacion::new(&config_clone);
+
             let mut sistema = Sistema::new(dron, comunicacion);
 
             let num = rand::thread_rng().gen_range(0..3000);

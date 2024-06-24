@@ -218,11 +218,16 @@ impl Conexion for JetStreamStream {
                 if let Ok(datos) =
                     JSPeticionCrearConsumer::from_json(&String::from_utf8_lossy(&mensaje.payload))
                 {
-                    self.crear_consumer(datos.config.clone());
+                    let mut creado = true;
+                    if self.consumers.contains_key(&datos.config.durable_name) {
+                        creado = false;
+                    } else {
+                        self.crear_consumer(datos.config.clone());
+                    }
 
                     if let Some(reply_to) = &mensaje.replay_to {
                         if let Ok(respuesta) =
-                            JSCrearConsumerRespuesta::new(datos.config, true).to_json()
+                            JSCrearConsumerRespuesta::new(datos.config, creado).to_json()
                         {
                             self.respuestas.push(Publicacion::new(
                                 reply_to.to_string(),
