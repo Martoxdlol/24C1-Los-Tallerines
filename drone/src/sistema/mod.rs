@@ -110,6 +110,9 @@ impl Sistema {
     /// Descarga la batería del dron
     fn descarga_bateria(&mut self) {
         self.dron.bateria_actual -= self.dron.velocidad_descarga_bateria * self.diferencial_tiempo;
+        if self.dron.bateria_actual < 0. {
+            panic!("Bateria agotada")
+        }
     }
 
     /// Mueve el dron
