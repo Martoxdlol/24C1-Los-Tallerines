@@ -6,8 +6,7 @@ Nombre del grupo: **"Los Tallerines"**
 
 - Valeria Brzoza (107523)
 - Tomás Cichero (107973)
-- Rodolfo Valentin Albornoz Tomé (107975)
-- Francisco Antonio Pereyra (105666)
+
 
 ## Como usar
 
