@@ -89,10 +89,9 @@ impl JetStream {
         ));
     }
 
-    pub fn ack(&mut self, publicacion: &Publicacion) -> io::Result<()> {
+    pub fn ack(&self, publicacion: &Publicacion) -> io::Result<()> {
         if let Some(reply_to) = &publicacion.reply_to {
-            self.cliente
-                .peticion_tiempo_limite(reply_to, b"", Duration::from_secs(1))?;
+            self.cliente.publicar(reply_to, b"", None)?;
         }
 
         Ok(())
