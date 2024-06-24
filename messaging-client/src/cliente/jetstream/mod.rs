@@ -81,12 +81,12 @@ impl JetStream {
     ) -> io::Result<JSSuscripcion> {
         let suscripcion_inicial = self.suscribir_proximo_mensaje(stream_name, consumer_name)?;
 
-        return Ok(JSSuscripcion::new(
+        Ok(JSSuscripcion::new(
             self.clone(),
             stream_name.to_string(),
             consumer_name.to_string(),
             suscripcion_inicial,
-        ));
+        ))
     }
 
     pub fn ack(&self, publicacion: &Publicacion) -> io::Result<()> {

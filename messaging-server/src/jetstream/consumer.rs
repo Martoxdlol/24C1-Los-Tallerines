@@ -188,7 +188,7 @@ impl Conexion for JetStreamConsumer {
                 if let Some(reply_to) = &mensaje.replay_to {
                     self.reply_to_pendiente = Some(reply_to.to_string());
 
-                    if self.topico_ack_mensaje_pendiente.len() == 0 {
+                    if self.topico_ack_mensaje_pendiente.is_empty() {
                         self.topico_ack_mensaje_pendiente = format!(
                             "$JS.ACK.{}.{}.{}",
                             self.nombre_stream,
