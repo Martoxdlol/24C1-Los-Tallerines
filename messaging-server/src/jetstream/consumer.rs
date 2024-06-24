@@ -27,6 +27,7 @@ pub struct JetStreamConsumer {
     rx_mensajes: Receiver<Publicacion>,
     topico_ack_mensaje_pendiente: String,
     registrador: Registrador,
+    reply_to_pendiente: Option<String>,
 }
 
 impl JetStreamConsumer {
@@ -49,6 +50,7 @@ impl JetStreamConsumer {
             rx_mensajes,
             topico_ack_mensaje_pendiente: "".to_string(),
             registrador,
+            reply_to_pendiente: None,
         }
     }
 
@@ -72,23 +74,13 @@ impl JetStreamConsumer {
             }));
     }
 
-    fn responder_mensaje_pendiente(&mut self, reply_to: &str) {
-        let ack_topico = format!(
-            "$JS.ACK.{}.{}.{}",
-            self.nombre_stream,
-            self.config.durable_name,
-            nuid::next()
-        );
-
-        if let Some(mensaje) = &self.mensaje_pendiente {
-            self.topico_ack_mensaje_pendiente.clone_from(&ack_topico);
-            self.respuestas.push(Publicacion::new(
-                reply_to.to_string(),
-                mensaje.payload.clone(),
-                mensaje.header.clone(),
-                Some(ack_topico),
-            ));
-        }
+    fn responder_mensaje_pendiente(&mut self, reply_to: &str, mensaje: &Publicacion) {
+        self.respuestas.push(Publicacion::new(
+            reply_to.to_string(),
+            mensaje.payload.clone(),
+            mensaje.header.clone(),
+            Some(self.topico_ack_mensaje_pendiente.clone()),
+        ));
     }
 }
 
@@ -146,6 +138,20 @@ impl Conexion for JetStreamConsumer {
             self.preparado = true;
         }
 
+        if self.mensaje_pendiente.is_none() {
+            if let Ok(mensaje) = self.rx_mensajes.try_recv() {
+                self.mensaje_pendiente = Some(mensaje);
+            }
+        }
+
+        let mp = self.mensaje_pendiente.clone();
+
+        if let Some(m) = &mp {
+            if let Some(reply_to) = &self.reply_to_pendiente.take() {
+                self.responder_mensaje_pendiente(reply_to, m);
+            }
+        }
+
         for respuesta in self.respuestas.drain(..) {
             contexto.publicar(respuesta);
         }
@@ -179,14 +185,17 @@ impl Conexion for JetStreamConsumer {
                     ));
             }
             "mensaje_siguiente" => {
-                if self.mensaje_pendiente.is_none() {
-                    if let Ok(mensaje) = self.rx_mensajes.try_recv() {
-                        self.mensaje_pendiente = Some(mensaje);
-                    }
-                }
-
                 if let Some(reply_to) = &mensaje.replay_to {
-                    self.responder_mensaje_pendiente(reply_to);
+                    self.reply_to_pendiente = Some(reply_to.to_string());
+
+                    if self.topico_ack_mensaje_pendiente.len() == 0 {
+                        self.topico_ack_mensaje_pendiente = format!(
+                            "$JS.ACK.{}.{}.{}",
+                            self.nombre_stream,
+                            self.config.durable_name,
+                            nuid::next()
+                        );
+                    }
                 }
             }
             "ack" => {
@@ -194,6 +203,7 @@ impl Conexion for JetStreamConsumer {
                     && self.topico_ack_mensaje_pendiente.eq(&mensaje.topico)
                 {
                     self.mensaje_pendiente = None;
+                    self.reply_to_pendiente = None;
                     self.topico_ack_mensaje_pendiente = "".to_string();
                 }
             }

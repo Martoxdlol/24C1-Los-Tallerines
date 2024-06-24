@@ -219,7 +219,7 @@ impl HiloCliente {
     }
 
     fn proximo_mensaje(&mut self) -> std::io::Result<Option<Mensaje>> {
-        let mut buffer = [0; 1024];
+        let mut buffer = [0; 32768];
 
         match self.stream.read(&mut buffer) {
             Ok(n) => {

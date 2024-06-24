@@ -7,13 +7,18 @@ use lib::{
     camara::Camara,
     configuracion::Configuracion,
     incidente::Incidente,
+    jet_stream::{consumer_config::ConsumerConfig, stream_config::StreamConfig},
     serializables::{
         deserializar_vec,
         guardar::{cargar_serializable, guardar_serializable},
         serializar_vec, Serializable,
     },
 };
-use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
+use messaging_client::cliente::{
+    jetstream::{js_suscripcion::JSSuscripcion, JetStream},
+    suscripcion::Suscripcion,
+    Cliente,
+};
 
 use crate::{
     estado::Estado,
@@ -63,13 +68,30 @@ impl Sistema {
     fn inicio(&mut self) -> io::Result<()> {
         // Conectar el cliente al servidor de NATS
         let mut cliente = self.conectar()?;
+        let mut jet_stream = JetStream::new(cliente.clone());
+
+        jet_stream.crear_stream(&StreamConfig {
+            name: "camaras".to_string(),
+            subjects: vec!["comandos.camaras".to_string()],
+            ..Default::default()
+        })?;
+
+        jet_stream.crear_consumer(
+            "camaras",
+            ConsumerConfig {
+                durable_name: "comandos".to_string(),
+                filter_subject: Some("comandos.camaras".to_string()),
+                ..Default::default()
+            },
+        )?;
 
         // Publicar al servidor de NATS el estado de todas las cámaras
         self.publicar_y_guardar_estado_general(&cliente)?;
 
         let sub_nuevos_incidentes = cliente.suscribirse("incidentes.*.creado", None)?;
         let sub_incidentes_finalizados = cliente.suscribirse("incidentes.*.finalizado", None)?;
-        let sub_comandos_remotos = cliente.suscribirse("comandos.camaras", None)?;
+        let mut sub_comandos_remotos = jet_stream.suscribirse("camaras", "comandos")?;
+        //cliente.suscribirse("comandos.camaras", None)?;
 
         let sub_incidentes = cliente.suscribirse("incidentes", None)?;
 
@@ -80,7 +102,7 @@ impl Sistema {
                 &cliente,
                 &sub_nuevos_incidentes,
                 &sub_incidentes_finalizados,
-                &sub_comandos_remotos,
+                &mut sub_comandos_remotos,
                 &sub_incidentes,
             )?;
         }
@@ -161,7 +183,7 @@ impl Sistema {
         cliente: &Cliente,
         sub_nuevos_incidentes: &Suscripcion,
         sub_incidentes_finalizados: &Suscripcion,
-        sub_comandos: &Suscripcion,
+        sub_comandos: &mut JSSuscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_incidentes(
@@ -283,7 +305,7 @@ impl Sistema {
     fn leer_comandos_remotos(
         &mut self,
         cliente: &Cliente,
-        sub_comandos_remotos: &Suscripcion,
+        sub_comandos_remotos: &mut JSSuscripcion,
     ) -> io::Result<()> {
         while let Some(mensaje) = sub_comandos_remotos.intentar_leer()? {
             let mensaje_texto = String::from_utf8_lossy(&mensaje.payload);
@@ -291,6 +313,8 @@ impl Sistema {
             if let Some(comando) = interpretar_comando(&mensaje_texto) {
                 self.matchear_comandos(cliente, comando)?;
             }
+
+            sub_comandos_remotos.ack(&mensaje)?;
         }
 
         Ok(())
