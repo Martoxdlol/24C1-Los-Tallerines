@@ -16,8 +16,7 @@ x = np.expand_dims(x, axis=0)
 images = np.vstack([x])
 classes = model.predict(images, batch_size=10)
 
-print(classes)
-
 for key in INDICES:
     i = INDICES[key]
-    print(f'{key}: {classes[0][i]}')
+    valor = round(classes[0][i])
+    print(f'{key}: {valor}')

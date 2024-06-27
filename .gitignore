@@ -18,5 +18,5 @@ Cargo.lock
 _*.csv
 
 
-machine-learning/dataset*
+machine-learning/dataset_*
 __pycache__
