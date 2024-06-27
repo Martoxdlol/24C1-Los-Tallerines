@@ -16,3 +16,6 @@ Cargo.lock
 
 # Archivos csv
 _*.csv
+
+
+machine-learning/dataset*

@@ -5,7 +5,7 @@ from keras_preprocessing import image
 from keras_preprocessing.image import ImageDataGenerator
 
 TRAINING_DIR = './dataset/train'
-VALIDATION_DIR = './dataset/test'
+VALIDATION_DIR = './dataset/val'
 
 subdirs = os.listdir(TRAINING_DIR)
 
@@ -65,7 +65,7 @@ model = tf.keras.models.Sequential([
     tf.keras.layers.Dropout(0.5),
     # 512 neuron hidden layer
     tf.keras.layers.Dense(512, activation='relu'),
-    tf.keras.layers.Dense(5, activation='softmax')
+    tf.keras.layers.Dense(len(subdirs), activation='softmax')
 ])
 
 
