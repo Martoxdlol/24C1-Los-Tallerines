@@ -29,7 +29,7 @@ validation_generator = validation_datagen.flow_from_directory(
 	VALIDATION_DIR,
 	target_size=(150,150),
 	class_mode='categorical',
-  batch_size=126
+  batch_size=32
 )
 
 INDICES = train_generator.class_indices
