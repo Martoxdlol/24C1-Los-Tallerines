@@ -19,3 +19,4 @@ _*.csv
 
 
 machine-learning/dataset*
+__pycache__
