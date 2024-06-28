@@ -1,18 +1,25 @@
 use aws_sdk_rekognition::{self as rekognition, primitives::Blob, types::Image};
 use dotenv::dotenv;
-use futures::executor;
+use tokio::runtime::Runtime;
 
-#[::tokio::main]
-pub async fn main() {}
+pub fn main() {
+    println!(
+        "{:?}",
+        reconocer_imagen("./machine-learning/dataset_01/val/incendios/fire.237.png")
+    )
+}
 
 pub fn reconocer_imagen(ruta: &str) -> Result<(), String> {
     dotenv().ok();
     let input = std::fs::read(ruta).map_err(|e| e.to_string())?;
 
-    let arn_from_env =
-        std::env::var("REKOGNITION_PROJECT_VERSION_ARN").map_err(|e| e.to_string())?;
+    let arn_from_env = std::env::var("AWS_PROJECT_ARN").map_err(|e| e.to_string())?;
 
-    executor::block_on(reconocer_async(&arn_from_env, input)).map_err(|e| e.to_string())
+    let runtime = Runtime::new().map_err(|e| e.to_string())?;
+
+    runtime
+        .block_on(reconocer_async(&arn_from_env, input))
+        .map_err(|e| e.to_string())
 }
 
 async fn reconocer_async(arn: &str, bytes: Vec<u8>) -> Result<(), rekognition::Error> {
