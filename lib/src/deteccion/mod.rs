@@ -14,7 +14,7 @@ pub struct Deteccion {
 
 impl Deteccion {
     pub fn es_incidente(&self) -> bool {
-        self.comprobar_etiqueta("incendios", 80.) || self.comprobar_etiqueta("accidentes", 60.)
+        self.comprobar_etiqueta("incendios", 70.) || self.comprobar_etiqueta("accidentes", 55.)
     }
 
     pub fn comprobar_etiqueta(&self, etiqueta: &str, confianza_minima: f64) -> bool {
@@ -23,6 +23,16 @@ impl Deteccion {
         } else {
             false
         }
+    }
+
+    pub fn detalle(&self) -> String {
+        let mut detalle = String::new();
+
+        for (etiqueta, confianza) in &self.etiquetas {
+            detalle.push_str(&format!("{}: {:.2}% ", etiqueta, confianza));
+        }
+
+        detalle.trim_end().to_string()
     }
 }
 
