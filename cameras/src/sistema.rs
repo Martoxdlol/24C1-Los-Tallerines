@@ -393,6 +393,7 @@ impl Sistema {
             ));
         }
         let camara = Camara::new(id, lat, lon, rango);
+        self.iniciar_hilo_camara(camara.clone())?;
         self.estado.conectar_camara(camara);
         self.publicar_y_guardar_estado_general(cliente)?;
         self.responder_ok()
@@ -402,6 +403,10 @@ impl Sistema {
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
         if self.estado.desconectar_camara(id).is_some() {
             self.publicar_y_guardar_estado_general(cliente)?;
+            let sender = self.detener_deteccion.get(&id);
+            if let Some(sender) = sender {
+                let _ = sender.send(());
+            }
             self.responder_ok()
         } else {
             self.responder(Respuesta::Error(
