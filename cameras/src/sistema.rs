@@ -24,7 +24,7 @@ use messaging_client::cliente::{
 
 use crate::{
     estado::Estado,
-    hilo_deteccion_camara::hilo_deteccion_camara,
+    hilo_deteccion_camara::HiloDeteccionCamara,
     interfaz::{comando::Comando, interpretar_comando, respuesta::Respuesta},
 };
 
@@ -97,7 +97,8 @@ impl Sistema {
         self.detener_deteccion.insert(camara.id, enviar_detener);
 
         std::thread::spawn(move || {
-            hilo_deteccion_camara(camara, ruta, enviar_deteccion_clon, recibir_detener)
+            HiloDeteccionCamara::new(camara, ruta, enviar_deteccion_clon, recibir_detener)
+                .iniciar();
         });
 
         Ok(())

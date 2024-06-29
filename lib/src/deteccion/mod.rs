@@ -7,10 +7,25 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Deteccion {
-    id_camara: u64,
-    posicion: Coordenadas,
-    etiquetas: HashMap<String, f64>,
+    pub id_camara: u64,
+    pub posicion: Coordenadas,
+    pub etiquetas: HashMap<String, f64>,
 }
+
+impl Deteccion {
+    pub fn es_incidente(&self) -> bool {
+        self.comprobar_etiqueta("incendios", 80.) || self.comprobar_etiqueta("accidentes", 60.)
+    }
+
+    pub fn comprobar_etiqueta(&self, etiqueta: &str, confianza_minima: f64) -> bool {
+        if let Some(confianza) = self.etiquetas.get(etiqueta) {
+            *confianza >= confianza_minima
+        } else {
+            false
+        }
+    }
+}
+
 impl Serializable for Deteccion {
     /// Deserializa un dron.
     fn deserializar(data: &[u8]) -> Result<Self, crate::serializables::error::DeserializationError>

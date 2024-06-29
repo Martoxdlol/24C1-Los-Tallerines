@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 lib = { path = "../lib" }
+rekognition = { path = "../rekognition" }
 messaging-client = { path = "../messaging-client" }
+rand = "0.8.5"

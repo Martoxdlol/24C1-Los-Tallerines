@@ -1,15 +1,14 @@
-use aws_sdk_rekognition::{self as rekognition, primitives::Blob, types::Image};
+use std::path::Path;
+
+use aws_sdk_rekognition::{
+    self as rekognition,
+    primitives::Blob,
+    types::{CustomLabel, Image},
+};
 use dotenv::dotenv;
 use tokio::runtime::Runtime;
 
-// pub fn main() {
-//     println!(
-//         "{:?}",
-//         reconocer_imagen("./machine-learning/dataset_01/val/incendios/fire.237.png")
-//     )
-// }
-
-pub fn reconocer_imagen(ruta: &str) -> Result<(), String> {
+pub fn reconocer_imagen<P: AsRef<Path>>(ruta: P) -> Result<Vec<CustomLabel>, String> {
     dotenv().ok();
     let input = std::fs::read(ruta).map_err(|e| e.to_string())?;
 
@@ -17,12 +16,17 @@ pub fn reconocer_imagen(ruta: &str) -> Result<(), String> {
 
     let runtime = Runtime::new().map_err(|e| e.to_string())?;
 
-    runtime
+    let resultado = runtime
         .block_on(reconocer_async(&arn_from_env, input))
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    Ok(resultado)
 }
 
-async fn reconocer_async(arn: &str, bytes: Vec<u8>) -> Result<(), rekognition::Error> {
+async fn reconocer_async(
+    arn: &str,
+    bytes: Vec<u8>,
+) -> Result<Vec<CustomLabel>, rekognition::Error> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_rekognition::Client::new(&config);
 
@@ -35,7 +39,5 @@ async fn reconocer_async(arn: &str, bytes: Vec<u8>) -> Result<(), rekognition::E
         .send()
         .await?;
 
-    println!("{:#?}", result.custom_labels.unwrap_or_default());
-
-    Ok(())
+    Ok(result.custom_labels.unwrap_or_default())
 }
