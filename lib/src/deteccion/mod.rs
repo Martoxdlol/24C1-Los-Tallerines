@@ -51,7 +51,31 @@ impl Serializable for Deteccion {
 
         serializador.agregar_elemento(&self.id_camara);
         serializador.agregar_elemento_serializable(&self.posicion);
+        serializador.agregar_elemento_serializable(&self.etiquetas);
 
         serializador.bytes
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{coordenadas::Coordenadas, deteccion::Deteccion, serializables::Serializable};
+    use std::collections::HashMap;
+
+    #[test]
+    fn serializacion() {
+        let mut deteccion = Deteccion {
+            id_camara: 1,
+            posicion: Coordenadas::from_lat_lon(1., 2.),
+            etiquetas: HashMap::new(),
+        };
+
+        deteccion.etiquetas.insert("incendios".to_string(), 90.3);
+        deteccion.etiquetas.insert("accidentes".to_string(), 70.2);
+
+        let serializado = deteccion.serializar();
+        let deserializado = Deteccion::deserializar(&serializado).unwrap();
+
+        assert_eq!(deteccion, deserializado);
     }
 }

@@ -185,7 +185,7 @@ impl<K: Serializable + Eq + Hash, V: Serializable> Serializable for HashMap<K, V
         let mut data = Vec::new();
         for (key, value) in self {
             data.extend(escapar_solo_salto_de_linea(&key.serializar_string()).as_bytes());
-            data.push(b',');
+            data.push(b'=');
             data.extend(escapar_solo_salto_de_linea(&value.serializar_string()).as_bytes());
             data.push(b'\n');
         }
@@ -207,9 +207,16 @@ impl<K: Serializable + Eq + Hash, V: Serializable> Serializable for HashMap<K, V
                 continue;
             }
 
-            let mut partes = linea.split(',');
-            let key = K::deserializar(partes.next().unwrap().as_bytes())?;
-            let value = V::deserializar(partes.next().unwrap().as_bytes())?;
+            let mut partes = linea.split('=');
+
+            let key = K::deserializar(
+                desescapar_solo_salto_de_linea(partes.next().unwrap_or_default()).as_bytes(),
+            )?;
+
+            let value = V::deserializar(
+                desescapar_solo_salto_de_linea(partes.next().unwrap_or_default()).as_bytes(),
+            )?;
+
             result.insert(key, value);
         }
 
@@ -287,11 +294,11 @@ mod tests {
     #[test]
     fn serializar_hashmap() {
         let mut map = HashMap::new();
-        map.insert(1, "hola".to_string());
-        map.insert(2, "chau".to_string());
+        map.insert("hola".to_string(), 10.5);
+        map.insert("chau".to_string(), 20.9);
 
         let serializado = map.serializar();
-        let deserializado = HashMap::<u64, String>::deserializar(&serializado).unwrap();
+        let deserializado = HashMap::<String, f64>::deserializar(&serializado).unwrap();
 
         assert_eq!(map, deserializado);
     }

@@ -305,9 +305,15 @@ impl Sistema {
     }
 
     /// Lee las detecciones enviadas por las cámaras
-    fn leer_detecciones(&mut self, _cliente: &Cliente) -> io::Result<()> {
+    fn leer_detecciones(&mut self, cliente: &Cliente) -> io::Result<()> {
         while let Ok(deteccion) = self.recibir_deteccion.try_recv() {
             println!("Detección recibida: {:?}", deteccion);
+
+            if deteccion.es_incidente() {
+                println!("Incidente detectado");
+
+                cliente.publicar("incidentes.deteccion", &deteccion.serializar(), None)?;
+            }
         }
 
         Ok(())
