@@ -2,6 +2,7 @@ pub mod camara;
 pub mod configuracion;
 pub mod coordenadas;
 pub mod csv;
+pub mod deteccion;
 pub mod dron;
 pub mod incidente;
 pub mod jet_stream;

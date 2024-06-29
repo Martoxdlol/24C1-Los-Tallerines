@@ -1,4 +1,7 @@
-use std::{collections::HashSet, hash::Hash};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+};
 
 use escape::{desescapar_solo_salto_de_linea, escapar_solo_salto_de_linea};
 
@@ -130,6 +133,21 @@ impl Serializable for u64 {
     }
 }
 
+impl Serializable for f64 {
+    fn serializar(&self) -> Vec<u8> {
+        self.to_string().as_bytes().to_vec()
+    }
+
+    fn deserializar(data: &[u8]) -> Result<Self, DeserializationError> {
+        let texto =
+            String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
+        let numero = texto
+            .parse()
+            .map_err(|_| DeserializationError::InvalidData)?;
+        Ok(numero)
+    }
+}
+
 impl<T: Serializable> Serializable for Option<T> {
     fn serializar(&self) -> Vec<u8> {
         match self {
@@ -159,6 +177,43 @@ impl<T: Serializable> Serializable for Option<T> {
             b'n' => Ok(None),
             _ => Err(DeserializationError::InvalidData),
         }
+    }
+}
+
+impl<K: Serializable + Eq + Hash, V: Serializable> Serializable for HashMap<K, V> {
+    fn serializar(&self) -> Vec<u8> {
+        let mut data = Vec::new();
+        for (key, value) in self {
+            data.extend(escapar_solo_salto_de_linea(&key.serializar_string()).as_bytes());
+            data.push(b',');
+            data.extend(escapar_solo_salto_de_linea(&value.serializar_string()).as_bytes());
+            data.push(b'\n');
+        }
+        data
+    }
+
+    fn deserializar(data: &[u8]) -> Result<Self, DeserializationError>
+    where
+        Self: Sized,
+    {
+        let texto =
+            String::from_utf8(data.to_vec()).map_err(|_| DeserializationError::InvalidData)?;
+        let lineas = texto.lines();
+
+        let mut result = HashMap::new();
+
+        for linea in lineas {
+            if linea.trim().is_empty() {
+                continue;
+            }
+
+            let mut partes = linea.split(',');
+            let key = K::deserializar(partes.next().unwrap().as_bytes())?;
+            let value = V::deserializar(partes.next().unwrap().as_bytes())?;
+            result.insert(key, value);
+        }
+
+        Ok(result)
     }
 }
 
@@ -227,5 +282,17 @@ mod tests {
 
         assert_eq!(some, deserializado_some);
         assert_eq!(none, deserializado_none);
+    }
+
+    #[test]
+    fn serializar_hashmap() {
+        let mut map = HashMap::new();
+        map.insert(1, "hola".to_string());
+        map.insert(2, "chau".to_string());
+
+        let serializado = map.serializar();
+        let deserializado = HashMap::<u64, String>::deserializar(&serializado).unwrap();
+
+        assert_eq!(map, deserializado);
     }
 }

@@ -2,12 +2,12 @@ use aws_sdk_rekognition::{self as rekognition, primitives::Blob, types::Image};
 use dotenv::dotenv;
 use tokio::runtime::Runtime;
 
-pub fn main() {
-    println!(
-        "{:?}",
-        reconocer_imagen("./machine-learning/dataset_01/val/incendios/fire.237.png")
-    )
-}
+// pub fn main() {
+//     println!(
+//         "{:?}",
+//         reconocer_imagen("./machine-learning/dataset_01/val/incendios/fire.237.png")
+//     )
+// }
 
 pub fn reconocer_imagen(ruta: &str) -> Result<(), String> {
     dotenv().ok();
