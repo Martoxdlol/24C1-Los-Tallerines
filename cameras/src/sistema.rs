@@ -130,8 +130,11 @@ impl Sistema {
         // Publicar al servidor de NATS el estado de todas las cámaras
         self.publicar_y_guardar_estado_general(&cliente)?;
 
-        let sub_nuevos_incidentes = cliente.suscribirse("incidentes.*.creado", None)?;
-        let sub_incidentes_finalizados = cliente.suscribirse("incidentes.*.finalizado", None)?;
+        let mut sub_nuevos_incidentes = jet_stream.suscribirse("incidentes", "nuevos-camaras")?;
+
+        let mut sub_incidentes_finalizados =
+            jet_stream.suscribirse("incidentes", "finalizados-camaras")?;
+
         let mut sub_comandos_remotos = jet_stream.suscribirse("camaras", "comandos")?;
         //cliente.suscribirse("comandos.camaras", None)?;
 
@@ -142,8 +145,8 @@ impl Sistema {
         loop {
             self.ciclo(
                 &cliente,
-                &sub_nuevos_incidentes,
-                &sub_incidentes_finalizados,
+                &mut sub_nuevos_incidentes,
+                &mut sub_incidentes_finalizados,
                 &mut sub_comandos_remotos,
                 &sub_incidentes,
             )?;
@@ -223,8 +226,8 @@ impl Sistema {
     fn ciclo(
         &mut self,
         cliente: &Cliente,
-        sub_nuevos_incidentes: &Suscripcion,
-        sub_incidentes_finalizados: &Suscripcion,
+        sub_nuevos_incidentes: &mut JSSuscripcion,
+        sub_incidentes_finalizados: &mut JSSuscripcion,
         sub_comandos: &mut JSSuscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
@@ -248,8 +251,8 @@ impl Sistema {
     fn leer_incidentes(
         &mut self,
         cliente: &Cliente,
-        sub_nuevos_incidentes: &Suscripcion,
-        sub_incidentes_finalizados: &Suscripcion,
+        sub_nuevos_incidentes: &mut JSSuscripcion,
+        sub_incidentes_finalizados: &mut JSSuscripcion,
         sub_incidentes: &Suscripcion,
     ) -> io::Result<()> {
         let mut enviar_actualizacion = false;

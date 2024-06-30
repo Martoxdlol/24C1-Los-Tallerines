@@ -11,13 +11,18 @@ use lib::{
     deteccion::Deteccion,
     dron::Dron,
     incidente::Incidente,
+    jet_stream::{consumer_config::ConsumerConfig, stream_config::StreamConfig},
     serializables::{
         deserializar_vec,
         guardar::{cargar_serializable, guardar_serializable},
         serializar_vec, Serializable,
     },
 };
-use messaging_client::cliente::{suscripcion::Suscripcion, Cliente};
+use messaging_client::cliente::{
+    jetstream::{js_suscripcion::JSSuscripcion, JetStream},
+    suscripcion::Suscripcion,
+    Cliente,
+};
 
 use self::{comando::Comando, estado::Estado};
 
@@ -109,6 +114,7 @@ impl Sistema {
     fn inicio(&mut self) -> io::Result<()> {
         // Conectar el cliente al servidor de NATS
         let mut cliente = self.conectar()?;
+        let mut jet_stream = JetStream::new(cliente.clone());
 
         let sub_conectado = cliente.suscribirse("comandos.monitoreo.conectado", None)?;
 
@@ -137,7 +143,45 @@ impl Sistema {
 
         let suscripcion_estado_drone = cliente.suscribirse("drones.*", None)?;
 
-        let suscripcion_detecciones = cliente.suscribirse("incidentes.deteccion", None)?;
+        // TODO: USAR JS
+        jet_stream.crear_stream(&StreamConfig {
+            name: "incidentes".to_string(),
+            subjects: vec![
+                "incidentes.deteccion".to_string(),
+                "incidentes.*.creado".to_string(),
+                "incidentes.*.finalizado".to_string(),
+            ],
+            ..Default::default()
+        })?;
+
+        jet_stream.crear_consumer(
+            "incidentes",
+            ConsumerConfig {
+                durable_name: "deteccion".to_string(),
+                filter_subject: Some("incidentes.deteccion".to_string()),
+                ..Default::default()
+            },
+        )?;
+
+        jet_stream.crear_consumer(
+            "incidentes",
+            ConsumerConfig {
+                durable_name: "nuevos-camaras".to_string(),
+                filter_subject: Some("incidentes.*.creado".to_string()),
+                ..Default::default()
+            },
+        )?;
+
+        jet_stream.crear_consumer(
+            "incidentes",
+            ConsumerConfig {
+                durable_name: "finalizados-camaras".to_string(),
+                filter_subject: Some("incidentes.*.finalizado".to_string()),
+                ..Default::default()
+            },
+        )?;
+
+        let mut suscripcion_detecciones = jet_stream.suscribirse("incidentes", "deteccion")?;
 
         self.requerir_actualizar_estado_ui();
 
@@ -149,7 +193,7 @@ impl Sistema {
                 &suscripcion_camaras,
                 &suscripcion_comandos,
                 &suscripcion_estado_drone,
-                &suscripcion_detecciones,
+                &mut suscripcion_detecciones,
             )?;
 
             self.ciclo_cada_un_segundo(
@@ -248,7 +292,7 @@ impl Sistema {
         suscripcion_camaras: &Suscripcion,
         suscripcion_comandos: &Suscripcion,
         suscripcion_estado_drone: &Suscripcion,
-        suscripcion_detecciones: &Suscripcion,
+        suscripcion_detecciones: &mut JSSuscripcion,
     ) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
@@ -504,7 +548,7 @@ impl Sistema {
     fn leer_detecciones(
         &mut self,
         cliente: &Cliente,
-        suscripcion_detecciones: &Suscripcion,
+        suscripcion_detecciones: &mut JSSuscripcion,
     ) -> io::Result<()> {
         if let Some(mensaje) = suscripcion_detecciones.intentar_leer()? {
             if let Ok(deteccion) = Deteccion::deserializar(&mensaje.payload) {
