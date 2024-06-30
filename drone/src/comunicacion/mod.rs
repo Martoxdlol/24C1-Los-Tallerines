@@ -157,8 +157,6 @@ impl Comunicacion {
                     }
                 }
 
-                contexto.suscripcion_comandos.ack(&publicacion)?;
-
                 enviar_estado = true;
             }
         }

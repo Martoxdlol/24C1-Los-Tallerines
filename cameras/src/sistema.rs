@@ -313,8 +313,6 @@ impl Sistema {
             if let Some(comando) = interpretar_comando(&mensaje_texto) {
                 self.matchear_comandos(cliente, comando)?;
             }
-
-            sub_comandos_remotos.ack(&mensaje)?;
         }
 
         Ok(())
