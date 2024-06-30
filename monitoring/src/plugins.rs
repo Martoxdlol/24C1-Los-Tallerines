@@ -25,7 +25,7 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
         lugares.push(Place {
             position: Position::from_lat_lon(incidente.posicion().lat, incidente.posicion().lon),
             label: incidente.detalle.clone(),
-            symbol: symbol,
+            symbol,
             style: estilo_incidente(),
         });
     }

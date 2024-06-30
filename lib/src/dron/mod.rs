@@ -96,7 +96,7 @@ impl Dron {
         if self.bateria_actual * 0.75 < bateria_necesaria {
             return true;
         }
-        return false;
+        false
     }
 
     pub fn incidente_en_rango(&self, incidente: &Incidente) -> bool {
