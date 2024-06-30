@@ -202,3 +202,23 @@ nats consumer delete
 ? Select a Consumer ordenes-nuevas
 ? Really delete Consumer ordenes > ordenes-nuevas Yes
 ```
+
+## Usar detección de incidentes con AI
+
+El sistema de cámaras puede recibir imágenes a través de carpetas y ser analizadas automáticamente en busca de incidentes.
+
+Se puede elegir la carpeta base para donde el sistema generará los directorios para cada cámara pasando el párametro
+`deteccion=./camaras/deteccion`. Cada cámara tendrá un directorio `./camaras/deteccion/<id cámara>`. 
+Solamente copiando una imagen al directorio de una cámara autoamticamente abalizará en busqueda de incidente y eliminará el archivo.
+Por defecto se utiliza el directorio `./camaras`.
+
+**Variables de entorno necesarias**:
+
+```.env
+AWS_ACCESS_KEY_ID=
+AWS_REGION=
+AWS_SECRET_ACCESS_KEY=
+AWS_PROJECT_ARN=
+```
+
+Se pueden configurar globalmente en el sistema (ejemplo usando `~/.bashrc`) o creando un archivo `.env` en la raiz del proyecto.

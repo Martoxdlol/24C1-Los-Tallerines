@@ -85,7 +85,7 @@ impl Sistema {
     fn iniciar_hilo_camara(&mut self, camara: Camara) -> io::Result<()> {
         let ruta = self
             .configuracion
-            .obtener("direccion")
+            .obtener("deteccion")
             .unwrap_or("./camaras".to_string());
         let ruta = format!("{}/{}", ruta, camara.id);
         std::fs::create_dir_all(&ruta)?;
