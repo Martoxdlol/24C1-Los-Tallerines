@@ -122,6 +122,10 @@ impl Hilo {
         // Iterar sobre las suscripciones y enviar la publicación a cada una
         // Cabe destacar que solo itera en las suscripciones que coinciden con el tópico de la publicación
         for suscripcion in self.suscripciones.suscripciones_topico(&publicacion.topico) {
+            if suscripcion.id_hilo() != &self.id {
+                continue;
+            }
+
             if let Some(conexion) = self.conexiones.get_mut(suscripcion.id_conexion()) {
                 conexion.escribir_publicacion_mensaje(
                     &publicacion.mensaje(suscripcion.id().to_owned()),
