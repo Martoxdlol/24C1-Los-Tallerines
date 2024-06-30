@@ -5,6 +5,7 @@ use crate::logica::comando::Comando;
 use crate::{accion_camara::AccionCamara, accion_incidente::AccionIncidente};
 use egui::{Color32, Ui};
 use lib::camara::Camara;
+use lib::dron::Dron;
 use lib::{camara, incidente::Incidente};
 use walkers::Position;
 
@@ -159,7 +160,9 @@ impl Listar {
                 .anchor(egui::Align2::RIGHT_TOP, [-10., 10.])
                 .show(ui.ctx(), |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        for dron in drones {
+                        let mut drones_ordenados = drones.iter().collect::<Vec<&Dron>>();
+                        drones_ordenados.sort_by(|a, b| a.id.cmp(&b.id));
+                        for dron in drones_ordenados {
                             let id = dron.id.to_string();
 
                             ui.scope(|ui| {
