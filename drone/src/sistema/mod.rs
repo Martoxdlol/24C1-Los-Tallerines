@@ -58,9 +58,7 @@ impl Sistema {
 
             // Si el dron esta en el centro de carga, se recarga
             if let Accion::Cargar = self.dron.accion() {
-                if self.en_destino() {
-                    self.dron.bateria_actual = 100.;
-                }
+                self.dron.bateria_actual = 100.;
             }
         } else {
             self.establecer_velocidad();

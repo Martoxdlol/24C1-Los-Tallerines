@@ -8,6 +8,7 @@ use std::{
 use lib::{
     camara::Camara,
     configuracion::Configuracion,
+    deteccion::Deteccion,
     dron::Dron,
     incidente::Incidente,
     serializables::{
@@ -136,6 +137,8 @@ impl Sistema {
 
         let suscripcion_estado_drone = cliente.suscribirse("drones.*", None)?;
 
+        let suscripcion_detecciones = cliente.suscribirse("incidentes.deteccion", None)?;
+
         self.requerir_actualizar_estado_ui();
 
         self.solicitar_actualizacion_camaras(&cliente)?;
@@ -146,6 +149,7 @@ impl Sistema {
                 &suscripcion_camaras,
                 &suscripcion_comandos,
                 &suscripcion_estado_drone,
+                &suscripcion_detecciones,
             )?;
 
             self.ciclo_cada_un_segundo(
@@ -244,11 +248,13 @@ impl Sistema {
         suscripcion_camaras: &Suscripcion,
         suscripcion_comandos: &Suscripcion,
         suscripcion_estado_drone: &Suscripcion,
+        suscripcion_detecciones: &Suscripcion,
     ) -> io::Result<()> {
         self.leer_camaras(cliente, suscripcion_camaras)?;
         self.leer_comandos(cliente)?;
         self.leer_comandos_remotos(cliente, suscripcion_comandos)?;
         self.leer_estado_drones(cliente, suscripcion_estado_drone)?;
+        self.leer_detecciones(cliente, suscripcion_detecciones)?;
 
         std::thread::sleep(std::time::Duration::from_millis(30));
 
@@ -488,6 +494,36 @@ impl Sistema {
             if let Ok(drone) = Dron::deserializar(&mensaje.payload) {
                 self.estado.cargar_dron(drone);
                 self.requerir_actualizar_estado_ui();
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Lee las detecciones desde el sistema de cámaras
+    fn leer_detecciones(
+        &mut self,
+        cliente: &Cliente,
+        suscripcion_detecciones: &Suscripcion,
+    ) -> io::Result<()> {
+        if let Some(mensaje) = suscripcion_detecciones.intentar_leer()? {
+            if let Ok(deteccion) = Deteccion::deserializar(&mensaje.payload) {
+                let mut incidente = Incidente::new(
+                    0,
+                    deteccion.detalle().to_string(),
+                    deteccion.posicion.lat,
+                    deteccion.posicion.lon,
+                    chrono::offset::Local::now().timestamp_millis() as u64,
+                );
+
+                incidente.id = self.proximo_id_incidente;
+                self.proximo_id_incidente += 1;
+
+                self.estado.cargar_incidente(incidente.clone());
+                self.guardar_incidentes()?;
+                self.publicar_nuevo_incidente(cliente, &incidente)?;
+                self.requerir_actualizar_estado_ui();
+                self.asignar_incidentes_sin_asignar(cliente)?;
             }
         }
 

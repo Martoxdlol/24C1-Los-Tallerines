@@ -17,3 +17,4 @@ Cargo.lock
 # Archivos csv
 _*.csv
 .env
+.DS_Store

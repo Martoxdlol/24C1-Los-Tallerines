@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use rand::Rng;
+
 use crate::{
     coordenadas::Coordenadas,
     serializables::{
@@ -41,6 +43,14 @@ impl Camara {
     /// Devuelve la posición de la cámara.
     pub fn posicion(&self) -> Coordenadas {
         Coordenadas::from_lat_lon(self.lat, self.lon)
+    }
+
+    pub fn posicion_en_rango_aleatoria(&self) -> Coordenadas {
+        let mut rng = rand::thread_rng();
+        let distancia = rng.gen_range(0.0..self.rango);
+        let direccion = rng.gen_range(0.0..360.0);
+        let coordenadas = self.posicion();
+        Coordenadas::mover_en_direccion(&coordenadas, distancia, direccion)
     }
 }
 

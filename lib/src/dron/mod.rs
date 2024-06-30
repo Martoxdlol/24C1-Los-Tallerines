@@ -80,7 +80,23 @@ impl Dron {
             return Accion::Incidente(incidente.clone());
         }
 
+        if self.tengo_que_cargar() {
+            return Accion::Cargar;
+        }
+
         Accion::Espera
+    }
+
+    /// Determina si el dron tiene que cargar la batería.
+    /// Basado en si tiene la batería suficiente para llegar a la central de carga.
+    fn tengo_que_cargar(&self) -> bool {
+        let distancia_central = self.posicion.distancia(&self.central_de_carga);
+        let tiempo_necesario = distancia_central / self.velocidad_maxima;
+        let bateria_necesaria = tiempo_necesario * self.velocidad_descarga_bateria;
+        if self.bateria_actual * 0.75 < bateria_necesaria {
+            return true;
+        }
+        return false;
     }
 
     pub fn incidente_en_rango(&self, incidente: &Incidente) -> bool {

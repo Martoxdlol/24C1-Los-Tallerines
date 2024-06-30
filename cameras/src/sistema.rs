@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io,
     sync::mpsc::{Receiver, Sender},
 };
@@ -6,6 +7,7 @@ use std::{
 use lib::{
     camara::Camara,
     configuracion::Configuracion,
+    deteccion::Deteccion,
     incidente::Incidente,
     jet_stream::{consumer_config::ConsumerConfig, stream_config::StreamConfig},
     serializables::{
@@ -22,6 +24,7 @@ use messaging_client::cliente::{
 
 use crate::{
     estado::Estado,
+    hilo_deteccion_camara::HiloDeteccionCamara,
     interfaz::{comando::Comando, interpretar_comando, respuesta::Respuesta},
 };
 
@@ -31,6 +34,9 @@ pub struct Sistema {
     pub configuracion: Configuracion,
     enviar_respuesta: Sender<Respuesta>,
     recibir_comandos: Receiver<Comando>,
+    recibir_deteccion: Receiver<Deteccion>,
+    enviar_deteccion: Sender<Deteccion>,
+    detener_deteccion: HashMap<u64, Sender<()>>,
 }
 
 impl Sistema {
@@ -40,11 +46,16 @@ impl Sistema {
         enviar_respuesta: Sender<Respuesta>,
         recibir_comandos: Receiver<Comando>,
     ) -> Self {
+        let (enviar_deteccion, recibir_deteccion) = std::sync::mpsc::channel();
+
         Self {
             estado,
             configuracion,
             enviar_respuesta,
             recibir_comandos,
+            recibir_deteccion,
+            enviar_deteccion,
+            detener_deteccion: HashMap::new(),
         }
     }
 
@@ -53,6 +64,12 @@ impl Sistema {
     /// Está función se encarga de reintentar la ejecución del sistema en caso de error.
     pub fn iniciar(&mut self) -> io::Result<()> {
         self.cargar_camaras()?;
+        //Por cada camara, crearle su carpeta de lectura
+        let camaras_clones: Vec<Camara> = self.estado.camaras().into_iter().cloned().collect();
+
+        for camara in camaras_clones {
+            self.iniciar_hilo_camara(camara)?;
+        }
 
         loop {
             if let Err(e) = self.inicio() {
@@ -60,6 +77,31 @@ impl Sistema {
                 std::thread::sleep(std::time::Duration::from_secs(1));
             }
         }
+    }
+
+    /// Inicia un hilo de detección de una cámara
+    ///
+    /// Este se encarga de leer las imágenes de la cámara, detectar si hay un incidente y enviarlo al sistema
+    fn iniciar_hilo_camara(&mut self, camara: Camara) -> io::Result<()> {
+        let ruta = self
+            .configuracion
+            .obtener("direccion")
+            .unwrap_or("./camaras".to_string());
+        let ruta = format!("{}/{}", ruta, camara.id);
+        std::fs::create_dir_all(&ruta)?;
+
+        let (enviar_detener, recibir_detener) = std::sync::mpsc::channel();
+
+        let enviar_deteccion_clon = self.enviar_deteccion.clone();
+
+        self.detener_deteccion.insert(camara.id, enviar_detener);
+
+        std::thread::spawn(move || {
+            HiloDeteccionCamara::new(camara, ruta, enviar_deteccion_clon, recibir_detener)
+                .iniciar();
+        });
+
+        Ok(())
     }
 
     /// Inicia el bucle de eventos del sistema
@@ -194,6 +236,7 @@ impl Sistema {
         )?;
         self.leer_comandos(cliente)?;
         self.leer_comandos_remotos(cliente, sub_comandos)?;
+        self.leer_detecciones(cliente)?;
 
         std::thread::sleep(std::time::Duration::from_millis(5));
 
@@ -256,6 +299,21 @@ impl Sistema {
     fn leer_comandos(&mut self, cliente: &Cliente) -> io::Result<()> {
         while let Ok(comando) = self.recibir_comandos.try_recv() {
             self.matchear_comandos(cliente, comando)?;
+        }
+
+        Ok(())
+    }
+
+    /// Lee las detecciones enviadas por las cámaras
+    fn leer_detecciones(&mut self, cliente: &Cliente) -> io::Result<()> {
+        while let Ok(deteccion) = self.recibir_deteccion.try_recv() {
+            println!("Detección recibida: {:?}", deteccion);
+
+            if deteccion.es_incidente() {
+                println!("Incidente detectado");
+
+                cliente.publicar("incidentes.deteccion", &deteccion.serializar(), None)?;
+            }
         }
 
         Ok(())
@@ -333,6 +391,7 @@ impl Sistema {
             ));
         }
         let camara = Camara::new(id, lat, lon, rango);
+        self.iniciar_hilo_camara(camara.clone())?;
         self.estado.conectar_camara(camara);
         self.publicar_y_guardar_estado_general(cliente)?;
         self.responder_ok()
@@ -342,6 +401,10 @@ impl Sistema {
     fn comando_desconectar_camara(&mut self, cliente: &Cliente, id: u64) -> io::Result<()> {
         if self.estado.desconectar_camara(id).is_some() {
             self.publicar_y_guardar_estado_general(cliente)?;
+            let sender = self.detener_deteccion.get(&id);
+            if let Some(sender) = sender {
+                let _ = sender.send(());
+            }
             self.responder_ok()
         } else {
             self.responder(Respuesta::Error(

@@ -44,7 +44,6 @@ impl Deserializador {
         &mut self,
     ) -> Result<T, DeserializationError> {
         let texto = self.sacar_elemento::<String>()?;
-
         T::deserializar(texto.as_bytes())
     }
 }
