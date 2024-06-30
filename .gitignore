@@ -16,8 +16,5 @@ Cargo.lock
 
 # Archivos csv
 _*.csv
-
-
-machine-learning/dataset_*
-__pycache__
 .env
+.DS_Store
