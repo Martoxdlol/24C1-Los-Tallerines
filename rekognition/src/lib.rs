@@ -18,7 +18,12 @@ pub fn reconocer_imagen<P: AsRef<Path>>(ruta: P) -> Result<Vec<CustomLabel>, Str
 
     let resultado = runtime
         .block_on(reconocer_async(&arn_from_env, input))
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            format!(
+                "No se pudo utilizar el modelo para reconocer la imagen. {}",
+                e.to_string()
+            )
+        })?;
 
     Ok(resultado)
 }
