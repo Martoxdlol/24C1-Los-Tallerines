@@ -21,7 +21,7 @@ pub fn reconocer_imagen<P: AsRef<Path>>(ruta: P) -> Result<Vec<CustomLabel>, Str
         .map_err(|e| {
             format!(
                 "No se pudo utilizar el modelo para reconocer la imagen. {}",
-                e.to_string()
+                e
             )
         })?;
 
