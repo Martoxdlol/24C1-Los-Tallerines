@@ -193,7 +193,6 @@ mod tests {
             lon: 1.0,
             inicio: 0,
             tiempo_atendido: 0,
-            deteccion: None,
         };
         let dron = Dron {
             id: 1,
@@ -272,7 +271,6 @@ mod tests {
             lon: 1.0,
             inicio: 0,
             tiempo_atendido: 0,
-            deteccion: None,
         };
         let dron = Dron {
             id: 1,

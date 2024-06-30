@@ -519,8 +519,6 @@ impl Sistema {
                 incidente.id = self.proximo_id_incidente;
                 self.proximo_id_incidente += 1;
 
-                incidente.deteccion = Some(deteccion);
-
                 self.estado.cargar_incidente(incidente.clone());
                 self.guardar_incidentes()?;
                 self.publicar_nuevo_incidente(cliente, &incidente)?;

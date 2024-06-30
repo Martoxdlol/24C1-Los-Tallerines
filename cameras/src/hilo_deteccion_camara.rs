@@ -91,7 +91,7 @@ impl HiloDeteccionCamara {
         let deteccion = Deteccion {
             id_camara: self.camara.id,
             etiquetas,
-            posicion: self.camara.posicion(),
+            posicion: self.camara.posicion_en_rango_aleatoria(),
         };
 
         self.enviar_deteccion

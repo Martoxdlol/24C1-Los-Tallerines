@@ -1,6 +1,5 @@
 use crate::{
     coordenadas::Coordenadas,
-    deteccion::Deteccion,
     serializables::{deserializador::Deserializador, serializador::Serializador, Serializable},
 };
 
@@ -13,7 +12,6 @@ pub struct Incidente {
     pub lon: f64,
     pub inicio: u64,
     pub tiempo_atendido: i64,
-    pub deteccion: Option<Deteccion>,
 }
 
 impl Incidente {
@@ -25,7 +23,6 @@ impl Incidente {
             lon,
             inicio,
             tiempo_atendido: 0,
-            deteccion: None,
         }
     }
 
@@ -46,7 +43,6 @@ impl Serializable for Incidente {
         serializador.agregar_elemento(&self.lon);
         serializador.agregar_elemento(&self.inicio);
         serializador.agregar_elemento(&self.tiempo_atendido);
-        serializador.agregar_elemento_serializable(&self.deteccion);
 
         serializador.bytes
     }
@@ -64,7 +60,6 @@ impl Serializable for Incidente {
         let lon = deserializador.sacar_elemento()?;
         let inicio = deserializador.sacar_elemento()?;
         let tiempo_atendido = deserializador.sacar_elemento()?;
-        let deteccion = deserializador.sacar_elemento_serializable()?;
 
         Ok(Incidente {
             id,
@@ -73,7 +68,6 @@ impl Serializable for Incidente {
             lon,
             inicio,
             tiempo_atendido,
-            deteccion,
         })
     }
 }
