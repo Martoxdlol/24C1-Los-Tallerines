@@ -16,10 +16,16 @@ pub fn mostrar_incidentes(incidentes: &[Incidente]) -> impl Plugin {
     let mut lugares = Vec::new();
 
     for incidente in incidentes.iter() {
+        let mut symbol = '🚨';
+        if incidente.detalle.contains("incendio") {
+            symbol = '🔥';
+        } else if incidente.detalle.contains("accidente") {
+            symbol = '💥';
+        }
         lugares.push(Place {
             position: Position::from_lat_lon(incidente.posicion().lat, incidente.posicion().lon),
             label: incidente.detalle.clone(),
-            symbol: '🚨',
+            symbol: symbol,
             style: estilo_incidente(),
         });
     }
