@@ -46,7 +46,7 @@ impl JSSuscripcion {
 
         if let Some(sub) = &self.suscripcion {
             if let Some(publicacion) = sub.intentar_leer()? {
-                self.ack_pendiente = publicacion.reply_to.clone();
+                self.ack_pendiente.clone_from(&publicacion.reply_to);
                 self.suscripcion = None;
                 return Ok(Some(publicacion));
             }
