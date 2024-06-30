@@ -16,3 +16,4 @@ Cargo.lock
 
 # Archivos csv
 _*.csv
+.env

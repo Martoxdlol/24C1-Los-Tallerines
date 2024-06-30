@@ -79,13 +79,10 @@ impl JetStream {
         stream_name: &str,
         consumer_name: &str,
     ) -> io::Result<JSSuscripcion> {
-        let suscripcion_inicial = self.suscribir_proximo_mensaje(stream_name, consumer_name)?;
-
         Ok(JSSuscripcion::new(
             self.clone(),
             stream_name.to_string(),
             consumer_name.to_string(),
-            suscripcion_inicial,
         ))
     }
 
