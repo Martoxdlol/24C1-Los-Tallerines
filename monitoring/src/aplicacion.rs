@@ -26,10 +26,6 @@ fn mostrado_incidentes_y_camaras<'a>(
     clicks: &'a mut plugins::ClickWatcher,
 ) -> Map<'a, 'a, 'a> {
     mapa_a_mostrar
-        .with_plugin(plugins::mostrar_centros_carga(&estado.drones()))
-        .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
-        .with_plugin(plugins::mostrar_drones(&estado.drones()))
-        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
         .with_plugin(plugins::SombreadoCircular {
             posiciones: estado
                 .camaras()
@@ -37,6 +33,10 @@ fn mostrado_incidentes_y_camaras<'a>(
                 .map(|i| (i.posicion(), i.rango, i.activa()))
                 .collect(),
         })
+        .with_plugin(plugins::mostrar_centros_carga(&estado.drones()))
+        .with_plugin(plugins::mostrar_camaras(&estado.camaras()))
+        .with_plugin(plugins::mostrar_drones(&estado.drones()))
+        .with_plugin(plugins::mostrar_incidentes(&estado.incidentes()))
         .with_plugin(clicks)
 }
 

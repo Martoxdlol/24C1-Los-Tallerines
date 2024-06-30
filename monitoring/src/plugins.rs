@@ -66,6 +66,9 @@ fn estilo_dron(dron: &Dron) -> Style {
     if let Accion::Incidente(_incidente) = dron.accion() {
         stroke = Stroke::new(16., Color32::from_rgb(140, 27, 144))
     }
+    if let Accion::Cargar = dron.accion() {
+        stroke = Stroke::new(14., Color32::from_rgba_premultiplied(255, 51, 236, 127));
+    }
     Style {
         symbol_font: FontId::proportional(20.),
         symbol_stroke: stroke,
