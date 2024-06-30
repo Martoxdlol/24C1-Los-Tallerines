@@ -63,7 +63,7 @@ impl HiloDeteccionCamara {
             })
             .collect::<Vec<_>>();
 
-        if imagenes.len() == 0 {
+        if imagenes.is_empty() {
             std::thread::sleep(std::time::Duration::from_secs(1));
             return Ok(());
         }

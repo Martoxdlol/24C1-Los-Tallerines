@@ -510,7 +510,7 @@ impl Sistema {
             if let Ok(deteccion) = Deteccion::deserializar(&mensaje.payload) {
                 let mut incidente = Incidente::new(
                     0,
-                    format!("{}", deteccion.detalle()),
+                    deteccion.detalle().to_string(),
                     deteccion.posicion.lat,
                     deteccion.posicion.lon,
                     chrono::offset::Local::now().timestamp_millis() as u64,
