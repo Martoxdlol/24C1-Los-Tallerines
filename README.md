@@ -1,5 +1,7 @@
 # Taller de Programacion
 
+[https://taller-1-fiuba-rust.github.io/proyecto/24C1/proyecto.html](https://taller-1-fiuba-rust.github.io/proyecto/24C1/proyecto.html)
+
 ## Grupo
 
 Nombre del grupo: **"Los Tallerines"**
